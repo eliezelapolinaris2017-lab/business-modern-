@@ -1,13 +1,13 @@
 {
   "id":"./index.html?desktop=1",
-  "name":"Nexus Business Desktop",
-  "short_name":"Nexus Desktop",
-  "description":"Versión Desktop completa de Nexus Business para iPad y escritorio.",
+  "name":"Nexus Business V2",
+  "short_name":"Nexus V2",
+  "description":"Nexus Business V2 — gestión empresarial simplificada.",
   "start_url":"./index.html?desktop=1",
   "scope":"./",
   "display":"standalone",
-  "background_color":"#f4f7fb",
-  "theme_color":"#0f172a",
+  "background_color":"#f6f8fb",
+  "theme_color":"#091424",
   "orientation":"any",
   "categories":["business","productivity","finance"],
   "icons":[
