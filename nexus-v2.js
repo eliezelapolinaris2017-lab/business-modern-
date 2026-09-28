@@ -79,49 +79,63 @@
   function setupModuleChrome(){
     Object.entries(MODULE_META).forEach(([id,meta])=>{
       const view=document.getElementById(id);
-      if(!view || view.querySelector(':scope > .school-module-hero')) return;
+      if(!view) return;
       const card=view.querySelector(':scope > .card');
       if(!card) return;
 
-      const hero=document.createElement('div');
-      hero.className='school-module-hero';
-      hero.innerHTML='<div class="school-module-icon">'+meta.icon+'</div><div class="school-module-copy"><small>'+meta.eyebrow+'</small><h2>'+meta.title+'</h2><p>'+meta.desc+'</p></div><div class="school-module-actions"></div>';
-      view.insertBefore(hero,card);
+      let hero=view.querySelector(':scope > .school-module-hero');
+      if(!hero){
+        hero=document.createElement('div');
+        hero.className='school-module-hero';
+        hero.innerHTML='<div class="school-module-icon">'+meta.icon+'</div><div class="school-module-copy"><small>'+meta.eyebrow+'</small><h2>'+meta.title+'</h2><p>'+meta.desc+'</p></div><div class="school-module-actions"></div>';
+        view.insertBefore(hero,card);
+      }
 
       const actions=hero.querySelector('.school-module-actions');
-      const form=formForView(view);
-      if(form && id!=='settings'){
-        const add=document.createElement('button');
-        add.type='button';add.className='school-module-primary';
-        add.textContent=id==='payments'?'＋ Registrar cobro':id==='payroll'?'＋ Registrar pago':'＋ Nuevo';
-        add.onclick=()=>setFormOpen(form,true);
-        actions.appendChild(add);
-      }
+      if(actions && !actions.dataset.ready){
+        actions.dataset.ready='1';
 
-      if(id==='clients'){
-        const importer=view.querySelector('.contact-import-card');
-        if(importer){
-          importer.classList.add('v2-secondary-tool','v2-secondary-hidden');
-          const btn=document.createElement('button');
-          btn.type='button';btn.className='school-module-secondary';btn.textContent='Importar';
-          btn.onclick=()=>{const hidden=importer.classList.toggle('v2-secondary-hidden');btn.textContent=hidden?'Importar':'Cerrar importación';if(!hidden)importer.scrollIntoView({behavior:'smooth',block:'start'});};
-          actions.appendChild(btn);
+        const form=formForView(view);
+        if(form && id!=='settings'){
+          const add=document.createElement('button');
+          add.type='button';add.className='school-module-primary';
+          add.textContent=id==='payments'?'＋ Registrar cobro':id==='payroll'?'＋ Registrar pago':'＋ Nuevo';
+          add.onclick=()=>setFormOpen(form,true);
+          actions.appendChild(add);
         }
-      }
 
-      if(id==='billing'){
-        const billBtn=document.getElementById('invoiceFromService');
-        if(billBtn){
-          const heroBtn=document.createElement('button');
-          heroBtn.type='button';heroBtn.className='school-module-primary';heroBtn.textContent='＋ Facturar servicio';
-          heroBtn.onclick=()=>billBtn.click();actions.appendChild(heroBtn);
-          billBtn.closest('.toolbar')?.classList.add('v2-toolbar-hidden');
+        if(id==='clients'){
+          const importer=view.querySelector('.contact-import-card');
+          if(importer){
+            importer.classList.add('v2-secondary-tool','v2-secondary-hidden');
+            const btn=document.createElement('button');
+            btn.type='button';btn.className='school-module-secondary';btn.textContent='Importar';
+            btn.onclick=()=>{const hidden=importer.classList.toggle('v2-secondary-hidden');btn.textContent=hidden?'Importar':'Cerrar';if(!hidden)importer.scrollIntoView({behavior:'smooth',block:'start'});};
+            actions.appendChild(btn);
+          }
+        }
+
+        if(id==='billing'){
+          const billBtn=document.getElementById('invoiceFromService');
+          if(billBtn){
+            const heroBtn=document.createElement('button');
+            heroBtn.type='button';heroBtn.className='school-module-primary';heroBtn.textContent='＋ Facturar servicio';
+            heroBtn.onclick=()=>billBtn.click();actions.appendChild(heroBtn);
+            billBtn.closest('.toolbar')?.classList.add('v2-toolbar-hidden');
+          }
         }
       }
 
       card.classList.add('school-module-card');
       const oldHead=card.querySelector(':scope > .section-head');
-      if(oldHead) oldHead.classList.add('school-inner-head');
+      if(oldHead){
+        oldHead.classList.add('school-inner-head');
+        const limit=oldHead.querySelector('.limit-chip');
+        if(limit && !hero.querySelector('.school-module-limit')){
+          limit.classList.add('school-module-limit');
+          hero.querySelector('.school-module-actions')?.prepend(limit);
+        }
+      }
     });
   }
 
@@ -187,10 +201,10 @@
 
   function run(){
     document.body.classList.add('v2-ready');
-    brandV2();groupNav();setupModuleForms();setupModuleChrome();setupSearch();setupFlowStrip();createCommand();syncActiveModule();
+    brandV2();groupNav();setupModuleForms();setupModuleChrome();setupSearch();createCommand();syncActiveModule();
   }
 
-  const obs=new MutationObserver(()=>{groupNav();setupModuleForms();setupModuleChrome();setupFlowStrip();syncActiveModule();});
+  const obs=new MutationObserver(()=>{groupNav();setupModuleForms();setupModuleChrome();syncActiveModule();});
   obs.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
   document.addEventListener('click',openFormOnEdit,true);
   document.addEventListener('DOMContentLoaded',run);window.addEventListener('load',run);run();
