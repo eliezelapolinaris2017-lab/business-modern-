@@ -1228,11 +1228,12 @@ function renderBillingTable(){
     </div>
     <small class="muted">Mostrando ${rows.length} de ${allCount} facturas · Balance filtrado ${money(receivableTotal)}</small>
   </div>`+
-  table(['Factura','Cliente','Vence','Total','Pagado','Balance','Estado','Acción'],rows.map(inv=>{const bal=invoiceBalance(inv),paid=invoicePaid(inv),st=invoiceStatus(inv);return `<tr><td><b>${esc(inv.number)}</b><br><span class="muted">${esc(inv.serviceTitle||'')}</span></td><td>${esc(inv.clientName)}</td><td>${esc(inv.dueDate||'—')}</td><td>${money(inv.total)}</td><td>${money(paid)}</td><td><b>${money(bal)}</b></td><td>${statusChip(st)}</td><td><div class="actions"><button data-prev-inv="${inv.id}" type="button">Preview</button><button data-dup-inv="${inv.id}" type="button">Duplicar</button>${st!=='Cancelada'?`<button class="danger" data-cancel-inv="${inv.id}" type="button">Cancelar</button>`:''}${action('invoices',inv.id)}</div></td></tr>`;}));
+  table(['Factura','Cliente','Vence','Total','Pagado','Balance','Estado','Acción'],rows.map(inv=>{const bal=invoiceBalance(inv),paid=invoicePaid(inv),st=invoiceStatus(inv);return `<tr><td><b>${esc(inv.number)}</b><br><span class="muted">${esc(inv.serviceTitle||'')}</span></td><td>${esc(inv.clientName)}</td><td>${esc(inv.dueDate||'—')}</td><td>${money(inv.total)}</td><td>${money(paid)}</td><td><b>${money(bal)}</b></td><td>${statusChip(st)}</td><td><div class="actions">${bal>0 && st!=='Cancelada'?`<button class="primary" data-collect-inv="${inv.id}" type="button">Cobrar</button>`:'' }<button data-prev-inv="${inv.id}" type="button">PDF</button><button data-dup-inv="${inv.id}" type="button">Duplicar</button>${st!=='Cancelada'?`<button class="danger" data-cancel-inv="${inv.id}" type="button">Cancelar</button>`:''}${action('invoices',inv.id)}</div></td></tr>`;}));
   const q=$('billingSearch'), f=$('billingFilter'), c=$('clearBillingFilter');
   if(q) q.oninput=()=>{state.billingSearch=q.value;renderBillingTable();setTimeout(()=>{$('billingSearch')?.focus(); const el=$('billingSearch'); if(el) el.setSelectionRange(el.value.length,el.value.length);},0);};
   if(f) f.onchange=()=>{state.billingFilter=f.value;renderBillingTable();};
   if(c) c.onclick=clearBillingFilter;
+  document.querySelectorAll('[data-collect-inv]').forEach(b=>b.onclick=()=>collectInvoice(b.dataset.collectInv));
   document.querySelectorAll('[data-prev-inv]').forEach(b=>b.onclick=()=>previewInvoice(b.dataset.prevInv));
   document.querySelectorAll('[data-dup-inv]').forEach(b=>b.onclick=()=>duplicateInvoice(b.dataset.dupInv));
   document.querySelectorAll('[data-cancel-inv]').forEach(b=>b.onclick=()=>cancelInvoice(b.dataset.cancelInv));
@@ -1243,7 +1244,7 @@ function renderBillingTable(){
 
 function renderQuotesTable(){
   const box=$('quotesTable'); if(!box) return;
-  box.innerHTML=table(['Cotización','Cliente','Válida','Total','Estado','Acción'],state.quotes.map(q=>{const t=quoteTotals(q), st=quoteStatus(q);return `<tr><td><b>${esc(q.number||'')}</b><br><span class="muted">${esc(q.title||q.serviceType||'')}</span></td><td>${esc(q.clientName||'')}</td><td>${esc(q.validUntil||'—')}</td><td>${money(t.total)}</td><td>${statusChip(st)}</td><td><div class="actions"><button data-prev-quote="${q.id}" type="button">Preview</button><button data-edit-quote="${q.id}" type="button">Editar</button>${quoteCanInvoice(q)?`<button data-invoice-quote="${q.id}" type="button">Convertir a factura</button>`:''}${quoteCanConvert(q)?`<button data-convert-quote="${q.id}" type="button">Crear servicio</button>`:''}<button class="danger" data-del="quotes:${q.id}" type="button">Borrar</button></div></td></tr>`;}));
+  box.innerHTML=table(['Cotización','Cliente','Válida','Total','Estado','Acción'],state.quotes.map(q=>{const t=quoteTotals(q), st=quoteStatus(q);return `<tr><td><b>${esc(q.number||'')}</b><br><span class="muted">${esc(q.title||q.serviceType||'')}</span></td><td>${esc(q.clientName||'')}</td><td>${esc(q.validUntil||'—')}</td><td>${money(t.total)}</td><td>${statusChip(st)}</td><td><div class="actions"><button data-prev-quote="${q.id}" type="button">Preview</button><button data-edit-quote="${q.id}" type="button">Editar</button>${quoteCanInvoice(q)?`<button data-invoice-quote="${q.id}" type="button">Factura</button>`:''}${quoteCanConvert(q)?`<button data-convert-quote="${q.id}" type="button">Servicio</button>`:''}<button class="danger" data-del="quotes:${q.id}" type="button">Borrar</button></div></td></tr>`;}));
   document.querySelectorAll('[data-prev-quote]').forEach(b=>b.onclick=()=>previewQuote(b.dataset.prevQuote));
   document.querySelectorAll('[data-edit-quote]').forEach(b=>b.onclick=()=>editQuoteRecord(b.dataset.editQuote));
   document.querySelectorAll('[data-convert-quote]').forEach(b=>b.onclick=()=>convertQuoteToService(b.dataset.convertQuote));
@@ -1340,8 +1341,51 @@ function renderDirectory(){
   box.querySelectorAll('[data-directory-fav]').forEach(b=>b.onclick=()=>toggleDirectoryFavorite(b.dataset.directoryFav));
   box.querySelectorAll('[data-client-summary]').forEach(b=>b.onclick=()=>showClientSummary(b.dataset.clientSummary));
 }
+function openV2Form(formId){
+  const form=$(formId);
+  if(!form) return;
+  form.classList.add('v2-form-open');
+  const view=form.closest('.view');
+  const btn=view?.querySelector('.v2-create-btn');
+  if(btn){btn.dataset.open='true';btn.textContent='Cerrar';}
+  setTimeout(()=>form.scrollIntoView({behavior:'smooth',block:'start'}),30);
+}
+function newQuoteForClient(clientId){
+  const c=clientBy(clientId); if(!c.id)return;
+  show('quotes');
+  setTimeout(()=>{
+    if($('qClient')) $('qClient').value=c.id;
+    if($('qDate')) $('qDate').value=today();
+    if($('qValid')) $('qValid').value=plusDays(15);
+    if($('qStatus')) $('qStatus').value='Borrador';
+    openV2Form('quoteForm');
+  },60);
+}
+function newServiceForClient(clientId){
+  const c=clientBy(clientId); if(!c.id)return;
+  show('services');
+  setTimeout(()=>{
+    if($('sClient')) $('sClient').value=c.id;
+    if($('sDate')) $('sDate').value=today();
+    if($('sStatus')) $('sStatus').value='Pendiente';
+    openV2Form('serviceForm');
+  },60);
+}
+function collectInvoice(id){
+  const inv=state.invoices.find(x=>x.id===id); if(!inv)return;
+  if(invoiceStatus(inv)==='Cancelada') return alert('No se puede cobrar una factura cancelada.');
+  const bal=invoiceBalance(inv);
+  if(bal<=0) return alert('Esta factura no tiene balance pendiente.');
+  show('payments');
+  setTimeout(()=>{
+    if($('pInvoice')) $('pInvoice').value=inv.id;
+    if($('pDate')) $('pDate').value=today();
+    if($('pAmount')) $('pAmount').value=Number(bal).toFixed(2);
+    openV2Form('paymentForm');
+  },60);
+}
 function tables(){const i=industry();
-  $('clientsTable').innerHTML=table(['Cliente','Contacto','Etiquetas','Historial','Acción'],state.clients.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span></td><td><div class="actions"><button data-client-summary="${c.id}" type="button">Ver historial</button><button data-client-portal="${c.id}" type="button">Portal</button>${action('clients',c.id)}</div></td></tr>`;}));
+  $('clientsTable').innerHTML=table(['Cliente','Contacto','Etiquetas','Historial','Acción'],state.clients.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span></td><td><div class="actions v2-flow-actions"><button class="primary" data-client-quote="${c.id}" type="button">Cotizar</button><button data-client-service="${c.id}" type="button">Servicio</button><button data-client-summary="${c.id}" type="button">Historial</button><button data-client-portal="${c.id}" type="button">Portal</button>${action('clients',c.id)}</div></td></tr>`;}));
   renderDirectory();
   $('teamTable').innerHTML=table([i.team,'Información personal','Vehículo','Estado','Comisión','Nómina pagada','Balance','Acción'],state.team.map(t=>`<tr><td><b>${esc(t.name)}</b><br><span class="muted">${esc(t.role)} · ${esc(t.phone||'')}</span></td><td><span class="muted">ID: ${esc(t.personalId||'—')}</span><br><span class="muted">SSN: ${esc(maskSSN(t.ssn||t.socialSecurity||''))}</span><br><span class="muted">Lic.: ${esc(t.driverLicense||'—')}</span></td><td>${esc(t.assignedVehicleName||'Sin vehículo')}</td><td>${statusChip(t.status||'Activo')}</td><td>${money(teamCommission(t.id))}<br><span class="muted">Ret. ${money(teamRetention(t.id))}</span></td><td>${money(payrollPaid(t.id))}</td><td><b>${money(teamBalance(t.id))}</b></td><td>${action('team',t.id)}</td></tr>`));
   $('payrollTable').innerHTML=table(['Fecha',i.team,'Periodo','Bruto','Bonos','Retención / salida','Adelantos / otros','Neto','Acción'],state.payroll.map(p=>`<tr><td>${esc(p.date)}</td><td>${esc(p.teamName)}</td><td>${esc(p.period)}<br><span class="muted">${Number(p.hours||0)}h + ${Number(p.overtime||0)}h extra</span></td><td>${money(p.gross)}</td><td>${money(p.bonus)}</td><td>${money(payrollRetention(p))}<br><span class="muted">${esc(p.retentionType||'')} ${p.retentionDestination?'→ '+esc(p.retentionDestination):''}</span></td><td>${money(payrollAdvance(p)+payrollOtherDeductions(p))}</td><td><b>${money(payrollNet(p))}</b><br><span class="muted">${esc(p.method)}</span></td><td><div class="actions"><button data-paystub="${p.id}" type="button">PDF</button>${action('payroll',p.id)}</div></td></tr>`));
@@ -1354,6 +1398,8 @@ function tables(){const i=industry();
   $('servicesTable').innerHTML=table(['Fecha',i.client,'Activo','Servicio','Estado','Monto','Factura','Acción'],state.services.map(s=>{const inv=state.invoices.find(x=>x.serviceId===s.id),amount=serviceAmount(s);return `<tr><td>${esc(s.date)}<br><span class="tag">${esc(s.priority||'Normal')}</span></td><td>${esc(s.clientName)}</td><td>${esc(s.assetName||'')}</td><td><b>${esc(serviceTitle(s))}</b><br>${isTransport()?(()=>{const r=transportRouteFromService(s);return `<span class="muted">${esc(r.origin||'')} → ${esc(r.destination||'')} ${r.miles?`· ${Number(r.miles).toFixed(2)} mi`:''}</span><br>${routeLink(r.origin,r.destination,'Abrir ruta')}`})():`<span class="muted">${esc((s.fields||[]).filter(Boolean).slice(0,3).join(' · '))}</span>`}</td><td><span class="status-chip">${esc(s.status||'Pendiente')}</span></td><td>${money(amount)}</td><td>${inv?esc(inv.number):`<button data-invoice="${s.id}" type="button">Facturar</button>`}</td><td><div class="actions"><button data-dup-service="${s.id}" type="button">Duplicar</button>${action('services',s.id)}</div></td></tr>`}));
   document.querySelectorAll('[data-invoice]').forEach(b=>b.onclick=()=>createInvoice(b.dataset.invoice));
   document.querySelectorAll('[data-client-summary]').forEach(b=>b.onclick=()=>showClientSummary(b.dataset.clientSummary));
+  document.querySelectorAll('[data-client-quote]').forEach(b=>b.onclick=()=>newQuoteForClient(b.dataset.clientQuote));
+  document.querySelectorAll('[data-client-service]').forEach(b=>b.onclick=()=>newServiceForClient(b.dataset.clientService));
   document.querySelectorAll('[data-dup-service]').forEach(b=>b.onclick=()=>duplicateService(b.dataset.dupService));
   document.querySelectorAll('[data-paystub]').forEach(b=>b.onclick=()=>previewPaystub(b.dataset.paystub));
   document.querySelectorAll('[data-pay-retention]').forEach(b=>b.onclick=()=>markRetentionPaid(b.dataset.payRetention));
