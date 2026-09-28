@@ -1,107 +1,79 @@
-// Nexus Business V2 UX layer
+// Nexus Business Modern — Clase Graduanda PR UX layer
 (()=>{
   const ICONS={
-    dashboard:'⌂',clients:'◎',directory:'⌖',contracts:'▤',services:'◆',quotes:'◇',
-    followups:'↻',team:'♙',assets:'▣',payroll:'$',suppliers:'◫',supplierPayments:'→',
-    purchases:'▥',billing:'▧',payments:'✓',cashflow:'∿',reports:'▦',plans:'☆',settings:'⚙'
+    dashboard:'⌂',clients:'👥',directory:'⌖',contracts:'▤',quotes:'🧾',followups:'↻',
+    services:'🛠',assets:'▣',team:'♙',billing:'$',payments:'✓',cashflow:'∿',
+    purchases:'▥',suppliers:'◫',supplierPayments:'→',payroll:'$',reports:'▦',plans:'☆',settings:'⚙'
   };
-  const GROUPS=[
-    ['Inicio',['dashboard']],
-    ['Ventas',['clients','directory','quotes','contracts','followups']],
-    ['Operación',['services','assets','team']],
-    ['Finanzas',['billing','payments','cashflow','purchases','suppliers','supplierPayments','payroll']],
-    ['Análisis',['reports']],
-    ['Sistema',['plans','settings']]
-  ];
-  const MODULE_META={
-    clients:{icon:'👥',eyebrow:'VENTAS',title:'Clientes',desc:'Personas, contactos, historial y próximos pasos.'},
-    directory:{icon:'📍',eyebrow:'CLIENTES',title:'Directorio',desc:'Direcciones y rutas sin buscar en conversaciones.'},
-    contracts:{icon:'📄',eyebrow:'VENTAS',title:'Contratos',desc:'Documentos vinculados a clientes y servicios.'},
-    quotes:{icon:'🧾',eyebrow:'VENTAS',title:'Cotizaciones',desc:'Crea, aprueba y convierte cotizaciones sin repetir datos.'},
-    followups:{icon:'↻',eyebrow:'VENTAS',title:'Seguimiento',desc:'Mantén pendientes, mantenimientos y oportunidades bajo control.'},
-    services:{icon:'🛠',eyebrow:'OPERACIÓN',title:'Servicios',desc:'Trabajo programado, estado, equipo asignado y facturación.'},
-    assets:{icon:'▣',eyebrow:'OPERACIÓN',title:'Activos',desc:'Equipos y activos relacionados a tus clientes.'},
-    team:{icon:'♙',eyebrow:'OPERACIÓN',title:'Equipo',desc:'Personal, asignaciones y datos operacionales.'},
-    billing:{icon:'💵',eyebrow:'FINANZAS',title:'Facturación',desc:'Facturas, balances pendientes y cobro inmediato.'},
-    payments:{icon:'✓',eyebrow:'FINANZAS',title:'Cobros',desc:'Registra pagos y mantén los balances al día.'},
-    cashflow:{icon:'∿',eyebrow:'FINANZAS',title:'Flujo de caja',desc:'Entradas y salidas del negocio en una vista simple.'},
-    purchases:{icon:'▥',eyebrow:'FINANZAS',title:'Compras',desc:'Compras, vencimientos y cuentas por pagar.'},
-    suppliers:{icon:'◫',eyebrow:'FINANZAS',title:'Suplidores',desc:'Contactos, crédito, compras y balances por suplidor.'},
-    supplierPayments:{icon:'→',eyebrow:'FINANZAS',title:'Pagos a suplidores',desc:'Registra pagos y concilia obligaciones pendientes.'},
-    payroll:{icon:'
-    dashboard:'Inicio',clients:'Clientes',directory:'Directorio',contracts:'Contratos',
-    services:'Servicios',quotes:'Cotizaciones',followups:'Seguimiento',team:'Equipo',
-    assets:'Activos',payroll:'Nómina',suppliers:'Suplidores',supplierPayments:'Pagos a suplidores',
-    purchases:'Compras',billing:'Facturación',payments:'Cobros',cashflow:'Flujo de caja',
-    reports:'Reportes',plans:'Planes',settings:'Configuración'
+  const META={
+    clients:['👥','VENTAS','Clientes','Personas, contactos, historial y próximos pasos.'],
+    directory:['📍','CLIENTES','Directorio','Direcciones y rutas de tus clientes.'],
+    contracts:['📄','VENTAS','Contratos','Contratos relacionados a clientes y servicios.'],
+    quotes:['🧾','VENTAS','Cotizaciones','Crea, aprueba y convierte cotizaciones.'],
+    followups:['↻','VENTAS','Seguimiento','Pendientes, mantenimientos y oportunidades.'],
+    services:['🛠','OPERACIÓN','Servicios','Trabajos, estados y facturación.'],
+    assets:['▣','OPERACIÓN','Activos','Equipos y activos vinculados a clientes.'],
+    team:['♙','OPERACIÓN','Equipo','Personal y asignaciones.'],
+    billing:['💵','FINANZAS','Facturación','Facturas, balances y cobros.'],
+    payments:['✓','FINANZAS','Cobros','Registra pagos y actualiza balances.'],
+    cashflow:['∿','FINANZAS','Flujo de caja','Entradas y salidas del negocio.'],
+    purchases:['▥','FINANZAS','Compras','Compras y cuentas por pagar.'],
+    suppliers:['◫','FINANZAS','Suplidores','Crédito, compras y balances.'],
+    supplierPayments:['→','FINANZAS','Pagos a suplidores','Pagos y conciliación.'],
+    payroll:['$','FINANZAS','Nómina','Pagos y retenciones del equipo.'],
+    reports:['▦','ANÁLISIS','Reportes','Reportes del negocio en un solo lugar.'],
+    plans:['☆','SISTEMA','Planes','Plan activo y funciones disponibles.'],
+    settings:['⚙','SISTEMA','Configuración','Personalización y preferencias.']
   };
 
-  function navButton(view){return document.querySelector('#sideNav [data-view="'+view+'"]')}
-  function groupNav(){
-    const nav=document.getElementById('sideNav'); if(!nav) return;
-    const buttons=[...nav.querySelectorAll('[data-view]')];
-    if(!buttons.length || nav.querySelector('.v2-nav-group')) return;
-    nav.dataset.v2Grouped='1';
-    buttons.forEach(b=>{b.dataset.modernIcon=ICONS[b.dataset.view]||'•'});
-    GROUPS.forEach(([label,views])=>{
-      const available=views.map(navButton).filter(Boolean); if(!available.length)return;
-      const tag=document.createElement('div'); tag.className='v2-nav-group'; tag.textContent=label; nav.appendChild(tag);
-      available.forEach(b=>nav.appendChild(b));
-    });
-  }
-
-  function formForView(view){
-    if(!view) return null;
-    return view.querySelector('form.form-grid');
-  }
+  const formFor=view=>view?.querySelector('form.form-grid')||null;
   function setFormOpen(form,open){
     if(!form)return;
     form.classList.toggle('v2-form-open',open);
-    const view=form.closest('.view');
-    const btn=view?.querySelector('.v2-create-btn');
-    if(btn){btn.dataset.open=open?'true':'false';btn.textContent=open?'Cerrar':'＋ Nuevo';}
-    if(open) setTimeout(()=>form.scrollIntoView({behavior:'smooth',block:'start'}),30);
+    if(open)setTimeout(()=>form.scrollIntoView({behavior:'smooth',block:'start'}),30);
   }
-  function setupModuleForms(){
+  function decorateNav(){
+    document.querySelectorAll('#sideNav [data-view]').forEach(b=>{
+      b.dataset.modernIcon=ICONS[b.dataset.view]||'•';
+    });
+    document.querySelectorAll('#sideNav .v2-nav-group').forEach(x=>x.remove());
+  }
+  function setupForms(){
     document.querySelectorAll('#appShell .view').forEach(view=>{
-      const form=formForView(view);
-      if(!form || view.id==='settings' || form.dataset.v2Ready==='1') return;
-      form.dataset.v2Ready='1'; form.classList.add('v2-collapsible');
-      const head=view.querySelector('.section-head');
-      if(!head) return;
-      const btn=document.createElement('button');
-      btn.type='button';btn.className='v2-create-btn';btn.textContent='＋ Nuevo';btn.dataset.open='false';
-      btn.onclick=()=>setFormOpen(form,!form.classList.contains('v2-form-open'));
-      head.appendChild(btn);
+      const form=formFor(view);
+      if(form && view.id!=='settings') form.classList.add('v2-collapsible');
     });
   }
-
-  function setupModuleChrome(){
-    Object.entries(MODULE_META).forEach(([id,meta])=>{
+  function setupModules(){
+    Object.entries(META).forEach(([id,m])=>{
       const view=document.getElementById(id);
-      if(!view) return;
-      const card=view.querySelector(':scope > .card');
-      if(!card) return;
+      const card=view?.querySelector(':scope > .card');
+      if(!view||!card)return;
 
       let hero=view.querySelector(':scope > .school-module-hero');
       if(!hero){
         hero=document.createElement('div');
         hero.className='school-module-hero';
-        hero.innerHTML='<div class="school-module-icon">'+meta.icon+'</div><div class="school-module-copy"><small>'+meta.eyebrow+'</small><h2>'+meta.title+'</h2><p>'+meta.desc+'</p></div><div class="school-module-actions"></div>';
+        hero.innerHTML='<div class="school-module-icon">'+m[0]+'</div><div class="school-module-copy"><small>'+m[1]+'</small><h2>'+m[2]+'</h2><p>'+m[3]+'</p></div><div class="school-module-actions"></div>';
         view.insertBefore(hero,card);
       }
+      card.classList.add('school-module-card');
 
       const actions=hero.querySelector('.school-module-actions');
-      if(actions && !actions.dataset.ready){
+      if(!actions.dataset.ready){
         actions.dataset.ready='1';
+        const oldHead=card.querySelector(':scope > .section-head');
+        const limit=oldHead?.querySelector('.limit-chip');
+        if(limit){limit.classList.add('school-module-limit');actions.appendChild(limit);}
+        if(oldHead)oldHead.classList.add('school-inner-head');
 
-        const form=formForView(view);
+        const form=formFor(view);
         if(form && id!=='settings'){
-          const add=document.createElement('button');
-          add.type='button';add.className='school-module-primary';
-          add.textContent=id==='payments'?'＋ Registrar cobro':id==='payroll'?'＋ Registrar pago':'＋ Nuevo';
-          add.onclick=()=>setFormOpen(form,true);
-          actions.appendChild(add);
+          const btn=document.createElement('button');
+          btn.type='button';btn.className='school-module-primary';
+          btn.textContent=id==='payments'?'＋ Registrar cobro':id==='payroll'?'＋ Registrar pago':'＋ Nuevo';
+          btn.onclick=()=>setFormOpen(form,true);
+          actions.appendChild(btn);
         }
 
         if(id==='clients'){
@@ -110,226 +82,40 @@
             importer.classList.add('v2-secondary-tool','v2-secondary-hidden');
             const btn=document.createElement('button');
             btn.type='button';btn.className='school-module-secondary';btn.textContent='Importar';
-            btn.onclick=()=>{const hidden=importer.classList.toggle('v2-secondary-hidden');btn.textContent=hidden?'Importar':'Cerrar';if(!hidden)importer.scrollIntoView({behavior:'smooth',block:'start'});};
+            btn.onclick=()=>{const hidden=importer.classList.toggle('v2-secondary-hidden');btn.textContent=hidden?'Importar':'Cerrar';};
             actions.appendChild(btn);
           }
         }
 
         if(id==='billing'){
-          const billBtn=document.getElementById('invoiceFromService');
-          if(billBtn){
-            const heroBtn=document.createElement('button');
-            heroBtn.type='button';heroBtn.className='school-module-primary';heroBtn.textContent='＋ Facturar servicio';
-            heroBtn.onclick=()=>billBtn.click();actions.appendChild(heroBtn);
-            billBtn.closest('.toolbar')?.classList.add('v2-toolbar-hidden');
+          const source=document.getElementById('invoiceFromService');
+          if(source){
+            source.closest('.toolbar')?.classList.add('v2-toolbar-hidden');
+            const btn=document.createElement('button');
+            btn.type='button';btn.className='school-module-primary';btn.textContent='＋ Facturar servicio';
+            btn.onclick=()=>source.click();actions.appendChild(btn);
           }
         }
       }
-
-      card.classList.add('school-module-card');
-      const oldHead=card.querySelector(':scope > .section-head');
-      if(oldHead){
-        oldHead.classList.add('school-inner-head');
-        const limit=oldHead.querySelector('.limit-chip');
-        if(limit && !hero.querySelector('.school-module-limit')){
-          limit.classList.add('school-module-limit');
-          hero.querySelector('.school-module-actions')?.prepend(limit);
-        }
-      }
     });
   }
-
-  function setupSearch(){
-    const input=document.getElementById('globalSearch');
-    if(input){input.placeholder='Buscar en Nexus…';input.setAttribute('aria-label','Buscar en Nexus');}
+  function improveSearch(){
+    const s=document.getElementById('globalSearch');
+    if(s)s.placeholder='Buscar en Nexus…';
   }
-
-  function createCommand(){
-    if(document.getElementById('v2Command'))return;
-    const hint=document.createElement('button');hint.type='button';hint.className='v2-command-hint';
-    hint.innerHTML='<span>Ir a módulo</span><kbd>⌘ K</kbd>';document.body.appendChild(hint);
-    const wrap=document.createElement('div');wrap.id='v2Command';wrap.className='v2-command';
-    wrap.innerHTML='<div class="v2-command-box"><input id="v2CommandInput" placeholder="¿A dónde quieres ir?"><div id="v2CommandResults" class="v2-command-results"></div></div>';
-    document.body.appendChild(wrap);
-    const input=wrap.querySelector('#v2CommandInput'),results=wrap.querySelector('#v2CommandResults');
-    const close=()=>{wrap.classList.remove('open');input.value='';};
-    const render=()=>{
-      const q=input.value.toLowerCase().trim();
-      const items=Object.entries(TITLES).filter(([k,v])=>navButton(k)&&(!q||v.toLowerCase().includes(q)));
-      results.innerHTML=items.map(([k,v])=>'<button type="button" data-v2-go="'+k+'"><span>'+v+'</span><small>'+k+'</small></button>').join('');
-      results.querySelectorAll('[data-v2-go]').forEach(b=>b.onclick=()=>{navButton(b.dataset.v2Go)?.click();close();});
-    };
-    const open=()=>{wrap.classList.add('open');render();setTimeout(()=>input.focus(),20)};
-    hint.onclick=open; input.oninput=render; wrap.onclick=e=>{if(e.target===wrap)close()};
-    document.addEventListener('keydown',e=>{
-      if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();open();}
-      if(e.key==='Escape')close();
-    });
+  function openEditForm(e){
+    if(!e.target.closest('[data-edit]'))return;
+    setTimeout(()=>setFormOpen(formFor(document.querySelector('#appShell .view.active')),true),60);
   }
-
-  function setupFlowStrip(){
-    const flow=[['clients','Cliente'],['quotes','Cotización'],['services','Servicio'],['billing','Factura'],['payments','Cobro']];
-    flow.forEach(([viewId])=>{
-      const view=document.getElementById(viewId); if(!view || view.querySelector('.v2-flow-strip')) return;
-      const card=view.querySelector(':scope > .card'); if(!card) return;
-      const strip=document.createElement('div');strip.className='v2-flow-strip';
-      strip.innerHTML=flow.map(([id,label],idx)=>'<button type="button" data-flow-view="'+id+'" class="'+(id===viewId?'active':'')+'"><span>'+(idx+1)+'</span>'+label+'</button>').join('');
-      card.prepend(strip);
-      strip.querySelectorAll('[data-flow-view]').forEach(b=>b.onclick=()=>navButton(b.dataset.flowView)?.click());
-    });
-  }
-
-  function syncActiveModule(){
-    const active=document.querySelector('#appShell .view.active');
-    document.body.dataset.activeModule=active?.id||'';
-  }
-
-  function openFormOnEdit(e){
-    const edit=e.target.closest('[data-edit]');
-    if(!edit)return;
-    setTimeout(()=>{
-      const view=document.querySelector('#appShell .view.active');
-      const form=formForView(view); if(form)setFormOpen(form,true);
-    },80);
-  }
-
-  function brandV2(){
-    document.title='Nexus Business V2';
-    const tagline=document.querySelector('.auth-tagline');
-    if(tagline)tagline.textContent='Una operación más simple. Un negocio más claro.';
-  }
-
   function run(){
     document.body.classList.add('v2-ready');
-    brandV2();groupNav();setupModuleForms();setupModuleChrome();setupSearch();createCommand();syncActiveModule();
+    document.title='Nexus Business';
+    decorateNav();setupForms();setupModules();improveSearch();
   }
-
-  const obs=new MutationObserver(()=>{groupNav();setupModuleForms();setupModuleChrome();syncActiveModule();});
-  obs.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
-  document.addEventListener('click',openFormOnEdit,true);
-  document.addEventListener('DOMContentLoaded',run);window.addEventListener('load',run);run();
-})();
-,eyebrow:'FINANZAS',title:'Nómina',desc:'Pagos, retenciones y balances del equipo.'},
-    reports:{icon:'▦',eyebrow:'ANÁLISIS',title:'Reportes',desc:'Encuentra y genera reportes sin navegar entre pantallas.'},
-    plans:{icon:'☆',eyebrow:'SISTEMA',title:'Planes',desc:'Revisa tu plan y las funciones disponibles.'},
-    settings:{icon:'⚙',eyebrow:'SISTEMA',title:'Configuración',desc:'Personaliza el negocio, documentos, calendario y preferencias.'}
-  };
-
-  const TITLES={
-    dashboard:'Inicio',clients:'Clientes',directory:'Directorio',contracts:'Contratos',
-    services:'Servicios',quotes:'Cotizaciones',followups:'Seguimiento',team:'Equipo',
-    assets:'Activos',payroll:'Nómina',suppliers:'Suplidores',supplierPayments:'Pagos a suplidores',
-    purchases:'Compras',billing:'Facturación',payments:'Cobros',cashflow:'Flujo de caja',
-    reports:'Reportes',plans:'Planes',settings:'Configuración'
-  };
-
-  function navButton(view){return document.querySelector('#sideNav [data-view="'+view+'"]')}
-  function groupNav(){
-    const nav=document.getElementById('sideNav'); if(!nav) return;
-    const buttons=[...nav.querySelectorAll('[data-view]')];
-    if(!buttons.length || nav.querySelector('.v2-nav-group')) return;
-    nav.dataset.v2Grouped='1';
-    buttons.forEach(b=>{b.dataset.modernIcon=ICONS[b.dataset.view]||'•'});
-    GROUPS.forEach(([label,views])=>{
-      const available=views.map(navButton).filter(Boolean); if(!available.length)return;
-      const tag=document.createElement('div'); tag.className='v2-nav-group'; tag.textContent=label; nav.appendChild(tag);
-      available.forEach(b=>nav.appendChild(b));
-    });
-  }
-
-  function formForView(view){
-    if(!view) return null;
-    return view.querySelector('form.form-grid');
-  }
-  function setFormOpen(form,open){
-    if(!form)return;
-    form.classList.toggle('v2-form-open',open);
-    const view=form.closest('.view');
-    const btn=view?.querySelector('.v2-create-btn');
-    if(btn){btn.dataset.open=open?'true':'false';btn.textContent=open?'Cerrar':'＋ Nuevo';}
-    if(open) setTimeout(()=>form.scrollIntoView({behavior:'smooth',block:'start'}),30);
-  }
-  function setupModuleForms(){
-    document.querySelectorAll('#appShell .view').forEach(view=>{
-      const form=formForView(view);
-      if(!form || view.id==='settings' || form.dataset.v2Ready==='1') return;
-      form.dataset.v2Ready='1'; form.classList.add('v2-collapsible');
-      const head=view.querySelector('.section-head');
-      if(!head) return;
-      const btn=document.createElement('button');
-      btn.type='button';btn.className='v2-create-btn';btn.textContent='＋ Nuevo';btn.dataset.open='false';
-      btn.onclick=()=>setFormOpen(form,!form.classList.contains('v2-form-open'));
-      head.appendChild(btn);
-    });
-  }
-
-  function setupSearch(){
-    const input=document.getElementById('globalSearch');
-    if(input){input.placeholder='Buscar en Nexus…';input.setAttribute('aria-label','Buscar en Nexus');}
-  }
-
-  function createCommand(){
-    if(document.getElementById('v2Command'))return;
-    const hint=document.createElement('button');hint.type='button';hint.className='v2-command-hint';
-    hint.innerHTML='<span>Ir a módulo</span><kbd>⌘ K</kbd>';document.body.appendChild(hint);
-    const wrap=document.createElement('div');wrap.id='v2Command';wrap.className='v2-command';
-    wrap.innerHTML='<div class="v2-command-box"><input id="v2CommandInput" placeholder="¿A dónde quieres ir?"><div id="v2CommandResults" class="v2-command-results"></div></div>';
-    document.body.appendChild(wrap);
-    const input=wrap.querySelector('#v2CommandInput'),results=wrap.querySelector('#v2CommandResults');
-    const close=()=>{wrap.classList.remove('open');input.value='';};
-    const render=()=>{
-      const q=input.value.toLowerCase().trim();
-      const items=Object.entries(TITLES).filter(([k,v])=>navButton(k)&&(!q||v.toLowerCase().includes(q)));
-      results.innerHTML=items.map(([k,v])=>'<button type="button" data-v2-go="'+k+'"><span>'+v+'</span><small>'+k+'</small></button>').join('');
-      results.querySelectorAll('[data-v2-go]').forEach(b=>b.onclick=()=>{navButton(b.dataset.v2Go)?.click();close();});
-    };
-    const open=()=>{wrap.classList.add('open');render();setTimeout(()=>input.focus(),20)};
-    hint.onclick=open; input.oninput=render; wrap.onclick=e=>{if(e.target===wrap)close()};
-    document.addEventListener('keydown',e=>{
-      if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();open();}
-      if(e.key==='Escape')close();
-    });
-  }
-
-  function setupFlowStrip(){
-    const flow=[['clients','Cliente'],['quotes','Cotización'],['services','Servicio'],['billing','Factura'],['payments','Cobro']];
-    flow.forEach(([viewId])=>{
-      const view=document.getElementById(viewId); if(!view || view.querySelector('.v2-flow-strip')) return;
-      const card=view.querySelector(':scope > .card'); if(!card) return;
-      const strip=document.createElement('div');strip.className='v2-flow-strip';
-      strip.innerHTML=flow.map(([id,label],idx)=>'<button type="button" data-flow-view="'+id+'" class="'+(id===viewId?'active':'')+'"><span>'+(idx+1)+'</span>'+label+'</button>').join('');
-      card.prepend(strip);
-      strip.querySelectorAll('[data-flow-view]').forEach(b=>b.onclick=()=>navButton(b.dataset.flowView)?.click());
-    });
-  }
-
-  function syncActiveModule(){
-    const active=document.querySelector('#appShell .view.active');
-    document.body.dataset.activeModule=active?.id||'';
-  }
-
-  function openFormOnEdit(e){
-    const edit=e.target.closest('[data-edit]');
-    if(!edit)return;
-    setTimeout(()=>{
-      const view=document.querySelector('#appShell .view.active');
-      const form=formForView(view); if(form)setFormOpen(form,true);
-    },80);
-  }
-
-  function brandV2(){
-    document.title='Nexus Business V2';
-    const tagline=document.querySelector('.auth-tagline');
-    if(tagline)tagline.textContent='Una operación más simple. Un negocio más claro.';
-  }
-
-  function run(){
-    document.body.classList.add('v2-ready');
-    brandV2();groupNav();setupModuleForms();setupSearch();setupFlowStrip();createCommand();syncActiveModule();
-  }
-
-  const obs=new MutationObserver(()=>{groupNav();setupModuleForms();setupFlowStrip();syncActiveModule();});
-  obs.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
-  document.addEventListener('click',openFormOnEdit,true);
-  document.addEventListener('DOMContentLoaded',run);window.addEventListener('load',run);run();
+  const obs=new MutationObserver(()=>{decorateNav();setupForms();setupModules();});
+  obs.observe(document.documentElement,{subtree:true,childList:true});
+  document.addEventListener('click',openEditForm,true);
+  document.addEventListener('DOMContentLoaded',run);
+  window.addEventListener('load',run);
+  run();
 })();
