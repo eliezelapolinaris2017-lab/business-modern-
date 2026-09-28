@@ -493,3 +493,178 @@ body.v2-ready .plan.featured{border-color:#d8b860!important;box-shadow:0 14px 32
   body.v2-ready .school-module-hero{display:none!important}
   body.v2-ready #appShell .main{padding:0!important;margin:0!important}
 }
+
+
+/* V8 — iPad/Desktop refinement from real screenshot */
+body.v2-ready #appShell.app{
+  grid-template-columns:210px minmax(0,1fr);
+}
+body.v2-ready #appShell .sidebar{
+  width:210px;
+  padding:18px 12px 14px;
+}
+body.v2-ready #appShell .brand{
+  padding:0 4px 16px;
+  margin-bottom:2px;
+}
+body.v2-ready #appShell .brand-img{
+  width:38px;height:38px;flex-basis:38px;border-radius:11px;
+}
+body.v2-ready #appShell .brand strong{font-size:13px}
+body.v2-ready #appShell .brand span{font-size:9px}
+body.v2-ready #sideNav{gap:2px}
+body.v2-ready #sideNav button{
+  min-height:39px;
+  padding:8px 9px;
+  gap:9px;
+  border-radius:11px;
+  font-size:11px;
+}
+body.v2-ready #sideNav button::before{
+  width:22px;height:22px;flex-basis:22px;
+  border-radius:7px;
+  font-size:12px;
+}
+body.v2-ready #appShell .side-plan{
+  padding:10px;
+  border-radius:13px;
+}
+body.v2-ready #appShell .side-plan strong{font-size:12px}
+
+body.v2-ready #appShell .main{
+  grid-column:2;
+  padding:0 22px 38px;
+}
+body.v2-ready #appShell .topbar{
+  min-height:88px;
+  margin:0 -22px 20px;
+  padding:17px 24px;
+}
+body.v2-ready #appShell .topbar h1{
+  font-size:24px;
+  margin:0 0 2px;
+}
+body.v2-ready #appShell .topbar p{
+  font-size:10px;
+}
+body.v2-ready #syncStatus{
+  padding:6px 8px;
+  font-size:8px;
+}
+body.v2-ready #logoutBtn{
+  min-height:34px;
+  padding:6px 10px;
+  font-size:9px;
+}
+
+/* dashboard compact like Clase Graduanda PR */
+body.v2-ready #dashboard .school-home{
+  max-width:1180px;
+  gap:14px;
+}
+body.v2-ready .school-home-hero{
+  min-height:132px;
+  padding:22px 24px;
+  border-radius:20px;
+}
+body.v2-ready .school-home-copy h2{
+  margin:6px 0 6px;
+  font-size:31px;
+  line-height:1.05;
+}
+body.v2-ready .school-home-copy p{
+  font-size:12px;
+}
+body.v2-ready .school-home-date{
+  min-width:165px;
+  padding:14px 16px;
+  border-radius:16px;
+}
+body.v2-ready .school-home-date strong{font-size:13px}
+
+body.v2-ready .school-home-stats{
+  gap:10px;
+}
+body.v2-ready .school-stat{
+  min-height:80px!important;
+  padding:13px 14px!important;
+  border-radius:16px!important;
+}
+body.v2-ready .school-stat-icon{
+  width:32px;height:32px;
+  font-size:16px;
+}
+body.v2-ready .school-stat-copy small{font-size:9px}
+body.v2-ready .school-stat-copy strong{font-size:20px}
+
+body.v2-ready .school-home-grid{
+  grid-template-columns:1.05fr .95fr;
+  gap:12px;
+}
+body.v2-ready .school-panel{
+  min-height:0;
+  padding:16px;
+  border-radius:18px;
+}
+body.v2-ready .school-panel-head{
+  margin-bottom:12px;
+}
+body.v2-ready .school-panel-head h3{
+  font-size:17px;
+}
+body.v2-ready .school-shortcut-grid{
+  gap:8px;
+}
+body.v2-ready .school-shortcut-grid button{
+  min-height:70px!important;
+  padding:11px!important;
+  grid-template-columns:30px 1fr;
+  column-gap:8px;
+  border-radius:13px!important;
+}
+body.v2-ready .school-shortcut-grid button>span{
+  width:30px;height:30px;
+  font-size:14px;
+}
+body.v2-ready .school-shortcut-grid button>b{font-size:10px}
+body.v2-ready .school-shortcut-grid button>small{font-size:8.5px}
+body.v2-ready .school-pending-item{
+  min-height:46px!important;
+  padding:8px 9px!important;
+}
+body.v2-ready .school-pending-item b{font-size:10px}
+body.v2-ready .school-pending-item small{font-size:8.5px}
+
+/* module pages get same compact rhythm */
+body.v2-ready .school-module-hero{
+  min-height:92px;
+  padding:16px 18px;
+  margin-bottom:12px;
+  border-radius:18px;
+}
+body.v2-ready .school-module-icon{
+  width:48px;height:48px;
+  font-size:20px;
+  border-radius:15px;
+}
+body.v2-ready .school-module-copy h2{
+  font-size:21px;
+}
+body.v2-ready .school-module-copy p{
+  font-size:10px;
+}
+body.v2-ready .school-module-card{
+  padding:16px!important;
+  border-radius:18px!important;
+}
+
+/* avoid huge desktop-emulation scale on iPad */
+html.nexus-desktop-pwa body.v2-ready{
+  min-width:980px!important;
+}
+html.nexus-desktop-pwa body.v2-ready #appShell.app{
+  grid-template-columns:210px minmax(0,1fr)!important;
+}
+html.nexus-desktop-pwa body.v2-ready #appShell .sidebar{
+  width:210px!important;
+}
