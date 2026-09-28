@@ -89,6 +89,18 @@
     });
   }
 
+  function setupFlowStrip(){
+    const flow=[['clients','Cliente'],['quotes','Cotización'],['services','Servicio'],['billing','Factura'],['payments','Cobro']];
+    flow.forEach(([viewId])=>{
+      const view=document.getElementById(viewId); if(!view || view.querySelector('.v2-flow-strip')) return;
+      const card=view.querySelector(':scope > .card'); if(!card) return;
+      const strip=document.createElement('div');strip.className='v2-flow-strip';
+      strip.innerHTML=flow.map(([id,label],idx)=>'<button type="button" data-flow-view="'+id+'" class="'+(id===viewId?'active':'')+'"><span>'+(idx+1)+'</span>'+label+'</button>').join('');
+      card.prepend(strip);
+      strip.querySelectorAll('[data-flow-view]').forEach(b=>b.onclick=()=>navButton(b.dataset.flowView)?.click());
+    });
+  }
+
   function syncActiveModule(){
     const active=document.querySelector('#appShell .view.active');
     document.body.dataset.activeModule=active?.id||'';
@@ -111,10 +123,10 @@
 
   function run(){
     document.body.classList.add('v2-ready');
-    brandV2();groupNav();setupModuleForms();setupSearch();createCommand();syncActiveModule();
+    brandV2();groupNav();setupModuleForms();setupSearch();setupFlowStrip();createCommand();syncActiveModule();
   }
 
-  const obs=new MutationObserver(()=>{groupNav();setupModuleForms();syncActiveModule();});
+  const obs=new MutationObserver(()=>{groupNav();setupModuleForms();setupFlowStrip();syncActiveModule();});
   obs.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
   document.addEventListener('click',openFormOnEdit,true);
   document.addEventListener('DOMContentLoaded',run);window.addEventListener('load',run);run();
