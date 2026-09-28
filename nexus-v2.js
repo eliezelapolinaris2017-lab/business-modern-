@@ -25,7 +25,7 @@
   function groupNav(){
     const nav=document.getElementById('sideNav'); if(!nav) return;
     const buttons=[...nav.querySelectorAll('[data-view]')];
-    if(!buttons.length || nav.dataset.v2Grouped==='1') return;
+    if(!buttons.length || nav.querySelector('.v2-nav-group')) return;
     nav.dataset.v2Grouped='1';
     buttons.forEach(b=>{b.dataset.modernIcon=ICONS[b.dataset.view]||'•'});
     GROUPS.forEach(([label,views])=>{
