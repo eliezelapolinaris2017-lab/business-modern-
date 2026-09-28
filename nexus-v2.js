@@ -99,6 +99,12 @@
       }
     });
   }
+  function renameHomeLabel(){
+    const b=document.querySelector('#sideNav [data-view="dashboard"]');
+    if(!b)return;
+    [...b.childNodes].forEach(n=>{if(n.nodeType===Node.TEXT_NODE && n.textContent.trim()) n.textContent='Inicio';});
+  }
+
   function improveSearch(){
     const s=document.getElementById('globalSearch');
     if(s)s.placeholder='Buscar en Nexus…';
@@ -110,9 +116,9 @@
   function run(){
     document.body.classList.add('v2-ready');
     document.title='Nexus Business';
-    decorateNav();setupForms();setupModules();improveSearch();
+    decorateNav();renameHomeLabel();setupForms();setupModules();improveSearch();
   }
-  const obs=new MutationObserver(()=>{decorateNav();setupForms();setupModules();});
+  const obs=new MutationObserver(()=>{decorateNav();renameHomeLabel();setupForms();setupModules();});
   obs.observe(document.documentElement,{subtree:true,childList:true});
   document.addEventListener('click',openEditForm,true);
   document.addEventListener('DOMContentLoaded',run);
