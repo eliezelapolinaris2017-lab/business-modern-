@@ -215,3 +215,44 @@ body.v2-ready .auth-main-btn{border-radius:13px;min-height:54px;font-size:16px}
   body.v2-ready form.form-grid.v2-collapsible > .full{grid-column:1/-1}
   .v2-command-hint{right:10px;bottom:10px}
 }
+
+
+/* V2 customer-to-cash flow */
+.v2-flow-strip{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:6px;
+  margin:-2px 0 14px;
+  padding:7px;
+  border:1px solid var(--v2-line);
+  border-radius:13px;
+  background:#f7f9fc;
+}
+.v2-flow-strip button{
+  min-height:34px!important;
+  padding:7px 8px!important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border-radius:9px!important;
+  background:transparent!important;
+  color:#788596!important;
+  box-shadow:none!important;
+  font-size:10px!important;
+}
+.v2-flow-strip button span{
+  width:18px;height:18px;border-radius:999px;display:grid;place-items:center;
+  background:#e9eef5;color:#607087;font-size:9px;font-weight:900
+}
+.v2-flow-strip button.active{
+  background:#fff!important;color:#10213a!important;border:1px solid #e4e9ef;
+}
+.v2-flow-strip button.active span{background:var(--v2-brand);color:#fff}
+.v2-flow-actions .primary{font-weight:850}
+.v2-flow-actions{min-width:250px}
+#billing .actions [data-collect-inv]{font-weight:850}
+@media(max-width:760px){
+  .v2-flow-strip{grid-template-columns:repeat(5,max-content);overflow:auto;justify-content:start}
+  .v2-flow-strip button{padding:7px 10px!important}
+}
