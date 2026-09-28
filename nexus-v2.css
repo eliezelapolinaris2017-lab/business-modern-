@@ -828,3 +828,122 @@ body.v2-ready .v2-flow-strip button.active{
   .school-module-copy h2{font-size:21px}
   body.v2-ready #appShell .school-module-card{padding:13px!important;border-radius:18px!important}
 }
+
+
+/* =========================================================
+   V5 cleanup — one clear header, no duplicated layers
+========================================================= */
+body.v2-ready #appShell .view:not(#dashboard) > .school-module-hero{
+  min-height:96px;
+  margin-bottom:12px;
+  padding:18px 20px;
+  border-radius:20px;
+}
+body.v2-ready .school-module-icon{
+  width:50px;height:50px;
+  border-radius:15px;
+  font-size:21px;
+}
+body.v2-ready .school-module-copy h2{font-size:21px}
+body.v2-ready .school-module-copy p{font-size:10.5px;max-width:620px}
+body.v2-ready .school-module-actions{gap:6px}
+body.v2-ready .school-module-limit{
+  display:inline-flex!important;
+  align-items:center;
+  min-height:32px;
+  margin:0!important;
+  padding:6px 9px!important;
+  border:1px solid #e5eaf0!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#7a8797!important;
+  font-size:9px!important;
+  white-space:nowrap;
+}
+
+/* legacy module headings are redundant now */
+body.v2-ready .school-module-card > .school-inner-head{
+  display:none!important;
+}
+
+/* remove the extra process strip; navigation already exists in the sidebar */
+body.v2-ready .v2-flow-strip{
+  display:none!important;
+}
+
+/* flatter content area */
+body.v2-ready #appShell .school-module-card{
+  padding:15px!important;
+  border-radius:19px!important;
+  border-color:#e9edf2!important;
+  box-shadow:0 6px 18px rgba(15,23,42,.025)!important;
+}
+body.v2-ready #appShell .school-module-card > form.form-grid.v2-collapsible:first-child,
+body.v2-ready #appShell .school-module-card > .v2-secondary-tool:first-child{
+  margin-top:0;
+}
+
+/* tables should feel like lists, not spreadsheets */
+body.v2-ready .school-module-card .table-wrap{
+  margin-top:0!important;
+  border:1px solid #edf1f5!important;
+  overflow:auto;
+}
+body.v2-ready .school-module-card th{
+  border-top:0!important;
+  border-left:0!important;
+  border-right:0!important;
+  border-radius:0!important;
+  background:#fafbfd!important;
+}
+body.v2-ready .school-module-card td{
+  min-height:48px;
+}
+body.v2-ready .school-module-card tbody tr:last-child td{
+  border-bottom:0!important;
+}
+
+/* less button clutter */
+body.v2-ready .school-module-card .actions button{
+  min-height:28px!important;
+  padding:5px 7px!important;
+  font-size:9.5px!important;
+}
+body.v2-ready .school-module-card .actions .danger{
+  opacity:.78;
+}
+body.v2-ready .v2-flow-actions{
+  min-width:0!important;
+}
+
+/* forms visually separate only when opened */
+body.v2-ready form.form-grid.v2-collapsible.v2-form-open{
+  margin:0 0 14px!important;
+  padding:15px!important;
+  background:#f8fafc!important;
+  border:1px solid #e7ecf2!important;
+}
+
+/* hide floating command badge on normal use; Cmd+K still works */
+body.v2-ready .v2-command-hint{
+  display:none!important;
+}
+
+@media(max-width:820px){
+  body.v2-ready #appShell .view:not(#dashboard) > .school-module-hero{
+    grid-template-columns:44px 1fr;
+    min-height:auto;
+    padding:15px;
+  }
+  body.v2-ready .school-module-icon{
+    width:44px;height:44px;
+    font-size:19px;
+  }
+  body.v2-ready .school-module-actions{
+    grid-column:1/-1;
+    width:100%;
+  }
+  body.v2-ready .school-module-actions > button{
+    flex:1 1 auto;
+  }
+}
