@@ -1,0 +1,542 @@
+/* Nexus Business PR — Modern UI 2026
+   Presentation layer only. Keeps existing IDs, events and business logic intact. */
+
+:root{
+  --nb-bg:#f5f7fb;
+  --nb-surface:rgba(255,255,255,.82);
+  --nb-surface-solid:#fff;
+  --nb-text:#132238;
+  --nb-muted:#718096;
+  --nb-line:rgba(148,163,184,.22);
+  --nb-brand:var(--brand,#2563eb);
+  --nb-navy:#0b1730;
+  --nb-radius:22px;
+  --nb-radius-sm:15px;
+  --nb-shadow:0 12px 34px rgba(15,23,42,.07);
+  --nb-shadow-soft:0 6px 18px rgba(15,23,42,.045);
+}
+
+html{background:var(--nb-bg)}
+body{
+  background:
+    radial-gradient(circle at 92% 5%, color-mix(in srgb,var(--nb-brand) 8%,transparent), transparent 26rem),
+    linear-gradient(180deg,#f8fafc 0%,#f4f7fb 100%);
+  color:var(--nb-text);
+  letter-spacing:-.01em;
+}
+
+#appShell.app{
+  grid-template-columns:252px minmax(0,1fr);
+  background:transparent;
+}
+
+/* Sidebar */
+#appShell .sidebar{
+  width:252px;
+  padding:18px 14px;
+  gap:14px;
+  background:linear-gradient(180deg,rgba(9,21,43,.98),rgba(13,31,58,.98));
+  border-right:1px solid rgba(255,255,255,.06);
+  box-shadow:14px 0 38px rgba(15,23,42,.08);
+}
+#appShell .brand{
+  min-height:66px;
+  padding:8px 10px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+#appShell .brand-img{
+  width:44px;height:44px;border-radius:13px;
+  background:rgba(255,255,255,.1);
+}
+#appShell .brand strong{color:#fff;font-size:15px}
+#appShell .brand span{color:rgba(226,232,240,.62);font-size:11px;margin-top:3px}
+#appShell .sidebar nav{
+  gap:4px;
+  overflow:auto;
+  padding:2px 0 8px;
+  scrollbar-width:none;
+}
+#appShell .sidebar nav::-webkit-scrollbar{display:none}
+#appShell .sidebar nav button{
+  min-height:42px;
+  padding:10px 11px;
+  border-radius:12px;
+  color:rgba(226,232,240,.76);
+  font-size:13px;
+  font-weight:750;
+  transition:background .18s ease,color .18s ease,transform .18s ease;
+}
+#appShell .sidebar nav button:hover{
+  background:rgba(255,255,255,.07);
+  color:#fff;
+  transform:translateX(2px);
+}
+#appShell .sidebar nav button.active{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--nb-brand) 84%,#fff 0%),color-mix(in srgb,var(--nb-brand) 62%,#0b1730));
+  color:#fff;
+  box-shadow:0 8px 20px color-mix(in srgb,var(--nb-brand) 24%,transparent);
+}
+#appShell .sidebar nav button::before{
+  content:attr(data-modern-icon);
+  width:20px;
+  flex:0 0 20px;
+  text-align:center;
+  opacity:.9;
+}
+#appShell .sidebar nav button{justify-content:flex-start;gap:9px}
+#appShell .side-plan{
+  margin-top:auto;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:17px;
+  padding:14px;
+  background:rgba(255,255,255,.055);
+  box-shadow:none;
+}
+#appShell .side-plan span,#appShell .side-plan small{font-size:10px}
+#appShell .side-plan strong{font-size:17px}
+#appShell .side-plan button{min-height:36px;padding:8px 10px;border-radius:10px;font-size:12px}
+
+/* Main shell + topbar */
+#appShell .main{
+  padding:0 26px 34px;
+  max-width:1680px;
+  width:100%;
+  margin:0 auto;
+}
+#appShell .topbar{
+  position:sticky;
+  top:0;
+  z-index:8;
+  min-height:84px;
+  margin:0 -26px 22px;
+  padding:17px 26px;
+  background:rgba(248,250,252,.82);
+  backdrop-filter:blur(18px) saturate(1.15);
+  -webkit-backdrop-filter:blur(18px) saturate(1.15);
+  border-bottom:1px solid rgba(148,163,184,.16);
+}
+#appShell .topbar h1{
+  font-size:clamp(23px,2vw,30px);
+  letter-spacing:-.035em;
+  color:#0b1730;
+}
+#appShell .topbar p{font-size:12px;color:#8793a7}
+#appShell .top-actions{
+  gap:8px;
+  padding:6px;
+  background:rgba(255,255,255,.7);
+  border:1px solid var(--nb-line);
+  border-radius:16px;
+  box-shadow:var(--nb-shadow-soft);
+}
+#appShell .global-search{
+  width:min(320px,28vw);
+  min-height:38px;
+  padding:9px 12px 9px 36px;
+  border:0;
+  border-radius:11px;
+  outline:0;
+  background:#f3f6fa;
+  color:var(--nb-text);
+}
+#appShell #syncStatus{
+  font-size:11px;
+  color:var(--nb-muted);
+  white-space:nowrap;
+}
+#appShell #logoutBtn{
+  min-height:38px;
+  padding:8px 12px;
+  border-radius:11px;
+  background:#fff;
+  border:1px solid var(--nb-line);
+  color:#475569;
+  box-shadow:none;
+}
+
+/* Cards and content density */
+#appShell .card{
+  border:1px solid var(--nb-line);
+  border-radius:var(--nb-radius);
+  background:var(--nb-surface);
+  box-shadow:var(--nb-shadow);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  padding:18px;
+  margin-bottom:15px;
+}
+#appShell .card h2,#appShell .card h3{color:#10203a;letter-spacing:-.025em}
+#appShell .card h2{font-size:20px}
+#appShell .card h3{font-size:15px}
+#appShell .muted{color:var(--nb-muted)}
+
+/* Compact dashboard: remove repeated branding/search blocks */
+#dashboard > .hero.card{display:none!important}
+#dashboard .grid.two:has(#globalResults){display:none!important}
+#dashboard{
+  --dash-gap:14px;
+}
+#dashboard .coach-card{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:108px;
+  padding:22px 24px;
+  background:
+    linear-gradient(130deg,rgba(255,255,255,.92),rgba(255,255,255,.78)),
+    linear-gradient(135deg,color-mix(in srgb,var(--nb-brand) 9%,transparent),transparent);
+}
+#dashboard .coach-card h2{font-size:25px;margin:5px 0 4px}
+#dashboard .coach-card p{margin:0;color:var(--nb-muted);font-size:13px}
+#dashboard .health-badge{
+  border-radius:999px;
+  padding:8px 12px;
+  background:#edfdf3;
+  color:#137333;
+  border:1px solid #c9f3d7;
+  font-size:12px;
+  font-weight:850;
+}
+#dashboard .daily-strip{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+#dashboard .daily-strip > *{
+  min-height:72px;
+  border-radius:17px;
+  border:1px solid var(--nb-line);
+  background:rgba(255,255,255,.86);
+  box-shadow:var(--nb-shadow-soft);
+}
+#dashboard .grid.two{gap:14px}
+#dashboard .grid.two .card{margin-bottom:0}
+#dashboard .kpis{
+  grid-template-columns:repeat(4,minmax(150px,1fr));
+  gap:10px;
+  margin:14px 0;
+}
+#dashboard .kpi{
+  min-height:102px;
+  border:1px solid var(--nb-line);
+  border-radius:18px;
+  padding:15px 16px;
+  background:#fff;
+  box-shadow:var(--nb-shadow-soft);
+}
+#dashboard .kpi span{font-size:11px;color:#8390a5}
+#dashboard .kpi strong{font-size:25px;letter-spacing:-.035em;color:#10203a}
+#dashboard .control-strip{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+#dashboard .financial-hub{box-shadow:none;background:linear-gradient(180deg,#fff,#f8fafc)}
+
+/* Action buttons */
+#appShell button{
+  min-height:40px;
+  border-radius:12px;
+  transition:transform .14s ease,box-shadow .14s ease,filter .14s ease;
+}
+#appShell button:hover{transform:translateY(-1px);filter:none}
+#appShell button.primary,#appShell .primary{
+  background:linear-gradient(135deg,var(--nb-brand),color-mix(in srgb,var(--nb-brand) 72%,#0b1730));
+  color:#fff;
+  box-shadow:0 8px 18px color-mix(in srgb,var(--nb-brand) 18%,transparent);
+}
+#appShell button.ghost{
+  background:#fff;
+  color:#334155;
+  border:1px solid var(--nb-line);
+}
+#appShell button.danger{
+  background:#fff1f2;
+  color:#be123c;
+  border:1px solid #ffe4e6;
+}
+#appShell .quick-actions.smart-actions button{
+  background:#fff;
+  color:#17345f;
+  border:1px solid var(--nb-line);
+  box-shadow:var(--nb-shadow-soft);
+}
+
+/* Module workspace */
+#appShell .view > .card{
+  max-width:1440px;
+  margin-left:auto;
+  margin-right:auto;
+}
+#appShell .section-head{
+  min-height:48px;
+  margin-bottom:10px;
+  padding-bottom:10px;
+  border-bottom:1px solid rgba(148,163,184,.13);
+}
+#appShell .section-head h2,#appShell .section-head h3{margin:0}
+#appShell .limit-chip{
+  background:#f8fafc;
+  border-color:var(--nb-line);
+  color:#7a8799;
+  font-weight:750;
+}
+
+/* Forms become clean "create/edit workspace" */
+#appShell .form-grid{
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:11px 12px;
+  margin:14px 0 20px;
+  padding:16px;
+  border:1px solid rgba(148,163,184,.16);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(248,250,252,.92),rgba(255,255,255,.94));
+}
+#appShell .form-grid > div{grid-column:span 3;min-width:0}
+#appShell .form-grid > .wide{grid-column:span 6}
+#appShell .form-grid > .full{grid-column:1/-1}
+#appShell .form-grid > button{grid-column:auto;align-self:end}
+#appShell .form-grid label{
+  font-size:10px;
+  letter-spacing:.045em;
+  text-transform:uppercase;
+  color:#7a8799;
+  margin-bottom:5px;
+}
+#appShell .form-grid input,
+#appShell .form-grid select,
+#appShell .form-grid textarea{
+  min-height:43px;
+  padding:10px 11px;
+  border:1px solid #dfe5ec;
+  border-radius:11px;
+  background:#fff;
+  color:#172033;
+  box-shadow:0 1px 2px rgba(15,23,42,.02);
+  outline:0;
+  transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+#appShell .form-grid textarea{min-height:90px}
+#appShell .form-grid input:focus,
+#appShell .form-grid select:focus,
+#appShell .form-grid textarea:focus{
+  border-color:color-mix(in srgb,var(--nb-brand) 55%,#cbd5e1);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--nb-brand) 9%,transparent);
+}
+#appShell .form-actions{
+  display:flex;
+  gap:8px;
+  align-items:end;
+}
+#appShell .service-lines-card{
+  border-radius:15px;
+  border:1px solid rgba(148,163,184,.18);
+  box-shadow:none;
+  background:#fff;
+}
+
+/* Tables */
+#appShell .table-wrap{
+  border:1px solid var(--nb-line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow:var(--nb-shadow-soft);
+  overflow:auto;
+}
+#appShell table{font-size:13px}
+#appShell th{
+  position:sticky;
+  top:0;
+  z-index:1;
+  padding:10px 11px;
+  background:#f7f9fc;
+  color:#7b8799;
+  border-bottom:1px solid var(--nb-line);
+  font-size:9.5px;
+  letter-spacing:.05em;
+}
+#appShell td{
+  padding:11px;
+  border-bottom:1px solid rgba(148,163,184,.12);
+  color:#334155;
+}
+#appShell tbody tr:hover td{background:#fbfcfe}
+#appShell .actions{gap:5px}
+#appShell .actions button{
+  min-height:32px;
+  padding:6px 9px;
+  font-size:11px;
+  border-radius:9px;
+}
+
+/* Search/import/report helpers */
+#appShell .contact-import-card,
+#appShell .report-center-tools,
+#appShell .report-selected-actions{
+  border-radius:16px;
+}
+#appShell .report-center-card{max-width:1180px}
+#appShell .report-option{
+  border:1px solid transparent;
+  background:#f7f9fc;
+  color:#475569;
+}
+#appShell .report-option.selected{
+  background:color-mix(in srgb,var(--nb-brand) 9%,#fff);
+  color:var(--nb-brand);
+  border-color:color-mix(in srgb,var(--nb-brand) 18%,#e2e8f0);
+}
+
+/* Scrollbars */
+#appShell *{scrollbar-color:#cbd5e1 transparent;scrollbar-width:thin}
+
+/* Responsive */
+@media(max-width:1180px){
+  #appShell.app{grid-template-columns:226px minmax(0,1fr)}
+  #appShell .sidebar{width:226px}
+  #appShell .form-grid > div{grid-column:span 4}
+  #appShell .form-grid > .wide{grid-column:span 6}
+  #dashboard .kpis,#dashboard .control-strip,#dashboard .daily-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:920px){
+  #appShell.app{display:block}
+  #appShell .sidebar{width:252px}
+  #appShell .main{padding:0 14px 24px}
+  #appShell .topbar{margin:0 -14px 15px;padding:12px 14px;min-height:70px}
+  #appShell .top-actions{background:transparent;border:0;box-shadow:none;padding:0}
+  #appShell .global-search{display:none}
+  #appShell #syncStatus{display:none}
+  #appShell .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:13px}
+  #appShell .form-grid > div,#appShell .form-grid > .wide{grid-column:span 1}
+  #appShell .form-grid > .full{grid-column:1/-1}
+}
+@media(max-width:680px){
+  #appShell .topbar h1{font-size:21px}
+  #dashboard .coach-card{align-items:flex-start;gap:12px;flex-direction:column;padding:17px}
+  #dashboard .daily-strip,#dashboard .kpis,#dashboard .control-strip,#dashboard .grid.two{grid-template-columns:1fr}
+  #appShell .form-grid{grid-template-columns:1fr}
+  #appShell .form-grid > div,#appShell .form-grid > .wide,#appShell .form-grid > .full{grid-column:1/-1}
+  #appShell .card{padding:14px;border-radius:17px}
+}
+
+/* Print/PDF must remain governed by existing document styles */
+@media print{
+  #appShell .sidebar,#appShell .topbar{display:none!important}
+  #appShell .main{padding:0!important;max-width:none!important}
+  #appShell .card{box-shadow:none!important;backdrop-filter:none!important}
+}
+
+
+/* =========================================================
+   Dashboard Simple 2026
+   Keep only: summary, KPIs, priorities and quick actions.
+   Everything else stays in the DOM for existing logic.
+========================================================= */
+#dashboard.view.active{
+  display:flex!important;
+  flex-direction:column;
+  gap:14px;
+}
+
+#dashboard > .hero.card,
+#dashboard > #dailyStrip,
+#dashboard > .grid.two:has(#myDayList),
+#dashboard > .grid.two:has(#agendaList),
+#dashboard > #controlStrip,
+#dashboard > #financialHub,
+#dashboard > .grid.two:has(#recentList),
+#dashboard > #alertList{
+  display:none!important;
+}
+
+#dashboard > .coach-card{order:1;margin-bottom:0}
+#dashboard > #kpis{order:2;margin:0}
+#dashboard > .grid.two:has(#priorityList){order:3;margin:0}
+
+#dashboard .coach-card{
+  min-height:92px;
+  padding:18px 20px;
+  border-radius:20px;
+  box-shadow:var(--nb-shadow-soft);
+}
+#dashboard .coach-card .pill{display:none}
+#dashboard .coach-card h2{
+  margin:0 0 3px;
+  font-size:23px;
+}
+#dashboard .coach-card p{
+  font-size:12px;
+  max-width:620px;
+}
+#dashboard .health-badge{
+  padding:7px 10px;
+  font-size:11px;
+}
+
+#dashboard #kpis{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+#dashboard #kpis .kpi{
+  min-height:86px;
+  padding:14px 15px;
+  border-radius:16px;
+  box-shadow:none;
+}
+#dashboard #kpis .kpi span{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.035em;
+}
+#dashboard #kpis .kpi strong{
+  margin-top:4px;
+  font-size:23px;
+}
+
+#dashboard > .grid.two:has(#priorityList){
+  grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
+  gap:12px;
+}
+#dashboard > .grid.two:has(#priorityList) .card{
+  min-height:220px;
+  margin:0;
+  padding:16px;
+  box-shadow:var(--nb-shadow-soft);
+}
+#dashboard > .grid.two:has(#priorityList) h3{
+  margin:0 0 12px;
+  font-size:14px;
+}
+
+#dashboard #priorityList .priority-item,
+#dashboard #quickActions button{
+  min-height:42px;
+  border-radius:11px;
+}
+
+#dashboard #quickActions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+#dashboard #quickActions button{
+  width:100%;
+  justify-content:flex-start;
+  text-align:left;
+  padding:10px 11px;
+  font-size:12px;
+}
+
+@media(max-width:980px){
+  #dashboard #kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #dashboard > .grid.two:has(#priorityList){grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  #dashboard .coach-card{min-height:auto;padding:15px}
+  #dashboard .coach-card h2{font-size:20px}
+  #dashboard #kpis{grid-template-columns:1fr 1fr}
+  #dashboard #kpis .kpi{min-height:76px}
+  #dashboard #quickActions{grid-template-columns:1fr}
+}

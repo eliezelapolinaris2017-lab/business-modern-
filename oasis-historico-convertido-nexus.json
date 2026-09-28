@@ -1,0 +1,3632 @@
+[
+  {
+    "legacyId": "doc_1773151565873_8b185fd38ace7",
+    "type": "FAC",
+    "number": "FAC-2026-0113",
+    "date": "2026-03-10",
+    "validUntil": "2026-03-24",
+    "client": {
+      "name": "DAISY PERALTA5",
+      "contact": "",
+      "addr": "SALON DE ENFERMERIA ESCUELA SALVADOR BRAU"
+    },
+    "items": [
+      {
+        "description": "MANTENIMIENTO PREVENTIVO UNIDAD 55K BTU MIDEA",
+        "qty": 1,
+        "price": 125
+      },
+      {
+        "description": "GRAPAS DE METAL 3/4 PARA TUBERIA DE DRENAJE",
+        "qty": 4,
+        "price": 1
+      },
+      {
+        "description": "TORNILLOS TAPCON 1-1/2",
+        "qty": 4,
+        "price": 1
+      },
+      {
+        "description": "SE REMPLAZO TERMINAL DE FAN MOTOR",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "GARANTIA DE 30 DIAS SI LIQUEA AGUA LUEGON DEL SERVICIOD",
+    "terms": "PAGADO $80.00 usd CASH $53.00 usd ATH MOVIL",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 133,
+      "tax": 0,
+      "grand": 133
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1773335228193_a736ea2a83be18",
+    "type": "FAC",
+    "number": "FAC-2026-0112",
+    "date": "2026-03-12",
+    "validUntil": "2026-03-26",
+    "client": {
+      "name": "Cristobal Falero RodrigueM",
+      "contact": "",
+      "addr": "C ACalle Bernard #366 Urb. Reparto Universitario San Juan P.R. 00926"
+    },
+    "items": [
+      {
+        "description": "Mantenimiento Aire Ventana 18k btu",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "DIAS SI EL EQUIPO BOTA AGUA LUEGO DEL MANTENIMIENTO.B",
+    "terms": "PAGADO POR: Ath Movil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0103.pdf?alt=media&token=5e47e425-103e-4b69-bdd2-f50d6b086dad"
+  },
+  {
+    "legacyId": "doc_1773501554021_38b7331c00c41",
+    "type": "FAC",
+    "number": "FAC-2026-0111",
+    "date": "2026-03-14",
+    "validUntil": "2026-03-28",
+    "client": {
+      "name": "Ivelisse Otero",
+      "contact": "",
+      "addr": "Royal Palm 402 Bayamon"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivo",
+        "qty": 3,
+        "price": 55
+      }
+    ],
+    "notes": "si bota agua luego del mantenimientoD",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 165,
+      "tax": 0,
+      "grand": 165
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0105.pdf?alt=media&token=3fea826d-4d31-4629-bd07-7db785ef61c9zQ"
+  },
+  {
+    "legacyId": "doc_1773686098081_5d4d8f185be4a",
+    "type": "FAC",
+    "number": "FAC-2026-0110",
+    "date": "2026-03-16",
+    "validUntil": "2026-03-30",
+    "client": {
+      "name": "Jos Figueroa-",
+      "contact": "370-3465",
+      "addr": "Cond mino del Parque 352 Apt 401"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 55
+      }
+    ],
+    "notes": "S Q30 d as de garant a si el equipo llegar a botar agua luego del mantenimiento.B",
+    "terms": "Pagado por Ath M vil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 110,
+      "tax": 0,
+      "grand": 110
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0106.pdf?alt=media&token=c6cb3ba5-b2c2-4cf9-a914-cf8e425b52bc"
+  },
+  {
+    "legacyId": "doc_1773761261407_bf4b6420a62c68",
+    "type": "FAC",
+    "number": "FAC-2026-0109",
+    "date": "2026-03-17",
+    "validUntil": "2026-03-31",
+    "client": {
+      "name": "Nerian ReyesN",
+      "contact": "",
+      "addr": "D BUrbaniacion Country Club 1021 Calle Genoveva, San Juan P.R. 00924"
+    },
+    "items": [
+      {
+        "description": "Reubicaci n 12k BTU sobre palometas",
+        "qty": 2,
+        "price": 75
+      },
+      {
+        "description": "Palometas 12k",
+        "qty": 2,
+        "price": 45
+      }
+    ],
+    "notes": "Garant a de 90 d as en reubicaciones.D",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 240,
+      "tax": 0,
+      "grand": 240
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0107.pdf?alt=media&token=6d4c5e0d-4bc1-472a-b478-54aea0e59fd6"
+  },
+  {
+    "legacyId": "doc_1773935752358_eabc20a42d7208",
+    "type": "FAC",
+    "number": "FAC-2026-0114",
+    "date": "2026-03-04",
+    "validUntil": "2026-04-02",
+    "client": {
+      "name": "Laura Blake",
+      "contact": "",
+      "addr": "Bairoa Caguas"
+    },
+    "items": [
+      {
+        "description": "facilitar unidad 12k btu airmax 110v",
+        "qty": 1,
+        "price": 410
+      },
+      {
+        "description": "labor de instalaci n",
+        "qty": 1,
+        "price": 300
+      },
+      {
+        "description": "material el ctrico",
+        "qty": 1,
+        "price": 90
+      }
+    ],
+    "notes": "Y W7 ANOS EN EL COMPRESOR 5 ANOS EN PIEZAS ELECTRICAS 1 ANO EN MANO DE OBRA. S/N#: S/N#:D",
+    "terms": "PAGADO POR: stripe",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 800,
+      "tax": 0,
+      "grand": 800
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1773936344213_1ddcfafc30de5",
+    "type": "FAC",
+    "number": "FAC-2026-0117",
+    "date": "2026-03-19",
+    "validUntil": "2026-04-02",
+    "client": {
+      "name": "CONSEJO DE TITULARES CONDOMINIO SENDEROS DEL RIO3",
+      "contact": "<",
+      "addr": "CARRETERA 175 TRUJILLO ALTO, P.R. 00976"
+    },
+    "items": [
+      {
+        "description": "MANTENIMIENTOS PREVENTIVOS",
+        "qty": 2,
+        "price": 55
+      }
+    ],
+    "notes": "DIAS SI EL EQUIPO BOTA AGUA LUEGO DEL MANTENIMIENTO.B",
+    "terms": "PAGAR AL RECIBIR",
+    "status": "PAGADA!",
+    "totals": {
+      "sub": 110,
+      "tax": 0,
+      "grand": 110
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1773949388407_17d7686e363858",
+    "type": "FAC",
+    "number": "FAC-2026-0151",
+    "date": "2026-03-19",
+    "validUntil": "2026-04-02",
+    "client": {
+      "name": "Jos Gum n2",
+      "contact": "",
+      "addr": "Calle 80 bloque 110 #12 Villa Carolina"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 1,
+        "price": 55
+      },
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "G E30 d as de garant a si la unidad bota agua luego del mantenimiento.D",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 130,
+      "tax": 0,
+      "grand": 130
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0118.pdf?alt=media&token=ebb75715-82ba-49d4-8971-163b2a234699zQ"
+  },
+  {
+    "legacyId": "doc_1774019166777_0b8253c63b2c18",
+    "type": "FAC",
+    "number": "FAC-2026-0145",
+    "date": "2026-03-20",
+    "validUntil": "2026-04-03",
+    "client": {
+      "name": "Eric SantosH",
+      "contact": "",
+      "addr": "Urb. Primavera SA-28 Paseo Las Flores Trujillo Alto PR 00976"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 1,
+        "price": 55
+      },
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "R PGarant a de 30 d as si luego de realiar el mantenimiento el equipo bota agua.D",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 130,
+      "tax": 0,
+      "grand": 130
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0119.pdf?alt=media&token=11e9b41d-2f81-4a1a-82fe-a6f34f494b14"
+  },
+  {
+    "legacyId": "doc_1774036075104_3a1c3988e9901",
+    "type": "FAC",
+    "number": "FAC-2026-0144",
+    "date": "2026-03-20",
+    "validUntil": "2026-04-03",
+    "client": {
+      "name": "Luis Flores",
+      "contact": "",
+      "addr": "Cupey Court"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 60
+      }
+    ],
+    "notes": "F DGarant a de 30 d as si luego del mantenimiento el equipo bota agua",
+    "terms": "Pagar al recibir",
+    "status": "PAGADAB",
+    "totals": {
+      "sub": 120,
+      "tax": 0,
+      "grand": 120
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0120.pdf?alt=media&token=17f2c50f-e7af-46a8-bafc-ad49912c7825"
+  },
+  {
+    "legacyId": "doc_1774286069881_37f8b94c6aa768",
+    "type": "FAC",
+    "number": "FAC-2026-0142",
+    "date": "2026-03-23",
+    "validUntil": "2026-04-06",
+    "client": {
+      "name": "Omhayra Pe a",
+      "contact": "",
+      "addr": "Rio Grande, P.R"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 4,
+        "price": 55
+      }
+    ],
+    "notes": "O MGarant a de 30 si luego de realiar el mantenimiento la unidad botar agua.D",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 220,
+      "tax": 0,
+      "grand": 220
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0121.pdf?alt=media&token=82975e1d-93c8-4299-a10a-2cc8b358cbe5zP"
+  },
+  {
+    "legacyId": "doc_1774293405764_7464ebd9f62ef8",
+    "type": "FAC",
+    "number": "FAC-2026-0143",
+    "date": "2026-03-23",
+    "validUntil": "2026-04-06",
+    "client": {
+      "name": "Mario Font",
+      "contact": "",
+      "addr": "Plaa de torrimar 2"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "J HGarant a de 30 d as si luego del mantenimiento el equipo botar agua.B",
+    "terms": "",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0122.pdf?alt=media&token=10288231-26fa-4602-a431-49b689cc3189"
+  },
+  {
+    "legacyId": "doc_1774365354897_4b2791121a445",
+    "type": "FAC",
+    "number": "FAC-2026-0140",
+    "date": "2026-03-24",
+    "validUntil": "2026-04-07",
+    "client": {
+      "name": "Joel B e",
+      "contact": "",
+      "addr": "Terra Lugo 9 Cupey"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos mini split",
+        "qty": 3,
+        "price": 55
+      },
+      {
+        "description": "Mantenimientos preventivos Wall pack",
+        "qty": 2,
+        "price": 65
+      }
+    ],
+    "notes": "J HGarant a de 30 d as si luego del mantenimiento el equipo botar agua.D",
+    "terms": "Pagar a negocio",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 295,
+      "tax": 0,
+      "grand": 295
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0123.pdf?alt=media&token=2b72ad59-4c2c-4831-ad68-daae54657b17zP"
+  },
+  {
+    "legacyId": "doc_1774448882259_be551c4b318d6",
+    "type": "FAC",
+    "number": "FAC-2026-0141",
+    "date": "2026-03-25",
+    "validUntil": "2026-04-08",
+    "client": {
+      "name": "Luis V le!",
+      "contact": "",
+      "addr": "Escuela Salvador Brau"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "D BGarant a de 30 si la unidad botar agua luego del mantenimiento.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0124.pdf?alt=media&token=8e72119e-bbdb-42b2-95a2-402c30ee4c03zP"
+  },
+  {
+    "legacyId": "doc_1774453623617_034e3311c13e",
+    "type": "FAC",
+    "number": "FAC-2026-0138",
+    "date": "2026-03-25",
+    "validUntil": "2026-04-08",
+    "client": {
+      "name": "Escuela Salvador Brau",
+      "contact": "!",
+      "addr": "Barraa ("
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 80
+      }
+    ],
+    "notes": "J HGarant a de 30 d as si luego del mantenimiento el equipo botar agua.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 80,
+      "tax": 0,
+      "grand": 80
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1774481247156_5c7475a498ca9",
+    "type": "FAC",
+    "number": "FAC-2026-0139",
+    "date": "2026-03-25",
+    "validUntil": "2026-04-08",
+    "client": {
+      "name": "Maryorie Adorno Figueroa",
+      "contact": "$",
+      "addr": "Trujillo Alto"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 3,
+        "price": 60
+      }
+    ],
+    "notes": "D",
+    "terms": "",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 180,
+      "tax": 0,
+      "grand": 180
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1774540829023_01169d3ad23608",
+    "type": "FAC",
+    "number": "FAC-2026-0137",
+    "date": "2026-03-26",
+    "validUntil": "2026-04-09",
+    "client": {
+      "name": "Jos A Torres>",
+      "contact": "",
+      "addr": "Villa Carolina 110-9 calle 80 Carolina, P.R. 00985"
+    },
+    "items": [
+      {
+        "description": "Facilitar unidad AirMax 12k BTU 22 seer",
+        "qty": 1,
+        "price": 420
+      },
+      {
+        "description": "Palometas 12k-18k",
+        "qty": 1,
+        "price": 40
+      },
+      {
+        "description": "Labor de instalaci n",
+        "qty": 1,
+        "price": 190
+      }
+    ],
+    "notes": "Garant a de 7 a os en el compresor, 5 a os en pieas el ctricas, 1 a o de garant a en labor de instalaci n. S/N# 540S6700101A2210130593 S/N# 540S6680401C270120432",
+    "terms": "Pagado en efectivo",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 650,
+      "tax": 0,
+      "grand": 650
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0131.pdf?alt=media&token=074f7efe-54c0-40cd-918d-2663291a640b"
+  },
+  {
+    "legacyId": "doc_1774632258807_172aa6278f94f8",
+    "type": "FAC",
+    "number": "FAC-2026-0278",
+    "date": "2026-03-27",
+    "validUntil": "2026-04-10",
+    "client": {
+      "name": "Jos Ovalles0",
+      "contact": "",
+      "addr": "Cond mino Senderos del r o A4 1025"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos Wall Pack",
+        "qty": 3,
+        "price": 65
+      },
+      {
+        "description": "Mantenimientos preventivos Mini Split",
+        "qty": 2,
+        "price": 60
+      },
+      {
+        "description": "Remplao de parrillas Wall Pack",
+        "qty": 2,
+        "price": 45
+      },
+      {
+        "description": "Facilitar Parrillas Para Wall Pack",
+        "qty": 2,
+        "price": 0
+      }
+    ],
+    "notes": "J HGarant a de 30 d as si la unidad luego del mantenimiento botar agua.P",
+    "terms": "Pagar al recibir / Pagar a negocio /OasisServicesPr",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1774725898389_5da487ac11dc88",
+    "type": "FAC",
+    "number": "FAC-2026-0150",
+    "date": "2026-03-28",
+    "validUntil": "2026-04-11",
+    "client": {
+      "name": "Tantra Apartments",
+      "contact": "",
+      "addr": "Condado / Isla Verde / Davinchi"
+    },
+    "items": [
+      {
+        "description": "Visita de emergencia",
+        "qty": 1,
+        "price": 80
+      },
+      {
+        "description": "Remplao de breaker aires acondicionados",
+        "qty": 2,
+        "price": 25
+      }
+    ],
+    "notes": "v tTrabajos el ctricos no tiene garant a si el sistema tienes fallas visibles como corrosi n y empalmes incorrectos.D",
+    "terms": "Pagar al recibir. Pagar A Negocios / OasisServicesPr",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 130,
+      "tax": 0,
+      "grand": 130
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1774728967732_522a8605aa29",
+    "type": "FAC",
+    "number": "FAC-2026-0153",
+    "date": "2026-03-28",
+    "validUntil": "2026-04-11",
+    "client": {
+      "name": "JAVIER OSTOLAZA",
+      "contact": "&",
+      "addr": "TERRA LUGO #1 CUPEY, 00925"
+    },
+    "items": [
+      {
+        "description": "MANTENIMIENTOS PREVENTIVOS CONTRATO 1 YEAR",
+        "qty": 6,
+        "price": 50
+      }
+    ],
+    "notes": "DIAS SI EL EQUIPO BOTA AGUA LUEGO DEL MANTENIMIENTO.D",
+    "terms": "PAGADO POR: ATH MOVIL BUSINESS",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 300,
+      "tax": 0,
+      "grand": 300
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1774877250933_eaa54bf358d16",
+    "type": "FAC",
+    "number": "FAC-2026-0156",
+    "date": "2026-03-30",
+    "validUntil": "2026-04-13",
+    "client": {
+      "name": "Paola Rosich(",
+      "contact": "",
+      "addr": "Boulevard del rio 2 Guaynabo"
+    },
+    "items": [
+      {
+        "description": "Visita de revisi n",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "Al momento el aire acondicionado no enfr a tiene p rdida de refrigerante. Tiene 30 d as para redimir los costos de visita para una instalaci n o servicio adicional.B",
+    "terms": "Pagar al recibir/ pagar a negocio",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0154.pdf?alt=media&token=28f7400c-4429-40a4-88a3-f5bcab1b0e3ezP"
+  },
+  {
+    "legacyId": "doc_1774880967617_5ade4dba609c",
+    "type": "FAC",
+    "number": "FAC-2026-0178",
+    "date": "2026-03-30",
+    "validUntil": "2026-04-13",
+    "client": {
+      "name": "Ivelisse V que$",
+      "contact": "",
+      "addr": "Boulevard del Rio 2 318L ("
+    },
+    "items": [
+      {
+        "description": "Facilitar unidad Midea MWBUP-15EEN8-MJ6 Wall Pack 12k BTU 15 seer de eficiencia energ tica",
+        "qty": 1,
+        "price": 850
+      },
+      {
+        "description": "Remoci n, instalaci n y desecho de equipos viejo",
+        "qty": 1,
+        "price": 250
+      }
+    ],
+    "notes": "E CGarant a de 5 a os en el compresor, 1 a o en pieas el ctricas",
+    "terms": "Se Pago equipo por Ath m vil $850.00",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 1100,
+      "tax": 0,
+      "grand": 1100
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1774893158431_1460ecc178d13",
+    "type": "FAC",
+    "number": "FAC-2026-0158",
+    "date": "2026-03-30",
+    "validUntil": "2026-04-13",
+    "client": {
+      "name": "Blanca P reO",
+      "contact": "",
+      "addr": "E CUrb. P re Morris 10 Calle Arecibo Hato Rey Sur SAN Juan PR 00917"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 75
+      }
+    ],
+    "notes": "J HGarant a de 30 d as si la unidad luego del mantenimiento botar agua.D",
+    "terms": "Pagar al recibir / pagar a negocio",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 150,
+      "tax": 0,
+      "grand": 150
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0155.pdf?alt=media&token=2ca2527b-3420-4f3a-a09f-d40434119969zQ"
+  },
+  {
+    "legacyId": "doc_1774990008428_1545a49ebd762",
+    "type": "FAC",
+    "number": "FAC-2026-0159",
+    "date": "2026-03-31",
+    "validUntil": "2026-04-14",
+    "client": {
+      "name": "Yary Ocasio0",
+      "contact": "",
+      "addr": "Urbaniaci n Rexville ZA-27 Bayamon"
+    },
+    "items": [
+      {
+        "description": "Prueba de fuga con nitr geno",
+        "qty": 1,
+        "price": 45
+      },
+      {
+        "description": "Vac o y carga de refrigerante",
+        "qty": 1,
+        "price": 90
+      },
+      {
+        "description": "Labor",
+        "qty": 1,
+        "price": 65
+      }
+    ],
+    "notes": "Garant a de 30 d as.D",
+    "terms": "Pagado Cash",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 200,
+      "tax": 0,
+      "grand": 200
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0159.pdf?alt=media&token=fe01222d-bd4c-4686-b039-8de63e5d5e00z!"
+  },
+  {
+    "legacyId": "doc_1775060396904_6abc56e3d51d08",
+    "type": "FAC",
+    "number": "FAC-2026-0182",
+    "date": "2026-04-01",
+    "validUntil": "2026-04-15",
+    "client": {
+      "name": "Luis V le9",
+      "contact": "",
+      "addr": "Escuela Salvador Brau / Chalets de Cupey i217"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 1,
+        "price": 60
+      }
+    ],
+    "notes": "J HGarant a de 30 d as si la unidad luego del mantenimiento botar agua.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 60,
+      "tax": 0,
+      "grand": 60
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0160.pdf?alt=media&token=27769b57-2061-4706-8db3-c5a1ba61ebadzQ"
+  },
+  {
+    "legacyId": "doc_1775099961542_9106a153088b88",
+    "type": "FAC",
+    "number": "FAC-2026-0181",
+    "date": "2026-04-01",
+    "validUntil": "2026-04-15",
+    "client": {
+      "name": "Leslie LugoC",
+      "contact": "",
+      "addr": "Urb. Vista del Morro L7 Calle Uruguay Cata o, PR 00962"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Remplao de isulacion evaporador reconexion y vac o",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "description": "Sellado con cemento hidr ulico",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Insulacion l neas en el techo",
+        "qty": 1,
+        "price": 25
+      }
+    ],
+    "notes": "Garant a de 90 d as.D",
+    "terms": "Pagado por Ath m vil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 200,
+      "tax": 0,
+      "grand": 200
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1775142929390_953797f165185",
+    "type": "FAC",
+    "number": "FAC-2026-0179",
+    "date": "2026-04-02",
+    "validUntil": "2026-04-16",
+    "client": {
+      "name": "Lourdes Bernabes",
+      "contact": "",
+      "addr": "Cata o"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 55
+      },
+      {
+        "description": "Remplao de terminal block",
+        "qty": 1,
+        "price": 45
+      }
+    ],
+    "notes": "J HGarant a de 30 d as si luego del mantenimiento la unidad botar agua.D",
+    "terms": "Pagada por Ath m vil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 155,
+      "tax": 0,
+      "grand": 155
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FCOT_COT-2026-0153.pdf?alt=media&token=8447db1e-c302-4ddb-bbe8-63ab1aa4f5ffzQ"
+  },
+  {
+    "legacyId": "doc_1775161101038_6f17f7330a4c2",
+    "type": "FAC",
+    "number": "FAC-2026-0180",
+    "date": "2026-04-02",
+    "validUntil": "2026-04-16",
+    "client": {
+      "name": "Beatri Arias>",
+      "contact": "",
+      "addr": "Urb. Metr polis calle 1 G1-24, Carolina, PR 00986"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "J HGarant a de 30 d as si luego del mantenimiento la unidad botar agua.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": "https://firebasestorage.googleapis.com/v0/b/oasis-facturacion.firebasestorage.app/o/users%2FjUYNuEyjprSXHkved7CXwV33Bqg2%2Fsent-pdfs%2FFAC_FAC-2026-0167.pdf?alt=media&token=a70e3ba3-e242-46ef-a0e2-1e07ab358166"
+  },
+  {
+    "legacyId": "doc_1775583765941_a18a9ca82f96b",
+    "type": "FAC",
+    "number": "FAC-2026-0176",
+    "date": "2026-04-07",
+    "validUntil": "2026-04-21",
+    "client": {
+      "name": "Luis Rivera",
+      "contact": "",
+      "addr": "Las Carolinas, Caguas, P.R"
+    },
+    "items": [
+      {
+        "description": "H FLabor de instalaci n el ctrica para port n, cisterna, inverter 12k",
+        "qty": 1,
+        "price": 540
+      }
+    ],
+    "notes": "Garantia de 1 year",
+    "terms": "Pagado Cash",
+    "status": "PAGADAP",
+    "totals": {
+      "sub": 540,
+      "tax": 0,
+      "grand": 540
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1775751633130_23627f8c98ef38",
+    "type": "FAC",
+    "number": "FAC-2026-0177",
+    "date": "2026-04-09",
+    "validUntil": "2026-04-23",
+    "client": {
+      "name": "Ricky V le",
+      "contact": "368-6027",
+      "addr": "Bayamon"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 2,
+        "price": 75
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 150,
+      "tax": 0,
+      "grand": 150
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776210625655_36ae0b400e1f28",
+    "type": "FAC",
+    "number": "FAC-2026-0188",
+    "date": "2026-04-14",
+    "validUntil": "2026-04-28",
+    "client": {
+      "name": "MIGUEL ALONSO BENIQUE:",
+      "contact": "!",
+      "addr": "CALLE LIBRA 225 BRISAS DE LOIZA CANOVANAS P.R. B"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 60
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua",
+    "terms": "PAGADA ATH MOVIL",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 120,
+      "tax": 0,
+      "grand": 120
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776210668562_0b7ba0141fa3d8",
+    "type": "FAC",
+    "number": "FAC-2026-0186",
+    "date": "2026-04-14",
+    "validUntil": "2026-04-28",
+    "client": {
+      "name": "AMME INC9",
+      "contact": "",
+      "addr": "Ave Roberto S nche Vilella Country Club"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 55
+      },
+      {
+        "description": "Remplao de tarjeta Midea",
+        "qty": 1,
+        "price": 150
+      },
+      {
+        "description": "Remplao de pantalla display",
+        "qty": 1,
+        "price": 25
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua. Tarjetas electr nicas no tienen garant a si la unidad no posee protector de voltaje.D",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 230,
+      "tax": 0,
+      "grand": 230
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776265968956_2e5353b07e62b",
+    "type": "FAC",
+    "number": "FAC-2026-0208",
+    "date": "2026-04-15",
+    "validUntil": "2026-04-29",
+    "client": {
+      "name": "Kamen Yan#",
+      "contact": "210-9730",
+      "addr": "Terra Lugo 6 Cupey P.R"
+    },
+    "items": [
+      {
+        "description": "Facilitar unidad 36k BTU Midea Xtreme MSAG-36CFN8CC",
+        "qty": 1,
+        "price": 1750
+      },
+      {
+        "description": "Facilitar unidad 18k BTU Midea Xtreme MSAG-18CFN8CC",
+        "qty": 1,
+        "price": 695
+      },
+      {
+        "description": "Facilitar unidad PTAC Midea 12k BTU MWBUP-12EEN8-MK6",
+        "qty": 1,
+        "price": 835
+      },
+      {
+        "description": "Labor de instalaci n aires acondicionados",
+        "qty": 1,
+        "price": 1950
+      },
+      {
+        "description": "Materiales el ctricos",
+        "qty": 1,
+        "price": 500
+      },
+      {
+        "description": "Labor instalaci n el ctrica",
+        "qty": 1,
+        "price": 750
+      },
+      {
+        "description": "Mantenimientos unidad WallPack",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Palometas de acero inoxidable",
+        "qty": 3,
+        "price": 75
+      },
+      {
+        "description": "Kit de cobre",
+        "qty": 3,
+        "price": 65
+      },
+      {
+        "description": "Reubicaci n unidad existente Midea 18k BTU",
+        "qty": 1,
+        "price": 350
+      },
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "Garant a de 7 a os en el compresor y 5 a os en pieas el ctricas aplica a mini split. Garant a de 5 a os en compresor y 1 a o en pieas el ctricas aplica a PTACD",
+    "terms": "j hSe requiere el dep sito de $4.500 d lares para comenar el proceso de agendar fecha para instalaci n",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 7400,
+      "tax": 0,
+      "grand": 7400
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776284803878_dbb4d00605bc38",
+    "type": "FAC",
+    "number": "FAC-2026-0247",
+    "date": "2026-04-15",
+    "validUntil": "2026-04-29",
+    "client": {
+      "name": "Paola DeCastroL",
+      "contact": "",
+      "addr": "B @Apartamento 1104 Cond Tropical Court calle Teresa Hornet San Jan"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776352944136_c934b1c98c0a98",
+    "type": "FAC",
+    "number": "FAC-2026-0246",
+    "date": "2026-04-16",
+    "validUntil": "2026-04-30",
+    "client": {
+      "name": "HENRY AMPARO",
+      "contact": "",
+      "addr": "CAROLINA, P.R. 00924"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 2,
+        "price": 75
+      },
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 60
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 270,
+      "tax": 0,
+      "grand": 270
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776361997718_3567984de612",
+    "type": "FAC",
+    "number": "FAC-2026-0238",
+    "date": "2026-04-16",
+    "validUntil": "2026-04-30",
+    "client": {
+      "name": "Roberto L pe Ramos7",
+      "contact": "",
+      "addr": "Cond Alto Monte Apt 901 San Juan P.R. 00926 ("
+    },
+    "items": [
+      {
+        "description": "Facilitar unidad Midea De Ventana 18k BTU Inverter",
+        "qty": 1,
+        "price": 585
+      },
+      {
+        "description": "Labor de instalaci n",
+        "qty": 1,
+        "price": 165
+      }
+    ],
+    "notes": "Garant a de 1 a o en pieas el ctricas 1 a o en compresor.D",
+    "terms": "PAGADA POR ATH MOVIL",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 750,
+      "tax": 0,
+      "grand": 750
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776379805989_a043392e0bd4a8",
+    "type": "FAC",
+    "number": "FAC-2026-0206",
+    "date": "2026-04-16",
+    "validUntil": "2026-04-30",
+    "client": {
+      "name": "Ricky V le",
+      "contact": "368-6027",
+      "addr": "Bayamon"
+    },
+    "items": [
+      {
+        "description": "FACILITAR UNUIDAD 36k BTU AIRMAX AWGRE36-C2 21 SEER",
+        "qty": 1,
+        "price": 1500
+      },
+      {
+        "description": "PALOMETAS DE ACERO INOXIDABLE",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "TUBOS DRENAJE",
+        "qty": 2,
+        "price": 5
+      },
+      {
+        "description": "CONDULETO LL",
+        "qty": 1,
+        "price": 5
+      },
+      {
+        "description": "TUBO 1/2 GRIS",
+        "qty": 1,
+        "price": 5
+      },
+      {
+        "description": "CURVA 1/2 GRIS",
+        "qty": 1,
+        "price": 5
+      },
+      {
+        "description": "UNIONES 1/2",
+        "qty": 2,
+        "price": 2
+      },
+      {
+        "description": "CONDULETO LB",
+        "qty": 1,
+        "price": 5
+      },
+      {
+        "description": "BREAKER 30 AMP DOBLE FINO N",
+        "qty": 1,
+        "price": 25
+      },
+      {
+        "description": "CABLE #10 AWG = 35 PIES",
+        "qty": 35,
+        "price": 1
+      },
+      {
+        "description": "GRAPAS 1/2 RIGIDAS",
+        "qty": 8,
+        "price": 1
+      },
+      {
+        "description": "LABOR DE INSTALACION",
+        "qty": 1,
+        "price": 325
+      }
+    ],
+    "notes": "S/N#: 3K6654W001126, GARANTIA 7-5-1 S/N#: 3K3074W000294P",
+    "terms": "PAGADO POR: TARJETA DE CREDITO",
+    "status": "PAGADAF",
+    "totals": {
+      "sub": 0,
+      "tax": 0,
+      "grand": 19
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776388721700_af142ab508fbd8",
+    "type": "FAC",
+    "number": "FAC-2026-0204",
+    "date": "2026-04-16",
+    "validUntil": "2026-04-30",
+    "client": {
+      "name": "Silvia Pe a",
+      "contact": "604-5344",
+      "addr": "Condado Moderno Caguas"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 60
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pasado en Efectivo",
+    "status": "PAGADAQ",
+    "totals": {
+      "sub": 120,
+      "tax": 0,
+      "grand": 120
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776451988929_c25354f86cb278",
+    "type": "FAC",
+    "number": "FAC-2026-0203",
+    "date": "2026-04-17",
+    "validUntil": "2026-05-01",
+    "client": {
+      "name": "Evy Collao",
+      "contact": "430-4533",
+      "addr": "Condominio Valencia Plaa 202"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Manga drenaje",
+        "qty": 1,
+        "price": 15
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 90,
+      "tax": 0,
+      "grand": 90
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1776976128116_5cea571c782988",
+    "type": "FAC",
+    "number": "FAC-2026-0239",
+    "date": "2026-04-23",
+    "validUntil": "2026-05-07",
+    "client": {
+      "name": "Venture Property Management LLC/",
+      "contact": "",
+      "addr": "Edificio Amapola 14 Piso 4 Apt# 404"
+    },
+    "items": [
+      {
+        "description": "W UFacilitar unidad MIDEA WINDOW UNIT 18K BTU INVERTER 220/1/60 R32 MWCUWH-18CRFN8-MCN10",
+        "qty": 1,
+        "price": 625
+      },
+      {
+        "description": "Labor remocion instalacion unidad Window unit",
+        "qty": 1,
+        "price": 150
+      },
+      {
+        "description": "Vidita de diagnostico",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "Y WGarantia de 1 a o en pieas Garantia de 1 a o en labor. S/N#:541W3377201AB260150020Q",
+    "terms": "PAGADO POR: ath movil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 850,
+      "tax": 0,
+      "grand": 850
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777041024987_9a0ba9c5af00b8",
+    "type": "FAC",
+    "number": "FAC-2026-0285",
+    "date": "2026-04-24",
+    "validUntil": "2026-05-08",
+    "client": {
+      "name": "Nino Lamoso0",
+      "contact": "677-4866",
+      "addr": "Terra Lugo 23 Cupey Garden, San Juan"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 6,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento en tabletas para drenajes",
+        "qty": 6,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua",
+    "terms": "Pagado cash",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 390,
+      "tax": 0,
+      "grand": 390
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777124960771_a91313800bb298",
+    "type": "FAC",
+    "number": "FAC-2026-0244",
+    "date": "2026-04-25",
+    "validUntil": "2026-05-09",
+    "client": {
+      "name": "Nivea Modesto",
+      "contact": "",
+      "addr": "Miradores Del Yunque"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 1,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento para bandeja drenaje",
+        "qty": 1,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagado por Ath m vil",
+    "status": "PAGADAQ",
+    "totals": {
+      "sub": 65,
+      "tax": 0,
+      "grand": 65
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777145202144_1b34127cc2cc88",
+    "type": "FAC",
+    "number": "FAC-2026-0243",
+    "date": "2026-04-25",
+    "validUntil": "2026-05-09",
+    "client": {
+      "name": "Angelo Hern nde?",
+      "contact": "648-3171",
+      "addr": "Betania Final Saint Just, Trujillo Alto, P.R. 00976"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 3,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento para bandeja drenaje en pastilla",
+        "qty": 3,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagado por Ath m vil",
+    "status": "PAGADAQ",
+    "totals": {
+      "sub": 195,
+      "tax": 0,
+      "grand": 195
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777324229361_c527721d0113f",
+    "type": "FAC",
+    "number": "FAC-2026-0241",
+    "date": "2026-04-27",
+    "validUntil": "2026-05-11",
+    "client": {
+      "name": "Tantra Apartments",
+      "contact": "",
+      "addr": "Condado / Isla Verde"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento para drenajes en pastilla",
+        "qty": 1,
+        "price": 5
+      },
+      {
+        "description": "Reparaci n de cortocircuito aires acondicionados",
+        "qty": 1,
+        "price": 170
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua. Se recomienda reparar circuitos el ctricos ya que est n en muy mal estado y podr a volver a fallarD",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 250,
+      "tax": 0,
+      "grand": 250
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777403363915_83d3ecf58f1bc",
+    "type": "FAC",
+    "number": "FAC-2026-0237",
+    "date": "2026-04-28",
+    "validUntil": "2026-05-12",
+    "client": {
+      "name": "AMME INC9",
+      "contact": "",
+      "addr": "Ave Roberto S nche Vilella Country Club"
+    },
+    "items": [
+      {
+        "description": "/Mantenimientos preventivos manejados de ductos",
+        "qty": 1,
+        "price": 175
+      },
+      {
+        "description": "Remplao de filtro",
+        "qty": 1,
+        "price": 25
+      },
+      {
+        "description": "Tratamiento para bandeja drenaje en pastillas",
+        "qty": 1,
+        "price": 10
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 210,
+      "tax": 0,
+      "grand": 210
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777482675240_72971ff2d50218",
+    "type": "FAC",
+    "number": "FAC-2026-0242",
+    "date": "2026-04-29",
+    "validUntil": "2026-05-13",
+    "client": {
+      "name": "Hiram Rosado0",
+      "contact": "265-3620",
+      "addr": "Calle 511 209-2 Villa Carolina 00985"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 1,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento para drenajes en pastillas",
+        "qty": 1,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagado por Ath M vil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 65,
+      "tax": 0,
+      "grand": 65
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777490221499_964094e5382b18",
+    "type": "FAC",
+    "number": "FAC-2026-0240",
+    "date": "2026-04-29",
+    "validUntil": "2026-05-13",
+    "client": {
+      "name": "Luis Rojas1",
+      "contact": "225-8953",
+      "addr": "Alturas de campo rico, Canovanas, PR"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777584860182_bafdf51f84f848",
+    "type": "FAC",
+    "number": "FAC-2026-0234",
+    "date": "2026-04-30",
+    "validUntil": "2026-05-14",
+    "client": {
+      "name": "Julio Garcia0",
+      "contact": "",
+      "addr": "Urbaniacion Los Flamboyanes, Gurabo"
+    },
+    "items": [
+      {
+        "description": "P NFACILITAR UNIDAD MIDEA XTREME IDU 24K BTU 220V/1/60 INVERTER SEER 22 R32 WIFI",
+        "qty": 1,
+        "price": 970
+      },
+      {
+        "description": "PALOMETAS DE ACERO INOXIDABLE",
+        "qty": 1,
+        "price": 49
+      },
+      {
+        "description": "CUBRE FALTAS BLANCO 10 FT",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "SURGE PROTECTOR",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "PVC TUBE 3/4 GRIS",
+        "qty": 5,
+        "price": 0
+      },
+      {
+        "description": "BREAKER FINO DOBLE GE",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "CONDULETO LB 3/4",
+        "qty": 2,
+        "price": 0
+      },
+      {
+        "description": "TAPA CIEGA PLASTICA",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "TAPCONS TORNILLOS",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "LABOR GENERAL",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "u sS/N#: 5410M255307B2070130150 S/N#: 5410F634201AC0602V0432 7 YEAR COMPRESOR 5 YEAR PIEZAS ELECTRICAS 1 YEAR LABOR.D",
+    "terms": "PAGADO POR: TARJETA DE CREDITO KLARNA",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 1650,
+      "tax": 0,
+      "grand": 1650
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777586417233_1674f10eeaf06",
+    "type": "FAC",
+    "number": "FAC-2026-0236",
+    "date": "2026-04-17",
+    "validUntil": "2026-05-14",
+    "client": {
+      "name": "PABLO SANTANA",
+      "contact": "",
+      "addr": "CATANO PR"
+    },
+    "items": [
+      {
+        "description": "FACILITAR UNIDAD AIRMAX 12K BTU AWMPRE12-C1 110V 22 SEER R32",
+        "qty": 1,
+        "price": 410
+      },
+      {
+        "description": "SHPR1 ANTI VIBRATION MOUNTING SET",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "ANCLAJE BASICO",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "LABOR GENERAL",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "CONEXION ELECTRICA",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "S/N#: 540Q665680149040130785 S/N#: 540S6696601A2140120526 GARANTIA 7 YEAR COMPRESOR 5 YEAR PIEZAS ELECTRICAS 1 YEAR LABOR.D",
+    "terms": "PAGADO POR: TARJETA DE CREDITO KLARNA",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 700,
+      "tax": 0,
+      "grand": 700
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777588901170_ce331a1d633068",
+    "type": "FAC",
+    "number": "FAC-2026-0250",
+    "date": "2026-04-07",
+    "validUntil": "2026-05-14",
+    "client": {
+      "name": "ISABEL PADROB",
+      "contact": "",
+      "addr": "URB. CARIBE CALLE ALDA 1553 APT 303 SAN JUAN PR. 00926"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "v tGarant a de 30 d as en mantenimientos por liqueo de agua. 30 DIAS SI EL EQUIPO BOTA AGUA LUEGO DEL MANTENIMIENTO.B",
+    "terms": "Pagar al recibir PAGADO POR: TARJETA DE CREDITO",
+    "status": "PAGADAQ",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777751499103_e6f1a9290f5e7",
+    "type": "FAC",
+    "number": "FAC-2026-0253",
+    "date": "2026-05-02",
+    "validUntil": "2026-05-16",
+    "client": {
+      "name": "ELIEZER GONZALEZ / MELANIUE DEL TOROI",
+      "contact": "0",
+      "addr": "AVE LAS CUMBRES COND LA CIUDADELA APT 304A GUAYNABO, PR 00969"
+    },
+    "items": [
+      {
+        "description": "FACILITAR MIDEA UNIT WINDOWS 12K BTU 115/60 INVERTER R32",
+        "qty": 2,
+        "price": 0
+      },
+      {
+        "description": "INSTALACION DE LAMPARA EN HABITACION",
+        "qty": 1,
+        "price": 50
+      },
+      {
+        "description": "LABOR DE INSTALACION AIRES DE VENTANA",
+        "qty": 2,
+        "price": 200
+      }
+    ],
+    "notes": "s qS/N#: 541U7393304A31502U0108 S/N#: 541U7393304A31502U0026 GARANTIA DE 1 YEAR COMPRESOR 1 YEAR PIEZAS ELECTRICASP",
+    "terms": "PAGADO POR: TARJETA DE CREDITO",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777912852067_c50bd15c728e7",
+    "type": "FAC",
+    "number": "FAC-2026-0265",
+    "date": "2026-05-04",
+    "validUntil": "2026-05-18",
+    "client": {
+      "name": "Luis Rivera;",
+      "contact": "",
+      "addr": "/Riachuelo 42 Encantada Trujillo Alto, PR. 00976"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento para drenajes en pastillas",
+        "qty": 1,
+        "price": 5
+      },
+      {
+        "description": "Reparaci n de bandeja drenaje unidad 24k BTU",
+        "qty": 1,
+        "price": 65
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 145,
+      "tax": 0,
+      "grand": 145
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777922286133_51f83fd5d2869",
+    "type": "FAC",
+    "number": "FAC-2026-0266",
+    "date": "2026-05-04",
+    "validUntil": "2026-05-18",
+    "client": {
+      "name": "Damaris MoralesM",
+      "contact": "728-5113",
+      "addr": "C ACarr 8852 k0.6 Barrio Quebrada Grande Sector Sabana Trujillo Alto"
+    },
+    "items": [
+      {
+        "description": "Visita De Diagn stico",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "g eUnidad TGM 18k perdi todo el refrigerante, unidad est en mal estado no se recomienda reparaci n.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777990045019_d29917c521c43",
+    "type": "FAC",
+    "number": "FAC-2026-0264",
+    "date": "2026-05-05",
+    "validUntil": "2026-05-19",
+    "client": {
+      "name": "Kamen Yan#",
+      "contact": "210-9730",
+      "addr": "Terra Lugo 6 Cupey P.R"
+    },
+    "items": [
+      {
+        "description": "Visita De Diagn stico",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "v tEquipo presenta p rdida de refrigerante por el compresor debido a la corrosi n. Se recomienda remplaar el equipoB",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1777992682349_27209fc677024",
+    "type": "FAC",
+    "number": "FAC-2026-0270",
+    "date": "2026-05-05",
+    "validUntil": "2026-05-19",
+    "client": {
+      "name": "TERESITA VELEZ0",
+      "contact": "",
+      "addr": "LAGUNA GARDEN 2 APT 3A CAROLINA, PR"
+    },
+    "items": [
+      {
+        "description": "L JFACILITAR UNIDAD MIDEA XTREME IDU 12K BTU 220/60 INVERTER 22 SEER WIFI R32",
+        "qty": 1,
+        "price": 500
+      },
+      {
+        "description": "LABOR DE REMOCION, INSTALACION UNIDAD MIDEA 12K BTU",
+        "qty": 1,
+        "price": 350
+      }
+    ],
+    "notes": "GARANTIA DE 7 ANOS EN COMPRESOR Y 5 ANOS EN PIEZAS ELECTRICAS. S/N#: 5410F6464401AC020270690 S/N#: 5410F646701AC050210086O",
+    "terms": "D BPAGADO POR: ATH MOVIL 1 ANO DE GARANTIA EN LABOR DE INSTALACION.D",
+    "status": "PAGADAQ",
+    "totals": {
+      "sub": 850,
+      "tax": 0,
+      "grand": 850
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778028226327_debc10c3bcc67",
+    "type": "FAC",
+    "number": "FAC-2026-0310",
+    "date": "2026-05-05",
+    "validUntil": "2026-05-19",
+    "client": {
+      "name": "Arnaldo Negron6",
+      "contact": "560-6672",
+      "addr": "Senderos del r o Trujillo Alto, PR. 00976"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 5,
+        "price": 75
+      },
+      {
+        "description": "Remplao de parrilla PTAC incluye parrilla",
+        "qty": 1,
+        "price": 125
+      },
+      {
+        "description": "Tratamiento para drenajes en pastilla",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagado por Ath M vil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 500,
+      "tax": 0,
+      "grand": 500
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778100020112_77f055425a7cd8",
+    "type": "FAC",
+    "number": "FAC-2026-0269",
+    "date": "2026-05-06",
+    "validUntil": "2026-05-20",
+    "client": {
+      "name": "Armando Gorbea5",
+      "contact": "",
+      "addr": "Costa Marina 1 Apt 1G Carolina, PR. 00983"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento en pastilla para drenajes",
+        "qty": 3,
+        "price": 5
+      },
+      {
+        "description": "Remplao de main board",
+        "qty": 1,
+        "price": 125
+      },
+      {
+        "description": "Reparaci n de terminal block",
+        "qty": 1,
+        "price": 45
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagado en cheque",
+    "status": "PAGADAP",
+    "totals": {
+      "sub": 380,
+      "tax": 0,
+      "grand": 380
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778170351281_ce4f27a0a2673",
+    "type": "FAC",
+    "number": "COT-2026-0259",
+    "date": "2026-05-07",
+    "validUntil": "2026-05-21",
+    "client": {
+      "name": "Kamen Yan#",
+      "contact": "210-9730",
+      "addr": "Terra Lugo 6 Cupey P.R"
+    },
+    "items": [
+      {
+        "description": "Visita de diagn stico",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Main board PTAC",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "description": "Remplao de tarjeta",
+        "qty": 1,
+        "price": 45
+      }
+    ],
+    "notes": "Pieas el ctricas no tienen garant aD",
+    "terms": "No se requiere dep sito.Q",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 220,
+      "tax": 0,
+      "grand": 220
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778191103290_4872ef1e3a46e",
+    "type": "COT",
+    "number": "COT-2026-0262",
+    "date": "2026-05-07",
+    "validUntil": "2026-05-21",
+    "client": {
+      "name": "Omhayra Pe a",
+      "contact": "",
+      "addr": "Rio Grande, P.R"
+    },
+    "items": [
+      {
+        "description": "S QFacilitar unidad 24k BTU AirMax GR R32 25.5 seer de eficiencia energ tica 220/60",
+        "qty": 1,
+        "price": 1029
+      },
+      {
+        "description": "J HFacilitar unidad 12k BTU AirMax GR R32 22 seer de eficiencia energ tica",
+        "qty": 1,
+        "price": 435
+      },
+      {
+        "description": "Labor de remoci n e instalaci n",
+        "qty": 2,
+        "price": 300
+      }
+    ],
+    "notes": "l jTodas las unidades mini split tienen garant a de 7 a os en el compresor y 5 a os en pieas el ctricas.D",
+    "terms": "Trabajos adicionales se cobran por separado",
+    "status": "CANCELADA",
+    "totals": {
+      "sub": 2064,
+      "tax": 0,
+      "grand": 2064
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778251723040_cca2aa38e7283",
+    "type": "FAC",
+    "number": "FAC-2026-0283",
+    "date": "2026-05-08",
+    "validUntil": "2026-05-22",
+    "client": {
+      "name": "Ricardo Matos`",
+      "contact": "390-4398",
+      "addr": "V TCasa C-17 Calle Higuero, Urbaniaci n Vistas de R o Grande I, R o Grande PR 00745"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 2,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastillas para drenajes",
+        "qty": 2,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 160,
+      "tax": 0,
+      "grand": 160
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778267038237_9543972b3f157",
+    "type": "FAC",
+    "number": "FAC-2026-0274",
+    "date": "2026-05-08",
+    "validUntil": "2026-05-22",
+    "client": {
+      "name": "Desiree Rodrigue1",
+      "contact": "603-2452",
+      "addr": "Cond Sierra Alta Apt 201 San Juan PR"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento en pastillas para drenajes",
+        "qty": 2,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagada por Ath m vil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 130,
+      "tax": 0,
+      "grand": 130
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778272113744_6dc25c3bd8f75",
+    "type": "FAC",
+    "number": "FAC-2026-0276",
+    "date": "2026-05-08",
+    "validUntil": "2026-05-22",
+    "client": {
+      "name": "Laura Blake",
+      "contact": "",
+      "addr": "Bairoa Caguas"
+    },
+    "items": [
+      {
+        "description": "Visita de diagn stico",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Remplao de motor ventilador del condensador",
+        "qty": 1,
+        "price": 55
+      },
+      {
+        "description": "Labor de servicios generales",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "Z XPieas electr nicas en garant a se cobrar en tienda flete dependiendo de los costes",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 205,
+      "tax": 0,
+      "grand": 205
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778340883124_154c261a2af448",
+    "type": "FAC",
+    "number": "FAC-2026-0286",
+    "date": "2026-05-09",
+    "validUntil": "2026-05-23",
+    "client": {
+      "name": "Elvia Mart ne0",
+      "contact": "",
+      "addr": "Calle Brail C-85 Urb. Rolling Hills"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastilla para drenaje",
+        "qty": 1,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagado por ATH MOVIL* updatedISO * 2026-05-10T06:05:17.911Z",
+    "status": "PAGADAP",
+    "totals": {
+      "sub": 80,
+      "tax": 0,
+      "grand": 80
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778356375805_bc9c4735c88838",
+    "type": "FAC",
+    "number": "FAC-2026-0282",
+    "date": "2026-05-09",
+    "validUntil": "2026-05-23",
+    "client": {
+      "name": "EDGARDO FUMERO ACOSTA@",
+      "contact": "!",
+      "addr": "URBANIZACION ENCANTADA MC41 TRUJILLO ALTO P.R. 00976"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 2,
+        "price": 75
+      }
+    ],
+    "notes": "v tGarant a de 30 d as en mantenimientos por liqueo de agua. 30 DIAS SI EL EQUIPO BOTA AGUA LUEGO DEL MANTENIMIENTO.!",
+    "terms": "PAGADO POR: CHEQUE",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 150,
+      "tax": 0,
+      "grand": 150
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778543231557_b441a3c4ed1328",
+    "type": "FAC",
+    "number": "FAC-2026-0287",
+    "date": "2026-05-11",
+    "validUntil": "2026-05-25",
+    "client": {
+      "name": "ARACELIS GUEVAREZ$",
+      "contact": "",
+      "addr": "VILLA PRADES RIO PIEDRAS"
+    },
+    "items": [
+      {
+        "description": "MANTENIMIENTO PREVENTIVO",
+        "qty": 1,
+        "price": 60
+      },
+      {
+        "description": "TRATAMIENTO PARA DRENAJES EN PASTILLAS",
+        "qty": 1,
+        "price": 5
+      }
+    ],
+    "notes": "GARANTIA DE 30 DIAS EN MANTENIMIENTOS POR LIQUEO DE AGUAB",
+    "terms": "PAGADO POR ATH MOVIL",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 65,
+      "tax": 0,
+      "grand": 65
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778598895017_4756375ec932e",
+    "type": "FAC",
+    "number": "FAC-2026-0289",
+    "date": "2026-05-12",
+    "validUntil": "2026-05-26",
+    "client": {
+      "name": "Yahisha Cardona",
+      "contact": "502-2442",
+      "addr": "Guaynabo, PR"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 2,
+        "price": 60
+      },
+      {
+        "description": "Diagn stico unidad 12k BTU Gree",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento para drenajes en pastillas",
+        "qty": 2,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua. Unidad presenta congelamiento debido a una obstrucci n en el sistema se presume es la v lvula de expansi n",
+    "terms": "Pagar al recibir",
+    "status": "",
+    "totals": {
+      "sub": 205,
+      "tax": 0,
+      "grand": 205
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778608462016_76c399dd87ebd",
+    "type": "FAC",
+    "number": "FAC-2026-0291",
+    "date": "2026-05-12",
+    "validUntil": "2026-05-26",
+    "client": {
+      "name": "Betsy Garc a>",
+      "contact": "616-0196",
+      "addr": "Urb. El Conquistador Calle 5 i52 Trujillo Alto PR"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 1,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento en pastilla para drenajes",
+        "qty": 1,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 65,
+      "tax": 0,
+      "grand": 65
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778616948778_b0b06b7fd8e8e8",
+    "type": "FAC",
+    "number": "FAC-2026-0294",
+    "date": "2026-05-12",
+    "validUntil": "2026-05-26",
+    "client": {
+      "name": "Tantra Apartments",
+      "contact": "",
+      "addr": "Condado / Isla Verde"
+    },
+    "items": [
+      {
+        "description": "Visita de diagn stico",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "Unidad presenta c digo E6 p rdida de comunicaci n debido a da o en la tarjeta exterior, unidad est en muy mal estado y tiene la base del suelo podrida o sin suelo, se recomienda remplaar el equipo.B",
+    "terms": "Pagar al recibir",
+    "status": "",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778617231070_d4b76faf4e6d2",
+    "type": "COT",
+    "number": "COT-2026-0263",
+    "date": "2026-05-12",
+    "validUntil": "2026-05-26",
+    "client": {
+      "name": "Tantra Apartments",
+      "contact": "",
+      "addr": "Condado / Isla Verde"
+    },
+    "items": [
+      {
+        "description": "Facilitar unidad AirMax 12k BTU 22 seer",
+        "qty": 1,
+        "price": 465
+      },
+      {
+        "description": "Remoci n / instalaci n unidad 12k BTU",
+        "qty": 1,
+        "price": 350
+      }
+    ],
+    "notes": "G EGarant a de 7 a os en el compresor y 5 a os en pieas el ctricas.D",
+    "terms": "Se requiere dep sito para coordinar la instalaci n",
+    "status": "PENDIENTEP",
+    "totals": {
+      "sub": 815,
+      "tax": 0,
+      "grand": 815
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778697699742_28fd92cd52a72",
+    "type": "FAC",
+    "number": "FAC-2026-0296",
+    "date": "2026-05-13",
+    "validUntil": "2026-05-27",
+    "client": {
+      "name": "Camille G me3",
+      "contact": "455-0585",
+      "addr": "calle Navarra Vistamar, Carolina PR"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 2,
+        "price": 75
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagar al recibir",
+    "status": "",
+    "totals": {
+      "sub": 150,
+      "tax": 0,
+      "grand": 150
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778709928111_2edff26cf8b3f",
+    "type": "FAC",
+    "number": "FAC-2026-0297",
+    "date": "2026-05-13",
+    "validUntil": "2026-05-27",
+    "client": {
+      "name": "Jean Carlos VerdejoA",
+      "contact": "",
+      "addr": "Calle union #24 sector la playita san juan, PR. 00915"
+    },
+    "items": [
+      {
+        "description": "MANTENIMIENTO PROFUNDO",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "GARANTIA DE 30 DIAS POR LIQUEO LUEGO DEL MANTENIMIENTO.B",
+    "terms": "PAGADO: CASH",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778782009250_508b7f465e7618",
+    "type": "FAC",
+    "number": "FAC-2026-0299",
+    "date": "2026-05-14",
+    "validUntil": "2026-05-28",
+    "client": {
+      "name": "Keyshline Esquil n(",
+      "contact": "624-5934",
+      "addr": "Villa Esperana, Caguas, PR"
+    },
+    "items": [
+      {
+        "description": "I GFacilitar unidad Midea Xtreme IDU 12k BTU 110/1/60 Inverter Seer 22 R32",
+        "qty": 2,
+        "price": 446
+      },
+      {
+        "description": "Palometas de acero inoxidable",
+        "qty": 2,
+        "price": 60
+      },
+      {
+        "description": "Labor de instalaci n",
+        "qty": 1,
+        "price": 488
+      }
+    ],
+    "notes": "Garant a de 7 a os en el compresor y 5 a os en pieas el ctricas. Sn# 5410F646002AC090210752 / 5410F646002AC090210908 Sn# 5410F646001AC030270011 / 5410F631901AC160250068D",
+    "terms": "J HCliente pago deposito de $1,000 d lares, balance $500 Pagar al recibir",
+    "status": "",
+    "totals": {
+      "sub": 1500,
+      "tax": 0,
+      "grand": 1500
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778864772035_13367e56678fc8",
+    "type": "FAC",
+    "number": "FAC-2026-0300",
+    "date": "2026-05-15",
+    "validUntil": "2026-05-29",
+    "client": {
+      "name": "Angelo Hern nde?",
+      "contact": "648-3171",
+      "addr": "Betania Final Saint Just, Trujillo Alto, P.R. 00976"
+    },
+    "items": [
+      {
+        "description": "Facilitar Palometas de acero inoxidable",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "/Remplao en grabar a de luber motor unidad 36k",
+        "qty": 1,
+        "price": 25
+      },
+      {
+        "description": "Labor general",
+        "qty": 1,
+        "price": 125
+      }
+    ],
+    "notes": "b `Pieas el ctricas no tienen garant a excepto las que est n en garant a vigente de la unidad.D",
+    "terms": "Pagar al recibir",
+    "status": "",
+    "totals": {
+      "sub": 225,
+      "tax": 0,
+      "grand": 225
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778875150517_834b0989592b6",
+    "type": "FAC",
+    "number": "",
+    "date": "2026-05-16",
+    "validUntil": "2026-05-29",
+    "client": {
+      "name": "ELIEZER GONZALEZ / MELANIUE DEL TOROG",
+      "contact": "0",
+      "addr": "AVE LAS CUMBRES COND LA CIUDADELA APT 304A GUYNABO PR 00969"
+    },
+    "items": [
+      {
+        "description": "Z XFACILITAR UNIDAD MSAG-18CFN8CC MIDEA XTREME IDU 18K BTU 220/60 INVERTER SEER 22 R32 WIFI",
+        "qty": 1,
+        "price": 675
+      },
+      {
+        "description": "LABOR / REMOCION / INSTALACION",
+        "qty": 1,
+        "price": 475
+      },
+      {
+        "description": "ZAPATOS DE 3\" PULGADAS PLASTICOS",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "GARANTIA DE 7 ANOS EN EL COMPRESOR Y 5 ANOS EN PIEZAS ELECTRICAS. SN# 5410F633201AC030252330 / SN# 5410F633401AC060210682D",
+    "terms": "Pagado por Tarjeta Y Ath M vil* updatedISO * 2026-05-16T18:12:37.495Z",
+    "status": "PAGADA,",
+    "totals": {
+      "sub": 1150,
+      "tax": 0,
+      "grand": 1150
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1778980953105_456a316f1611c8",
+    "type": "FAC",
+    "number": "FAC-2026-0302",
+    "date": "2026-05-17",
+    "validUntil": "2026-05-31",
+    "client": {
+      "name": "WENDSY MORALES",
+      "contact": "",
+      "addr": "FOREST PLANTATION CANOVANAS"
+    },
+    "items": [
+      {
+        "description": "Mantenimiento preventivo",
+        "qty": 1,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento en pastilla para drenaje",
+        "qty": 1,
+        "price": 5
+      }
+    ],
+    "notes": "Garant a de 30 d as por liqueo luego del mantenimiento.B",
+    "terms": "Pagado por ath m vil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 65,
+      "tax": 0,
+      "grand": 65
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779122354052_00f151fb3c1fc8",
+    "type": "FAC",
+    "number": "FAC-2026-0305",
+    "date": "2026-05-18",
+    "validUntil": "2026-06-01",
+    "client": {
+      "name": "Alexandra RoblesA",
+      "contact": "585-5499",
+      "addr": "Urb. M rame Linda Estates, #78 R o Grande, PR 00745"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 5,
+        "price": 65
+      },
+      {
+        "description": "Tratamiento para drenajes en pastilla",
+        "qty": 5,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagada por Ath m vil* updatedISO * 2026-05-19T00:09:51.943Z",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 325,
+      "tax": 0,
+      "grand": 325
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779209897981_210d526beb7d3",
+    "type": "FAC",
+    "number": "FAC-2026-0306",
+    "date": "2026-05-19",
+    "validUntil": "2026-06-02",
+    "client": {
+      "name": "Jos AmadeoG",
+      "contact": "274-2357",
+      "addr": "Calle Carlos Bertero # 1120 Country Club, San Juan PR 00924"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 2,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastilla para drenaje",
+        "qty": 2,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.D",
+    "terms": "Pagado por Ath m vil",
+    "status": "PAGADAQ",
+    "totals": {
+      "sub": 150,
+      "tax": 0,
+      "grand": 150
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779232618167_25c46427a17688",
+    "type": "FAC",
+    "number": "FAC-2026-0307",
+    "date": "2026-05-19",
+    "validUntil": "2026-06-02",
+    "client": {
+      "name": "ELIEZER GONZALEZC",
+      "contact": "",
+      "addr": "URB. LEVITTOWN CALLE MIREYA OESTE G6 TOA BAJA, PR 00949"
+    },
+    "items": [
+      {
+        "description": "FACILITAR UNIDAD 12K BTU AWGRC-12C2 R32 AIRMAX 22S SEER 220V",
+        "qty": 1,
+        "price": 450
+      },
+      {
+        "description": "REMOCION / INSTALACION UNIDAD 12K BTU",
+        "qty": 1,
+        "price": 300
+      },
+      {
+        "description": "MANTENIMIENTO PREVENTIVO 12K BTU",
+        "qty": 1,
+        "price": 65
+      }
+    ],
+    "notes": "i gGARANTIA DE 7 ANOS EN EL COMPRESOR Y 5 ANOS EN PIEZAS ELECTRICAS. SN# 3K1074W004306 SN# 3K6634W007891D",
+    "terms": "PAGADO POR ATH MOVIL",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 815,
+      "tax": 0,
+      "grand": 815
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779379448565_349e9d1671c618",
+    "type": "FAC",
+    "number": "FAC-2026-0308",
+    "date": "2026-05-21",
+    "validUntil": "2026-06-04",
+    "client": {
+      "name": "Christian Dia",
+      "contact": "949-3563",
+      "addr": "Dorado, PR"
+    },
+    "items": [
+      {
+        "description": "Facilitar unidad",
+        "qty": 1,
+        "price": 1750
+      },
+      {
+        "description": "Labor de instalaci n",
+        "qty": 1,
+        "price": 500
+      },
+      {
+        "description": "Materiales el ctricos",
+        "qty": 1,
+        "price": 125
+      },
+      {
+        "description": "Zapatos de 3 pulgadas",
+        "qty": 1,
+        "price": 25
+      },
+      {
+        "description": "Empotrado de tuber a",
+        "qty": 1,
+        "price": 150
+      }
+    ],
+    "notes": "Garant a de 7 a os en el compresor y 5 a os en pieas el ctricas. Sn# 5410F810101AC200130444 Sn# 5410M255310B2060150748",
+    "terms": "Pagado por Ath M vil",
+    "status": "PAGADA~",
+    "totals": {
+      "sub": 2550,
+      "tax": 0,
+      "grand": 2550
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779483569978_a96f88963b3a3",
+    "type": "FAC",
+    "number": "FAC-2026-0309",
+    "date": "2026-05-22",
+    "validUntil": "2026-06-05",
+    "client": {
+      "name": "Andrea Camacho",
+      "contact": "295-1247",
+      "addr": "Carolina Q"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastilla para drenajes",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Olor Neutraliante",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagado por Ath m vil",
+    "status": "PAGADAj",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779725369399_b7128c0e4976d8",
+    "type": "FAC",
+    "number": "FAC-2026-0311",
+    "date": "2026-05-25",
+    "validUntil": "2026-06-08",
+    "client": {
+      "name": "Fabiola Fuentes4",
+      "contact": "260-1709",
+      "addr": "Ave. Coll y Toste San Juan, PR 00918"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Olor cherry",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Tratamiento en pastilla para drenaje",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagado por tarjeta",
+    "status": "PAGADAP",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779731835503_6514bf574a91e",
+    "type": "FAC",
+    "number": "FAC-2026-0314",
+    "date": "2026-05-25",
+    "validUntil": "2026-06-08",
+    "client": {
+      "name": "Alejandra Casanova5",
+      "contact": "",
+      "addr": "Jardines Metropolitanos 1 San Juan Apt 7i"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastilla para drenajes",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Olor Cherry",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779808904679_129b4d5d29879",
+    "type": "FAC",
+    "number": "FAC-2026-0318",
+    "date": "2026-05-26",
+    "validUntil": "2026-06-09",
+    "client": {
+      "name": "Diamar Aldrey & AsociadosA",
+      "contact": "%",
+      "addr": "Olimpo Plaa oficina 202 R o Piedras P.R. 00925-2701"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 3,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastilla para drenajes",
+        "qty": 3,
+        "price": 0
+      },
+      {
+        "description": "Olor Neutraliante Cherry",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua",
+    "terms": "Pagar al recibir",
+    "status": "",
+    "totals": {
+      "sub": 225,
+      "tax": 0,
+      "grand": 225
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1779983476746_53f712cacf4148",
+    "type": "FAC",
+    "number": "FAC-2026-0320",
+    "date": "2026-05-28",
+    "validUntil": "2026-06-11",
+    "client": {
+      "name": "Diamar Aldrey & Assosiates Q",
+      "contact": "",
+      "addr": "Urbaniacion Encantada&"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 7,
+        "price": 55
+      },
+      {
+        "description": "Tratamiento para drenajes en pastilla",
+        "qty": 7,
+        "price": 5
+      },
+      {
+        "description": "Olor neutraliante Cherry",
+        "qty": 7,
+        "price": 0
+      },
+      {
+        "description": "Diagn stico unidad cocina",
+        "qty": 1,
+        "price": 45
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua. Unidad en el rea de la cocina tiene p rdida de refrigerante no visible se requiere visita para reparaci n y cotiaci n.D",
+    "terms": "Pagar al recibir",
+    "status": "",
+    "totals": {
+      "sub": 465,
+      "tax": 0,
+      "grand": 465
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780086265360_8d711b90f41d3",
+    "type": "FAC",
+    "number": "FAC-2026-0321",
+    "date": "2026-05-29",
+    "validUntil": "2026-06-12",
+    "client": {
+      "name": "Nino Lamoso0",
+      "contact": "677-4866",
+      "addr": "Terra Lugo 23 Cupey Garden, San Juan"
+    },
+    "items": [
+      {
+        "description": "B @Trabajo de construcci n / plomeria patio exterior trasero labor",
+        "qty": 1,
+        "price": 500
+      },
+      {
+        "description": "Tapones 3\" PVC",
+        "qty": 2,
+        "price": 19
+      },
+      {
+        "description": "Mescla lista cemento",
+        "qty": 2,
+        "price": 19
+      },
+      {
+        "description": "Piedra saco",
+        "qty": 1,
+        "price": 19
+      },
+      {
+        "description": "Varilla 3/8",
+        "qty": 1,
+        "price": 19
+      },
+      {
+        "description": "Madera St 1x3x8",
+        "qty": 1,
+        "price": 19
+      },
+      {
+        "description": "Cemento hidr ulico 10 lb",
+        "qty": 1,
+        "price": 19
+      },
+      {
+        "description": "Pickup materiales",
+        "qty": 1,
+        "price": 60
+      },
+      {
+        "description": "Extractor fan bathroom / parrilla",
+        "qty": 1,
+        "price": 19
+      },
+      {
+        "description": "Remplao extractor fan",
+        "qty": 1,
+        "price": 45
+      }
+    ],
+    "notes": "B @A pedido del cliente se taparon ambas tuberias de 3\" sanitarias.Q",
+    "terms": "pagar al recibir",
+    "status": "PENDIENTE",
+    "totals": {
+      "sub": 0,
+      "tax": 0,
+      "grand": 19
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780090358696_5e2ff21a31d2",
+    "type": "COT",
+    "number": "COT-2026-0264",
+    "date": "2026-05-29",
+    "validUntil": "2026-06-12",
+    "client": {
+      "name": "The Hispanic Federation8",
+      "contact": "#",
+      "addr": "Calle La Pa, Suite 201, San Juan, 00907 ("
+    },
+    "items": [
+      {
+        "description": "M KMantenimientos preventivos unidades tipo ducto de 5 ton interior y exterior",
+        "qty": 2,
+        "price": 250
+      },
+      {
+        "description": "Mantenimientos preventivos mini split unit interior y exterior",
+        "qty": 1,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento en pastilla para drenajes",
+        "qty": 3,
+        "price": 5
+      },
+      {
+        "description": "Reemplao de filtros para unidades tipo ducto",
+        "qty": 2,
+        "price": 15
+      },
+      {
+        "description": "Olor Neutraliante HVAC",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "D",
+    "terms": "",
+    "status": "PENDIENTE",
+    "totals": {
+      "sub": 605,
+      "tax": 0,
+      "grand": 605
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780153002466_1fe729b2e2b7e8",
+    "type": "FAC",
+    "number": "FAC-2026-0323",
+    "date": "2026-05-30",
+    "validUntil": "2026-06-13",
+    "client": {
+      "name": "Aida Rodr gue6",
+      "contact": "318-3700",
+      "addr": "Sector Los Soia, Trujillo Alto, PR. 00976"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastillas para drenajes",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Olor Neutraliante Cherry",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagar al recibir",
+    "status": "",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780153296548_9f9689d87ab4e8",
+    "type": "FAC",
+    "number": "FAC-2026-0324",
+    "date": "2026-05-30",
+    "validUntil": "2026-06-13",
+    "client": {
+      "name": "Iv n Monta e5",
+      "contact": "509-4418",
+      "addr": "Villa Margarita, Trujillo Alto, PR. 00976"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos preventivos",
+        "qty": 1,
+        "price": 60
+      },
+      {
+        "description": "Tratamiento para drenajes en pastilla",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Olor neutraliante Cherry",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagado por ath m vilQ",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 60,
+      "tax": 0,
+      "grand": 60
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780165125403_5661e9bdc90d88",
+    "type": "FAC",
+    "number": "FAC-2026-0327",
+    "date": "2026-06-02",
+    "validUntil": "2026-06-13",
+    "client": {
+      "name": "EGLA GABRIELA",
+      "contact": "",
+      "addr": "COND TROPICAL COURET APT 1104 B"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastillas para drenajes",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Olor neutraliante Cherry",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780415197719_87ebd8a26a49d",
+    "type": "FAC",
+    "number": "FAC-2026-0328",
+    "date": "2026-06-02",
+    "validUntil": "2026-06-16",
+    "client": {
+      "name": "Kelvin Reillo",
+      "contact": "",
+      "addr": "Calle Trenton 297 San Juan, PR"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Tratamiento en pastilla para drenajes",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Olor Neutraliante Cherry",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagado por ath movil* updatedISO * 2026-06-04T18:50:23.537Z",
+    "status": "PAGADA~",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780523043741_dc7913d1b765c8",
+    "type": "FAC",
+    "number": "FAC-2026-0329",
+    "date": "2026-06-03",
+    "validUntil": "2026-06-17",
+    "client": {
+      "name": "Alexander Rivera",
+      "contact": "",
+      "addr": "Rio Piedras"
+    },
+    "items": [
+      {
+        "description": "Visita Tecnica",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "m kSe encontro un pin doblado en el conector de la tarjeta display, se reparo y se dejo el equipo funcionando.B",
+    "terms": "Pagado por ath movil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780588447121_4e3b682287b98",
+    "type": "FAC",
+    "number": "FAC-2026-0330",
+    "date": "2026-06-04",
+    "validUntil": "2026-06-18",
+    "client": {
+      "name": "Franlier Latorre",
+      "contact": "",
+      "addr": "Cupey, PR"
+    },
+    "items": [
+      {
+        "description": "Facilitar unidad AWGRC12-C2 12k btu AirMax 22 seer",
+        "qty": 1,
+        "price": 460
+      },
+      {
+        "description": "Palometas de acero regular",
+        "qty": 1,
+        "price": 18
+      },
+      {
+        "description": "Cubre faltas blanco",
+        "qty": 1,
+        "price": 22
+      },
+      {
+        "description": "Labor de instalacion",
+        "qty": 1,
+        "price": 250
+      }
+    ],
+    "notes": "Garantia de 7 a os en compresor y 5 a os en pieas electricas. 1 a o de garantia en labor de instalacion. Sn# 3K1075W005503 Sn# 3K6634W004672* updatedISO * 2026-06-04T17:56:11.904Z",
+    "terms": "Pagado por ath movil",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 750,
+      "tax": 0,
+      "grand": 750
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780670452910_3090a08d8dc088",
+    "type": "FAC",
+    "number": "FAC-2026-0331",
+    "date": "2026-06-05",
+    "validUntil": "2026-06-19",
+    "client": {
+      "name": "Tania Marrero!",
+      "contact": "(787) 391-7796",
+      "addr": "El Vedado A3 Hato Rey"
+    },
+    "items": [
+      {
+        "description": "Mantenimientos profundos",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Olor neutraliante cherry",
+        "qty": 1,
+        "price": 0
+      },
+      {
+        "description": "Tratamiento en pastilla para drenajes",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "Garant a de 30 d as en mantenimientos por liqueo de agua.B",
+    "terms": "Pagado por ath movil* updatedISO * 2026-06-05T14:42:43.429Z",
+    "status": "PAGADAQ",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1780752310046_ff42cdf3425678",
+    "type": "FAC",
+    "number": "FAC-2026-0332",
+    "date": "2026-06-06",
+    "validUntil": "2026-06-20",
+    "client": {
+      "name": "Jos Ovalles0",
+      "contact": "",
+      "addr": "Cond mino Senderos del r o A4 1025"
+    },
+    "items": [
+      {
+        "description": "Visita de diagn stico t cnico",
+        "qty": 1,
+        "price": 75
+      },
+      {
+        "description": "Carga de refrigerante 410A x LB=",
+        "qty": 2,
+        "price": 90
+      },
+      {
+        "description": "Nu-Calgon LS/UV Ult mate System",
+        "qty": 1,
+        "price": 100
+      },
+      {
+        "description": "Aplicaci n de LS/UV System",
+        "qty": 1,
+        "price": 55
+      },
+      {
+        "description": "Labor Remplao protector de voltaje",
+        "qty": 1,
+        "price": 25
+      }
+    ],
+    "notes": "Aplicaci n de LS/UV System cubre carga de refrigerante, pr xima visita para revisi n de fugas futuras con l mpara ultravioleta. No cubre reparaci nes futuras.P",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 435,
+      "tax": 0,
+      "grand": 435
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1781122773278_18d96e10e74d4",
+    "type": "FAC",
+    "number": "FAC-2026-0333",
+    "date": "2026-06-10",
+    "validUntil": "2026-06-24",
+    "client": {
+      "name": "Ada$",
+      "contact": "447-1122",
+      "addr": "Calle Labrador, San Juan"
+    },
+    "items": [
+      {
+        "description": "Facilitar unidad AirMax 12k BTU 220/60 seer 22 R32",
+        "qty": 1,
+        "price": 465
+      },
+      {
+        "description": "Labor de instalaci n",
+        "qty": 1,
+        "price": 275
+      },
+      {
+        "description": "Materiales",
+        "qty": 1,
+        "price": 60
+      }
+    ],
+    "notes": "j hGarant a de 7 a os en el compresor y 5 a os en pieas el ctricas. S# 3K1074W019656 S# 3K6634W007904D",
+    "terms": "Pagar al recibir",
+    "status": "PAGADA",
+    "totals": {
+      "sub": 800,
+      "tax": 0,
+      "grand": 800
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1781206653913_0c9c901e515918",
+    "type": "FAC",
+    "number": "FAC-2026-0334",
+    "date": "2026-06-11",
+    "validUntil": "2026-06-25",
+    "client": {
+      "name": "AMANDA DOVAL!",
+      "contact": "",
+      "addr": "TERRA LUYGO C14 CUPEY"
+    },
+    "items": [
+      {
+        "description": "Materiales electricos para conexiones de receptaculos",
+        "qty": 1,
+        "price": 19
+      },
+      {
+        "description": "Pickup materiales",
+        "qty": 1,
+        "price": 30
+      },
+      {
+        "description": "Labor trabajo electrico 3 circuitos 110v",
+        "qty": 1,
+        "price": 600
+      },
+      {
+        "description": "Instalaci n de tablilla para abanico",
+        "qty": 1,
+        "price": 90
+      }
+    ],
+    "notes": "Q OTodo trabajo electrico tiene garantia de 1 a o dependiendo de su uso adecuado",
+    "terms": "Pagar al recibir",
+    "status": "PENDIENTE",
+    "totals": {
+      "sub": 0,
+      "tax": 0,
+      "grand": 19
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1781288743971_cb81ac344acb1",
+    "type": "COT",
+    "number": "COT-2026-0001",
+    "date": "2026-06-12",
+    "validUntil": "2026-06-26",
+    "client": {
+      "name": "Chris Dia Colon%",
+      "contact": "",
+      "addr": "Ciudad Jardin Caguas, PR"
+    },
+    "items": [
+      {
+        "description": "Facilitar Unidad 18k BTU Midea Xtreme",
+        "qty": 2,
+        "price": 696
+      },
+      {
+        "description": "Facilitar unidad 12k BTU Midea Xtreme",
+        "qty": 1,
+        "price": 467
+      },
+      {
+        "description": "Remocion y desecho de 3 unidades existentes",
+        "qty": 3,
+        "price": 75
+      },
+      {
+        "description": "Labor de Instalacion de 3 equipos Inverter Midea Xtreme",
+        "qty": 3,
+        "price": 300
+      },
+      {
+        "description": "Cubre faltas blancos",
+        "qty": 3,
+        "price": 25
+      },
+      {
+        "description": "galon 5500 crosco",
+        "qty": 1,
+        "price": 45
+      },
+      {
+        "description": "Cemento hidraulico",
+        "qty": 1,
+        "price": 25
+      },
+      {
+        "description": "Zapatos y anclaje",
+        "qty": 3,
+        "price": 45
+      }
+    ],
+    "notes": "Todos los equipos tienen una garantia de 7 a os en compresor y 5 a os en pieas slectricas.K",
+    "terms": "Se requiere deposito de $1850.00 para comenar la instalacion",
+    "status": "PENDIENTEj",
+    "totals": {
+      "sub": 3264,
+      "tax": 0,
+      "grand": 3264
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1781301409216_3232241b4f4c18",
+    "type": "FAC",
+    "number": "FAC-2026-0335",
+    "date": "2026-06-12",
+    "validUntil": "2026-06-26",
+    "client": {
+      "name": "Carlos Morales,",
+      "contact": "",
+      "addr": "Ave Periferal C1-1 Trujillo Alto"
+    },
+    "items": [
+      {
+        "description": "Mantenimiento profundo",
+        "qty": 1,
+        "price": 75
+      }
+    ],
+    "notes": "G E30 dias de garantia si la unidad botara agua luego del mantenimiento.B",
+    "terms": "Cash",
+    "status": "PENDIENTE",
+    "totals": {
+      "sub": 75,
+      "tax": 0,
+      "grand": 75
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1781360081767_12e73d62c4565",
+    "type": "COT",
+    "number": "COT-2026-0265",
+    "date": "2026-06-13",
+    "validUntil": "2026-06-27",
+    "client": {
+      "name": "JIMMY DIAZE",
+      "contact": "",
+      "addr": "URB ENCANTADA PARQUE DEL MONTE MC-43 TRUJILLO ALTOM , P.R"
+    },
+    "items": [
+      {
+        "description": "FACILITAR UNIDAD 18K BTU 22 SEER AIRMAX R32",
+        "qty": 1,
+        "price": 685
+      },
+      {
+        "description": "ZAPATOS DE 3'' Y ANCLAJE",
+        "qty": 1,
+        "price": 45
+      },
+      {
+        "description": "LABOR DE INSTALACION",
+        "qty": 1,
+        "price": 350
+      }
+    ],
+    "notes": "",
+    "terms": "",
+    "status": "PENDIENTE",
+    "totals": {
+      "sub": 1080,
+      "tax": 0,
+      "grand": 1080
+    },
+    "lastPdfUrl": ""
+  },
+  {
+    "legacyId": "doc_1773359108273_4a0dd514e4eae8",
+    "type": "COT",
+    "number": "COT-2026-0002",
+    "date": "2026-03-12",
+    "validUntil": "2026-03-26",
+    "client": {
+      "name": "Wilmary Aquino,",
+      "contact": "(939) 273-5400",
+      "addr": "Cll Llanuras Bayam n, 00961"
+    },
+    "items": [
+      {
+        "description": "qty",
+        "qty": 1,
+        "price": 0
+      }
+    ],
+    "notes": "B",
+    "terms": "",
+    "status": "PENDIENTE",
+    "totals": {
+      "sub": 0,
+      "tax": 0,
+      "grand": 0
+    },
+    "lastPdfUrl": ""
+  }
+]

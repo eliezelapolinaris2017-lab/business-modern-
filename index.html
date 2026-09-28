@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta id="desktopViewport" name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Nexus Desktop" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest-desktop.webmanifest?v=93" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/nexus-desktop-180.png?v=93" />
+  <script>
+    (()=>{
+      const desktop=new URLSearchParams(location.search).get('desktop')==='1';
+      if(!desktop)return;
+      document.documentElement.classList.add('nexus-desktop-pwa');
+      document.getElementById('desktopViewport')?.setAttribute('content','width=1200,initial-scale=0.78,minimum-scale=0.5,maximum-scale=2,user-scalable=yes');
+    })();
+  </script>
+  <title>Nexus Business PR SaaS</title>
+  <link id="faviconLink" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ctext x='32' y='41' text-anchor='middle' font-size='30' fill='white' font-family='Arial'%3EN%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css?v=96" />
+  <link rel="stylesheet" href="modern-2026.css?v=2" />
+
+  <style id="criticalModuleLayout">
+    /* V12 CRITICAL: un módulo visible a la vez. No más módulos apilados. */
+    #appShell .main > section.view{display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important;margin:0!important;padding:0!important;border:0!important;}
+    #appShell .main > section.view.active{display:block!important;visibility:visible!important;height:auto!important;overflow:visible!important;margin-bottom:18px!important;padding:0!important;border:0!important;}
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-card auth-card-premium">
+      <div class="auth-logo" id="authLogo"><img src="assets/logo.png" alt="Nexus Business PR"></div>
+      <p class="auth-tagline">Gestiona tu negocio de forma simple y eficiente</p>
+      <p class="auth-mobile-link"><a href="mobile.html">Abrir versión móvil iPhone/iPad</a></p>
+
+      <div class="auth-switch"><button id="showLogin" class="active" type="button">Entrar</button><button id="showRegister" type="button">Crear cuenta</button></div>
+      <form id="authForm" class="auth-form-premium">
+        <div class="auth-field register-only hidden"><span>⌂</span><input id="authBusiness" placeholder="Nombre del negocio" /></div>
+        <div class="auth-field register-only hidden"><span>⚒</span><select id="authIndustry"></select></div>
+        <div class="auth-field"><span>✉</span><input id="authEmail" type="email" placeholder="Email" required /></div>
+        <div class="auth-field"><span>▣</span><input id="authPassword" type="password" minlength="6" placeholder="Contraseña" required /></div>
+        <button class="primary auth-main-btn" id="authSubmit" type="submit"><span>👤</span> Entrar</button>
+      </form>
+      <small id="authMsg"></small>
+    </div>
+  </section>
+
+  <div id="appShell" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-img" id="sideLogo">N</div>
+        <div><strong id="sideName">Nexus</strong><span id="sideIndustry">Servicios</span></div>
+      </div>
+      <nav id="sideNav"></nav>
+      <div class="side-plan">
+        <span>Plan</span><strong id="sidePlan">Free</strong>
+        <small id="sideQuota">0 registros</small>
+        <button id="sideUpgrade" type="button">Mejorar</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="mobileMenu" class="icon-btn" type="button">☰</button>
+        <div><h1 id="pageTitle">Centro de Control</h1><p id="pageSubtitle">Resumen operativo</p></div>
+        <div class="top-actions"><input id="globalSearch" class="global-search" type="search" placeholder="Buscar..."><span id="syncStatus">Conectando...</span><button id="logoutBtn" type="button">Salir</button></div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="hero card">
+          <div class="hero-logo" id="dashboardLogo">N</div>
+          <div><span id="planBadge" class="pill">Free</span><h2 id="dashboardTitle">Dashboard</h2><p id="dashboardText"></p></div>
+        </div>
+        <div class="coach-card card">
+          <div class="coach-copy">
+            <span class="pill">Nexus Daily</span>
+            <h2 id="coachGreeting">Buenos días.</h2>
+            <p id="coachSummary">Tu operación diaria en un solo lugar.</p>
+          </div>
+          <div id="businessHealth" class="health-badge">🟢 Excelente</div>
+        </div>
+        <div id="dailyStrip" class="daily-strip"></div>
+        <div class="grid two">
+          <div class="card"><div class="section-head"><h3>Mi Día</h3><span id="dailyDate" class="limit-chip"></span></div><div id="myDayList" class="daily-list"></div></div>
+          <div class="card"><div class="section-head"><h3>Objetivo diario</h3><span id="goalStatus" class="limit-chip"></span></div><div id="dailyGoalBox" class="goal-box"></div></div>
+        </div>
+        <div class="grid two"><div class="card"><h3>Prioridades</h3><div id="priorityList" class="list"></div></div><div class="card"><h3>Acciones rápidas</h3><div id="quickActions" class="quick-actions smart-actions"></div></div></div>
+        <div class="grid two"><div class="card"><h3>Próximos eventos</h3><div id="agendaList" class="list"></div></div><div class="card"><h3>Búsqueda global</h3><div id="globalResults" class="list"></div></div></div>
+        <div id="kpis" class="kpis compact-kpis"></div>
+        <div class="control-strip" id="controlStrip"></div>
+        <div id="financialHub" class="card financial-hub"></div>
+        <div class="grid two"><div class="card"><h3>Actividad reciente</h3><div id="recentList" class="list"></div></div><div class="card"><h3>Experiencia del plan</h3><div id="planExperience"></div></div></div>
+        <div id="alertList" class="hidden"></div>
+      </section>
+
+      <section id="clients" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="clientsTitle">Clientes</h2><span id="clientsLimit" class="limit-chip"></span></div><form id="clientForm" class="form-grid"></form>
+        <div class="contact-import-card">
+          <div class="section-head"><div><h3>Importar contactos</h3><p class="muted">CSV, Excel, JSON, vCard, Google Contacts, Outlook o datos copiados desde Excel.</p></div><button id="undoClientImport" type="button" class="ghost">Deshacer última importación</button></div>
+          <div class="contact-import-actions"><input id="clientImportFile" type="file" accept=".csv,.tsv,.xlsx,.xls,.json,.vcf,text/csv,application/json"><button id="readClientImport" type="button">Analizar archivo</button></div>
+          <textarea id="clientImportPaste" rows="5" placeholder="También puedes pegar aquí filas copiadas desde Excel o CSV..."></textarea>
+          <div class="contact-import-actions"><select id="clientImportMode"><option value="skip">Omitir duplicados</option><option value="update">Actualizar duplicados</option><option value="create">Crear todos</option></select><button id="analyzeClientPaste" type="button">Analizar texto</button><button id="commitClientImport" class="primary" type="button" disabled>Importar contactos</button></div>
+          <div id="clientImportSummary" class="muted"></div><div id="clientImportPreview"></div>
+        </div><div id="clientsTable"></div></div></section>
+
+      <section id="directory" class="view" hidden aria-hidden="true">
+        <div class="card directory-module">
+          <div class="section-head"><div><h2>📍 Directorio de Clientes</h2><p class="muted">Encuentra direcciones y abre la ruta sin buscar en conversaciones.</p></div><span id="directoryCount" class="limit-chip"></span></div>
+          <div class="directory-toolbar">
+            <input id="directorySearch" type="search" placeholder="Buscar por cliente, calle, urbanización, pueblo o número de casa..." autocomplete="off">
+            <label class="directory-fav-filter"><input id="directoryFavoritesOnly" type="checkbox"> Solo favoritos</label>
+            <button id="directoryClear" type="button" class="ghost">Limpiar</button>
+          </div>
+          <div id="directoryList" class="directory-list"></div>
+        </div>
+      </section>
+      <section id="contracts" class="view" hidden aria-hidden="true">
+        <div class="card">
+          <div class="section-head">
+            <div><h2>Contratos de servicios</h2><p class="muted">Crea, guarda y reutiliza contratos vinculados a tus clientes.</p></div>
+            <span id="contractsCount" class="limit-chip"></span>
+          </div>
+          <form id="contractForm" class="form-grid"></form>
+          <div id="contractsTable"></div>
+        </div>
+      </section>
+      <section id="services" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="servicesTitle">Servicios</h2><span id="servicesLimit" class="limit-chip"></span></div><form id="serviceForm" class="form-grid"></form><div id="servicesTable"></div></div></section>
+      <section id="quotes" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><div><h2 id="quotesTitle">Cotizaciones Pro</h2><p class="muted">Cotización → aprobación → servicio → factura.</p></div><span id="quotesLimit" class="limit-chip"></span></div><form id="quoteForm" class="form-grid"></form><div id="quotesTable"></div></div></section>
+      <section id="followups" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><div><h2 id="followupsTitle">Seguimiento</h2><p class="muted">Mantenimientos cada 6 meses, cotizaciones, instalaciones y recordatorios.</p></div><span id="followupsLimit" class="limit-chip"></span></div><form id="followupForm" class="form-grid"></form><div id="followupsTable"></div></div></section>
+      <section id="team" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="teamTitle">Equipo</h2><span id="teamLimit" class="limit-chip"></span></div><form id="teamForm" class="form-grid"></form><div id="teamTable"></div></div></section>
+      <section id="assets" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="assetsTitle">Activos</h2><span id="assetsLimit" class="limit-chip"></span></div><form id="assetForm" class="form-grid"></form><div id="assetsTable"></div></div></section>
+      <section id="payroll" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="payrollTitle">Nómina / Pagos equipo</h2><span id="payrollLimit" class="limit-chip"></span></div><form id="payrollForm" class="form-grid"></form><div id="payrollTable"></div><div id="retentionsTable" class="retention-center"></div></div></section>
+      <section id="suppliers" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="suppliersTitle">Suplidores</h2><span id="suppliersLimit" class="limit-chip"></span></div><form id="supplierForm" class="form-grid"></form><div id="suppliersTable"></div></div></section>
+      <section id="supplierPayments" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="supplierPaymentsTitle">Pagos a suplidores</h2><span id="supplierPaymentsLimit" class="limit-chip"></span></div><form id="supplierPaymentForm" class="form-grid"></form><div id="supplierPaymentsTable"></div></div></section>
+      <section id="purchases" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Compras</h2><span id="purchasesLimit" class="limit-chip"></span></div><form id="purchaseForm" class="form-grid"></form><div id="purchasesTable"></div></div></section>
+      <section id="billing" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Facturación</h2><span id="invoicesLimit" class="limit-chip"></span></div><div class="toolbar"><button id="invoiceFromService" type="button">Facturar próximo servicio sin factura</button></div><div id="invoiceTable"></div></div></section>
+      <section id="payments" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Cobros</h2><span id="paymentsLimit" class="limit-chip"></span></div><form id="paymentForm" class="form-grid"></form><div id="paymentsTable"></div></div></section>
+      <section id="cashflow" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Flujo de caja</h2><span id="cashflowLimit" class="limit-chip"></span></div><form id="cashForm" class="form-grid"></form><div id="cashTable"></div></div></section>
+      <section id="reports" class="view" hidden aria-hidden="true">
+        <div class="card report-center-card report-scroll-only">
+          <div class="section-head clean-head">
+            <div>
+              <h2>Report Center</h2>
+            </div>
+          </div>
+
+          <div class="report-center-tools">
+            <input id="reportSearch" type="search" placeholder="Buscar reporte..." autocomplete="off">
+            <input id="reportFrom" type="date" title="Desde">
+            <input id="reportTo" type="date" title="Hasta">
+          </div>
+
+          <div class="report-scroll-box" id="reportCenterList" role="listbox" aria-label="Reportes disponibles">
+            <button class="report-option selected" type="button" data-report-type="executive" data-report-name="ejecutivo dashboard executive general clientes ventas">Ejecutivo</button>
+            <button class="report-option" type="button" data-report-type="services" data-report-name="servicios services trabajos jobs clientes activos montos">Servicios</button>
+            <button class="report-option" type="button" data-report-type="quotes" data-report-name="cotizaciones quotes estimates propuestas ventas proyectadas aprobadas vencidas">Cotizaciones</button>
+            <button class="report-option" type="button" data-report-type="followups" data-report-name="seguimiento followups mantenimientos cotizaciones instalaciones recordatorios vencidos proximos">Seguimiento</button>
+            <button class="report-option" type="button" data-report-type="assetsClient" data-report-name="activos assets cliente customer">Activos por Cliente</button>
+            <button class="report-option" type="button" data-report-type="assetsStatus" data-report-name="activos assets estado status">Activos por Estado</button>
+            <button class="report-option" type="button" data-report-type="invoices" data-report-name="facturacion facturas invoices pagos balance estado">Facturación</button>
+            <button class="report-option" type="button" data-report-type="payments" data-report-name="cobros payments pagos recibidos historial">Cobros</button>
+            <button class="report-option" type="button" data-report-type="finance" data-report-name="flujo caja cash flow financiero ingresos gastos neto">Flujo de Caja</button>
+            <button class="report-option" type="button" data-report-type="receivable" data-report-name="cuentas cobrar receivable vencidas overdue pendientes">Cuentas por Cobrar</button>
+            <button class="report-option" type="button" data-report-type="payroll" data-report-name="nomina payroll empleados retenciones descuentos neto">Nómina</button>
+            <button class="report-option" type="button" data-report-type="retentions" data-report-name="retenciones payroll hacienda asume sinot gobierno empleado pendientes pagadas">Retenciones</button>
+            <button class="report-option" type="button" data-report-type="purchases" data-report-name="compras purchases cuentas pagar cxp suppliers">Compras / CxP</button>
+            <button class="report-option" type="button" data-report-type="suppliers" data-report-name="suplidores vendors suppliers proveedores balances">Suplidores</button>
+            <button class="report-option" type="button" data-report-type="ops" data-report-name="operacional operaciones productivity empleados compras cuentas pagar">Operacional</button>
+          </div>
+
+          <div class="report-selected-actions">
+            <button id="reportViewBtn" type="button">Ver</button>
+            <button id="reportPdfBtn" type="button">PDF</button>
+            <button id="reportExportBtn" type="button">Exportar</button>
+          </div>
+
+          <div id="reportPreview" class="paper"></div>
+          <div class="report-actions report-preview-actions"><button id="printPreview" type="button">Imprimir</button><button id="downloadPreview" type="button">Descargar PDF</button></div>
+        </div>
+      </section>
+      <section id="plans" class="view" hidden aria-hidden="true"><div class="card"><h2>Planes</h2><div id="plansGrid" class="plans"></div></div></section>
+      <section id="settings" class="view" hidden aria-hidden="true"><div class="card"><h2>Configuración</h2><form id="settingsForm" class="form-grid"></form><button id="saveSettings" class="primary" type="button">Guardar</button></div></section>
+    </main>
+
+    <section id="welcomeCenter" class="welcome-overlay hidden" aria-hidden="true">
+      <div class="welcome-card">
+        <div class="welcome-head">
+          <div>
+            <span class="pill">Nexus 1.0</span>
+            <h2>Bienvenido a Nexus</h2>
+            <p>Configura tu operación inicial.</p>
+          </div>
+          <button id="welcomeClose" class="icon-btn" type="button">×</button>
+        </div>
+        <div class="welcome-progress"><i id="welcomeProgressBar"></i></div>
+        <div id="welcomeSteps" class="welcome-steps"></div>
+        <div class="welcome-actions">
+          <button id="welcomeSettings" type="button">Configurar</button>
+          <button id="welcomeLoadDemo" class="primary" type="button">Cargar demo</button>
+          <button id="welcomeFinish" class="primary" type="button">Comenzar</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script type="module" src="payment-links.js?v=51"></script>
+  <script type="module" src="app.js?v=99"></script>
+  <script src="modern-2026.js?v=1" defer></script>
+</body>
+</html>

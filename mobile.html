@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Nexus Mobile" />
+  <meta name="format-detection" content="telephone=yes" />
+  <meta name="theme-color" content="#f3f6fb" />
+  <title>Nexus Mobile · Facturación y Seguimiento</title>
+  <link rel="manifest" href="manifest.webmanifest?v=63" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <link rel="stylesheet" href="mobile.css?v=63" />
+</head>
+<body>
+  <section id="mobileAuth" class="mobile-auth">
+    <div class="auth-panel">
+      <div class="app-mark">N</div>
+      <h1>Nexus Mobile</h1>
+      <p>Facturación, clientes y seguimientos sincronizados.</p>
+      <form id="mobileAuthForm">
+        <input id="mobileEmail" type="email" placeholder="Email" autocomplete="email" required />
+        <input id="mobilePassword" type="password" placeholder="Contraseña" autocomplete="current-password" minlength="6" required />
+        <button class="primary" type="submit">Entrar</button>
+      </form>
+      <small id="mobileAuthMsg"></small>
+    </div>
+  </section>
+
+  <main id="mobileApp" class="mobile-app hidden">
+    <header class="mobile-top">
+      <div>
+        <span id="mobileSync" class="sync-pill">Sincronizando…</span>
+        <h1 id="mobileBusiness">Nexus Business</h1>
+        <p>Nueva factura móvil</p>
+      </div>
+      <button id="mobileLogout" type="button">Salir</button>
+    </header>
+
+    <section id="mDashboard" class="mobile-view active">
+      <div class="mobile-hero">
+        <span>Dashboard de facturación</span>
+        <h2 id="mMonthNet">$0.00</h2>
+        <p id="mMonthLabel">Cobrado del mes</p>
+      </div>
+      <div id="mBillingKpis" class="metric-grid"></div>
+      <div class="mobile-card slim-card">
+        <div class="section-row"><h3>Tipos de factura</h3><span class="muted">mes actual</span></div>
+        <div id="mTypeKpis" class="type-kpis"></div>
+      </div>
+      <div class="mobile-card">
+        <div class="section-row"><h3>Acciones rápidas</h3></div>
+        <div class="quick-grid">
+          <button data-tab="mInvoice" type="button">Nueva factura</button>
+          <button data-tab="mFollowups" type="button">Seguimientos</button>
+          <button data-tab="mClients" type="button">Clientes</button>
+          <button data-tab="mHistory" type="button">Historial</button>
+        </div>
+      </div>
+      <div class="mobile-card">
+        <div class="section-row"><h3>Seguimientos críticos</h3><button data-tab="mFollowups" type="button">Ver</button></div>
+        <div id="mCriticalFollowups" class="mobile-list"></div>
+      </div>
+    </section>
+
+    <section id="mInvoice" class="mobile-view">
+      <div class="step-bar">
+        <span class="active">1 Información</span><span>2 Líneas</span><span>3 Resumen</span><span>4 Guardar</span>
+      </div>
+
+      <form id="mInvoiceForm" class="mobile-form invoice-pro-form">
+        <div class="mobile-card">
+          <div class="section-row"><h3>Información general</h3><span class="muted">misma data</span></div>
+          <div class="two-col">
+            <label>Cliente *<select id="mInvClient" required></select></label>
+            <label>Número de documento<input id="mInvNumber" placeholder="Se generará automáticamente" /></label>
+          </div>
+          <div class="two-col">
+            <label>Tipo de factura *<select id="mInvType"><option>Servicio</option><option>Mantenimiento</option><option>Instalación</option><option>Diagnóstico</option><option>Cotización</option><option>Reparación</option><option>Otro</option></select></label>
+            <label>Método de pago<select id="mInvPaymentMethod"><option value="">Seleccionar método</option><option>ATH Móvil</option><option>Tarjeta</option><option>Efectivo</option><option>Cheque</option><option>Transferencia</option><option>Stripe</option><option>PayPal</option></select></label>
+          </div>
+          <div class="two-col">
+            <label>Fecha *<input id="mInvDate" type="date" required /></label>
+            <label>Vence *<input id="mInvDue" type="date" required /></label>
+          </div>
+          <label>Estado *</label>
+          <div class="status-toggle" role="group" aria-label="Estado de la factura">
+            <button id="mStatusPending" class="active" data-invoice-status="Pendiente" type="button">Pendiente</button>
+            <button id="mStatusPaid" data-invoice-status="Pagada" type="button">Pagada</button>
+          </div>
+          <input id="mInvStatus" type="hidden" value="Pendiente" />
+          <label>Notas<textarea id="mInvNotes" rows="3" maxlength="300" placeholder="Notas internas o para el cliente"></textarea></label>
+        </div>
+
+        <div class="mobile-card">
+          <div class="section-row"><h3>Líneas de factura</h3><button id="mAddLineTop" type="button">+ Línea</button></div>
+          <div id="mInvoiceLines" class="invoice-lines"></div>
+          <button id="mAddLine" class="ghost-btn" type="button">+ Añadir línea</button>
+        </div>
+
+        <div class="mobile-card summary-card">
+          <div>
+            <h3>Resumen</h3>
+            <div class="summary-row"><span>Subtotal</span><b id="mInvSubtotal">$0.00</b></div>
+            <div class="summary-row"><span>Descuento</span><b id="mInvDiscountTotal">$0.00</b></div>
+            <div class="summary-row"><span>IVU</span><b id="mInvTax">$0.00</b></div>
+            <div class="summary-row total"><span>Total</span><b id="mInvTotal">$0.00</b></div>
+          </div>
+          <div class="summary-side">
+            <span>Estado del pago</span>
+            <strong id="mInvStatusText">Pendiente</strong>
+            <small id="mInvBalanceText">Balance: $0.00</small>
+          </div>
+        </div>
+
+        <div class="action-strip">
+          <button id="mSaveDraft" type="button">Guardar borrador</button>
+          <button id="mPreviewInvoice" type="button">Vista previa</button>
+          <button id="mViewLastDoc" type="button">Ver documento</button>
+        </div>
+        <button class="primary big-save" type="submit">Guardar factura</button>
+      </form>
+
+      <div class="mobile-card">
+        <div class="section-row"><h3>Facturas recientes</h3><button id="mRefreshInvoices" type="button">Sync</button></div>
+        <div id="mInvoiceList" class="mobile-list"></div>
+      </div>
+    </section>
+
+    <section id="mFollowups" class="mobile-view">
+      <div class="mobile-card sticky-card">
+        <div class="section-row"><h3>Área Seguimientos</h3><span class="muted">6 meses estándar</span></div>
+        <form id="mFollowupForm" class="mobile-form compact">
+          <label>Cliente<select id="mFollowClient" required></select></label>
+          <label>Tipo<select id="mFollowType"><option>Mantenimiento</option><option>Cotización</option><option>Instalación</option><option>Servicio</option><option>Garantía</option><option>Otro</option></select></label>
+          <label>Asunto<input id="mFollowTitle" placeholder="Mantenimiento preventivo 6 meses" required /></label>
+          <div class="two-col">
+            <label>Fecha<input id="mFollowDue" type="date" required /></label>
+            <label>Meses<input id="mFollowInterval" type="number" min="1" value="6" /></label>
+          </div>
+          <label>Prioridad<select id="mFollowPriority"><option>Normal</option><option>Alta</option><option>Urgente</option></select></label>
+          <button class="primary" type="submit">Guardar seguimiento</button>
+        </form>
+      </div>
+      <div class="filter-bar">
+        <button data-follow-filter="all" class="active" type="button">Todos</button>
+        <button data-follow-filter="due" type="button">Vencidos</button>
+        <button data-follow-filter="next" type="button">Próximos</button>
+        <button data-follow-filter="maint" type="button">Mantenimientos</button>
+      </div>
+      <div id="mFollowupList" class="mobile-list"></div>
+    </section>
+
+    <section id="mClients" class="mobile-view">
+      <div class="mobile-card sticky-card">
+        <div class="section-row"><h3>Añadir cliente</h3><span class="muted">sync desktop</span></div>
+        <form id="mClientForm" class="mobile-form compact client-mobile-form">
+          <label>Nombre del cliente *<input id="mClientName" autocomplete="name" placeholder="Nombre o compañía" required /></label>
+          <div class="two-col">
+            <label>Teléfono / WhatsApp<input id="mClientPhone" inputmode="tel" autocomplete="tel" placeholder="787-000-0000" /></label>
+            <label>Email<input id="mClientEmail" type="email" autocomplete="email" placeholder="cliente@email.com" /></label>
+          </div>
+          <div class="two-col">
+            <label>Pueblo<input id="mClientCity" autocomplete="address-level2" placeholder="San Juan" /></label>
+            <label>Etiqueta<select id="mClientTag"><option value="">Sin etiqueta</option><option>VIP</option><option>Corporativo</option><option>Residencial</option><option>Garantía</option><option>Moroso</option><option>Mantenimiento</option></select></label>
+          </div>
+          <label>Dirección<textarea id="mClientAddress" rows="2" autocomplete="street-address" placeholder="Dirección física del servicio"></textarea></label>
+          <label>Notas<textarea id="mClientNotes" rows="2" placeholder="Notas administrativas, equipos, acceso, contacto alterno…"></textarea></label>
+          <div class="action-strip client-actions">
+            <button id="mClearClient" type="button">Limpiar</button>
+            <button class="primary" type="submit">Guardar cliente</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="mobile-card">
+        <div class="section-row"><h3>Clientes</h3><span id="mClientCount" class="muted"></span></div>
+        <input id="mClientSearch" class="search" type="search" placeholder="Buscar cliente, teléfono o email" />
+        <div id="mClientList" class="mobile-list"></div>
+      </div>
+    </section>
+
+    <section id="mHistory" class="mobile-view">
+      <div class="mobile-card">
+        <div class="section-row"><h3>Historial compartido</h3><span class="muted">cliente + factura + seguimiento</span></div>
+        <input id="mHistorySearch" class="search" type="search" placeholder="Buscar por cliente o número" />
+        <div id="mHistoryList" class="timeline"></div>
+      </div>
+    </section>
+
+    <section id="mSync" class="mobile-view">
+      <div class="mobile-card">
+        <h3>Sync & Auto actualización</h3>
+        <p>Esta versión usa la misma cuenta Firebase del panel principal. Cualquier cambio en iPhone, iPad o desktop se actualiza en tiempo real.</p>
+        <div id="mInstallBox" class="install-box"></div>
+        <div id="mSyncDetails" class="sync-details"></div>
+        <button id="mInstallBtn" type="button">Instalar / añadir a inicio</button>
+        <button id="mForceReload" class="primary" type="button">Buscar actualización</button>
+      </div>
+    </section>
+
+    <div id="mDocModal" class="doc-modal hidden" role="dialog" aria-modal="true">
+      <div class="doc-shell">
+        <div class="doc-actions">
+          <button id="mCloseDoc" type="button">Cerrar</button>
+          <button id="mShareDoc" type="button">Compartir</button>
+          <button id="mPrintDoc" type="button">Imprimir/PDF</button>
+        </div>
+        <div id="mDocPreview" class="doc-preview"></div>
+      </div>
+    </div>
+
+    <nav class="mobile-tabs" aria-label="Navegación móvil">
+      <button class="active" data-tab="mDashboard" type="button">Inicio</button>
+      <button data-tab="mInvoice" type="button">Facturar</button>
+      <button data-tab="mFollowups" type="button">Seguimiento</button>
+      <button data-tab="mClients" type="button">Clientes</button>
+      <button data-tab="mHistory" type="button">Historial</button>
+      <button data-tab="mSync" type="button">Sync</button>
+    </nav>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="mobile.js?v=64"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=64').catch(()=>{}));
+    }
+  </script>
+</body>
+</html>

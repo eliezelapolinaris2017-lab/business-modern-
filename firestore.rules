@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function owner(userId) { return signed() && request.auth.uid == userId; }
+    function admin() { return signed() && request.auth.token.email == "nexustoolspr@gmail.com"; }
+    function protectedPlanKeys() { return ['plan','planStatus','stripeCustomerId','stripeSubscriptionId','planUpdatedAt','planExpiresAt','lastPaymentMethod','lastPaymentAmount','lastPaymentDate']; }
+    function pendingRequestKeys() { return ['pendingPlan','pendingPlanName','pendingPaymentUrl','pendingPlanStatus','pendingPlanRequestedAt']; }
+    function normalCollections() { return ['clients','services','quotes','followups','contracts','team','assets','suppliers','supplierPayments','payroll','payrollRetentions','purchases','invoices','payments','cashflow']; }
+
+    match /users/{userId} {
+      allow create: if owner(userId);
+      allow read: if owner(userId) || admin();
+      allow update: if admin()
+        || (owner(userId)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedPlanKeys())
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(pendingRequestKeys())
+            || (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(pendingRequestKeys())
+              && request.resource.data.pendingPlanStatus == 'pending'
+            )
+          )
+        );
+      allow delete: if admin();
+
+      match /planRequests/{requestId} {
+        allow create: if owner(userId)
+          && request.resource.data.status == 'pending'
+          && request.resource.data.uid == userId;
+        allow read: if owner(userId) || admin();
+        allow update, delete: if admin();
+      }
+
+      match /{collectionId}/{documentId} {
+        allow read, write: if (owner(userId) || admin()) && collectionId in normalCollections();
+      }
+    }
+
+    match /clientPortals/{portalId} {
+      allow read: if true;
+      allow create: if signed() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if signed() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /{path=**}/planRequests/{requestId} {
+      allow read: if admin();
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

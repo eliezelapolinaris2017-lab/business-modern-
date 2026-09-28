@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nexus Admin · Suscripciones</title>
+  <link rel="stylesheet" href="styles.css?v=19" />
+</head>
+<body>
+  <section class="auth-screen" id="adminLogin">
+    <div class="auth-card">
+      <div class="auth-mark">A</div>
+      <h1>Nexus Admin</h1>
+      
+      <form id="adminForm">
+        <input id="adminEmail" type="email" placeholder="Email administrador" required />
+        <input id="adminPassword" type="password" minlength="6" placeholder="Contraseña" required />
+        <button class="primary" type="submit">Entrar</button>
+      </form>
+      <small id="adminMsg"></small>
+    </div>
+  </section>
+
+  <main class="main hidden admin-shell" id="adminPanel">
+    <header class="topbar">
+      <div>
+        <h1>Suscripciones</h1>
+        
+      </div>
+      <div class="top-actions"><span id="adminStatus">Conectando...</span><button id="adminLogout" type="button">Salir</button></div>
+    </header>
+
+    <section class="kpis" id="adminKpis"></section>
+
+    <section class="view active">
+      <div class="card">
+        <div class="section-head">
+          <div><h2>Solicitudes pendientes</h2></div>
+          <button id="refreshRequests" type="button">Actualizar</button>
+        </div>
+        <div id="requestList" class="list"><p class="muted">Sin cargar.</p></div>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <div><h2>Suscriptores</h2></div>
+          <div class="toolbar">
+            <input id="subscriberSearch" class="admin-search" type="search" placeholder="Buscar cliente o email..." />
+            <button id="refreshSubscribers" type="button">Actualizar</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Email</th>
+                <th>Plan</th>
+                <th>Estado</th>
+                <th>Vence</th>
+                <th>Último pago</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="subscriberRows"><tr><td colspan="7" class="muted">Sin cargar.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="admin.js?v=19"></script>
+</body>
+</html>
