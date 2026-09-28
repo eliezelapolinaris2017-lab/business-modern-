@@ -1153,6 +1153,50 @@ function forms(){const i=industry();
   const testCalendarBtn=$('testCalendarBtn'); if(testCalendarBtn) testCalendarBtn.onclick=()=>{const provider=$('set_calendarProvider')?.value||'confirmafy';const url=provider==='google'?$('set_googleCalendarUrl')?.value:$('set_confirmafyCalendarUrl')?.value;if(!String(url||'').trim()){alert('Escribe el enlace del calendario seleccionado.');return;}window.open(String(url).trim(),'_blank','noopener');};
 }
 
+function renderModernHome(){
+  const now=new Date();
+  const hour=now.getHours();
+  const greeting=hour<12?'Buenos días':hour<18?'Buenas tardes':'Buenas noches';
+  const p=profile();
+  const q=quoteSummary();
+  const receivable=state.invoices.reduce((sum,inv)=>sum+invoiceBalance(inv),0);
+  const servicesToday=state.services.filter(s=>String(s.date||'')===today()).length;
+  const clientCount=state.clients.length;
+
+  const g=$('modernHomeGreeting');
+  if(g) g.textContent=`${greeting}, ${p.businessName||'bienvenido'}`;
+  const sub=$('modernHomeSubtitle');
+  if(sub) sub.textContent='Tu negocio, organizado en un solo lugar.';
+  const day=$('modernHomeDay');
+  if(day) day.textContent=now.toLocaleDateString('es-PR',{weekday:'long'}).replace(/^./,c=>c.toUpperCase());
+  const date=$('modernHomeDate');
+  if(date) date.textContent=now.toLocaleDateString('es-PR',{day:'numeric',month:'long',year:'numeric'});
+
+  if($('modernStatClients')) $('modernStatClients').textContent=clientCount;
+  if($('modernStatServices')) $('modernStatServices').textContent=servicesToday;
+  if($('modernStatQuotes')) $('modernStatQuotes').textContent=q.open;
+  if($('modernStatReceivable')) $('modernStatReceivable').textContent=money(receivable);
+
+  const pending=[];
+  const overdue=state.invoices.filter(inv=>invoiceBalance(inv)>0 && invoiceStatus(inv)==='Vencida');
+  if(overdue.length) pending.push({icon:'!',title:`${overdue.length} factura${overdue.length===1?'':'s'} vencida${overdue.length===1?'':'s'}`,text:money(overdue.reduce((sum,inv)=>sum+invoiceBalance(inv),0)),view:'billing'});
+  if(q.approved) pending.push({icon:'✓',title:`${q.approved} cotización${q.approved===1?'':'es'} aprobada${q.approved===1?'':'s'}`,text:'Lista para convertir',view:'quotes'});
+  if(servicesToday) pending.push({icon:'•',title:`${servicesToday} servicio${servicesToday===1?'':'s'} para hoy`,text:'Ver agenda de trabajo',view:'services'});
+  const follow=(state.followups||[]).filter(x=>!['Completado','Cancelado'].includes(followupStatus(x)) && String(x.dueDate||'')<=plusDays(3));
+  if(follow.length) pending.push({icon:'↻',title:`${follow.length} seguimiento${follow.length===1?'':'s'} próximo${follow.length===1?'':'s'}`,text:'Revisar clientes',view:'followups'});
+
+  const box=$('modernHomePending');
+  if(box){
+    box.innerHTML=pending.length?pending.slice(0,4).map(x=>`<button type="button" class="school-pending-item" data-modern-home-view="${esc(x.view)}"><span class="school-pending-icon">${esc(x.icon)}</span><span><b>${esc(x.title)}</b><small>${esc(x.text)}</small></span><i>›</i></button>`).join(''):'<div class="school-empty"><span>✓</span><b>Todo al día</b><small>No hay nada urgente que atender ahora.</small></div>';
+  }
+
+  document.querySelectorAll('[data-modern-home-view]').forEach(b=>b.onclick=()=>{
+    const view=b.dataset.modernHomeView;
+    if(view==='billing'){state.billingFilter='receivable';}
+    show(view);
+  });
+}
+
 function kpis(){
   const billed=sum(state.invoices,'total'), collected=sum(state.payments,'amount'), expenses=state.cashflow.filter(x=>x.type==='Gasto').reduce((a,x)=>a+Number(x.amount||0),0), payroll=sum(state.payroll,'net'), supp=sum(state.supplierPayments,'amount');
   const balances=state.invoices.reduce((a,inv)=>a+invoiceBalance(inv),0);
@@ -1628,7 +1672,7 @@ forms=function(){__v90Forms();renderContractForm();};
 const __v90Tables=tables;
 tables=function(){__v90Tables();renderContractsTable();};
 
-function render(){setVisuals();nav();forms();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=T(TITLES[state.activeView]||state.activeView);$('pageSubtitle').textContent=state.activeView==='dashboard'?T('Resumen operativo, financiero y alertas'):' ';applyLanguage();}
+function render(){setVisuals();nav();forms();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(TITLES[state.activeView]||state.activeView);$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
 async function add(c,data){if(!canCreate(c)){alert(`Límite alcanzado en plan ${plan().name}. Mejora tu plan.`);show('plans');return null;}return await addDoc(colPath(c),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});}
 
 function showClientSummary(id){
