@@ -1161,17 +1161,9 @@ function kpis(){
   const ops=operationalSummary();
   const q=quoteSummary();
   const kpiCards=[
-    {a:'Clientes',b:state.clients.length,view:'clients'},
     {a:'Servicios hoy',b:todayServices,view:'services'},
-    {a:'Cotizaciones',b:q.total,view:'quotes'},
-    {a:'COT mes',b:q.month,view:'quotes'},
-    {a:'COT abiertas',b:q.open,view:'quotes'},
-    {a:'COT aprobadas',b:q.approved,view:'quotes'},
-    {a:'Potencial COT',b:money(q.openValue+q.approvedValue),view:'quotes'},
-    {a:'Conversión COT',b:q.conversionRate+'%',view:'quotes'},
-    {a:'Facturado',b:money(billed),view:'billing',filter:'all'},
-    {a:'Cobrado',b:money(collected),view:'payments'},
-    {a:'Balance por cobrar',b:money(balances),view:'billing',filter:'receivable'},
+    {a:'Cotizaciones abiertas',b:q.open,view:'quotes'},
+    {a:'Por cobrar',b:money(balances),view:'billing',filter:'receivable'},
     {a:'Caja neta',b:money(collected-expenses),view:'cashflow'}
   ];
   $('kpis').innerHTML=kpiCards.map(x=>`<button type="button" class="kpi kpi-action" data-kpi-view="${esc(x.view)}" data-kpi-filter="${esc(x.filter||'')}"><span>${T(x.a)}</span><strong>${x.b}</strong><small>Ver acción</small></button>`).join('')+`<button type="button" class="kpi kpi-action calendar-kpi" id="dashboardCalendarBtn"><span>Calendario</span><strong>${esc(configuredCalendarLabel())}</strong><small>Ver calendario configurado</small></button>`;
