@@ -1567,3 +1567,45 @@ body.v2-ready #dashboard .office-scene{
         rgba(220,235,244,.88) 100%);
   }
 }
+
+
+/* V15 — Full main canvas dashboard background */
+body.v2-ready #appShell .main:has(#dashboard.view.active){
+  min-height:100vh;
+  background:
+    linear-gradient(180deg,
+      rgba(239,246,251,.86) 0%,
+      rgba(235,244,249,.82) 45%,
+      rgba(226,238,246,.86) 100%),
+    url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&fm=jpg&q=78&w=2400")
+      center center/cover no-repeat;
+  background-attachment:fixed;
+}
+body.v2-ready #dashboard.view.active{
+  min-height:calc(100vh - 88px)!important;
+  background:transparent!important;
+}
+body.v2-ready #dashboard.view.active::before,
+body.v2-ready #dashboard.view.active::after{
+  display:none!important;
+}
+body.v2-ready #dashboard .school-home{
+  min-height:calc(100vh - 132px);
+  align-content:start;
+}
+@media(max-width:980px){
+  body.v2-ready #appShell .main:has(#dashboard.view.active){
+    min-height:100dvh;
+    background:
+      linear-gradient(180deg,
+        rgba(241,247,251,.90) 0%,
+        rgba(231,241,248,.87) 55%,
+        rgba(219,233,242,.90) 100%),
+      url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&fm=jpg&q=74&w=1600")
+        center center/cover no-repeat;
+    background-attachment:scroll;
+  }
+  body.v2-ready #dashboard .school-home{
+    min-height:auto;
+  }
+}
