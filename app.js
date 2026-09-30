@@ -669,6 +669,82 @@ function setVisuals(){const p=profile(), ind=industry(); if(p.plan!==currentPlan
 function nav(){const ind=industry();$('sideNav').innerHTML=ind.nav.map(v=>`<button type="button" data-view="${v}" class="${state.activeView===v?'active':''} ${lockedModule(v)?'locked':''}">${T(TITLES[v]||v)}<span>${lockedModule(v)?'🔒':''}</span></button>`).join('');document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));}
 function input(label,id,type='text',val='',cls='',step=''){const extra=type==='number'?(step?` step="${step}" min="0"`:' step="0.01" min="0"'):'';return `<div class="${cls}"><label>${esc(label)}</label><input id="${id}" type="${type}" value="${esc(val)}" placeholder="${esc(label)}"${extra}></div>`;}
 function select(label,id,opts,val='',cls=''){return `<div class="${cls}"><label>${esc(label)}</label><select id="${id}">${opts.map(o=>`<option value="${esc(o.value)}" ${String(o.value)===String(val)?'selected':''}>${esc(o.label)}</option>`).join('')}</select></div>`;}
+
+function searchableClientSelect(label,id,val=''){
+  const clients=state.clients||[];
+  const selectedId=val || clients[0]?.id || '';
+  const selected=clients.find(c=>c.id===selectedId)||{};
+  return `<div class="client-combo">
+    <label>${esc(label)}</label>
+    <div class="client-combo-wrap">
+      <span class="client-combo-icon">⌕</span>
+      <input id="${id}Search" class="client-combo-input" type="search" autocomplete="off"
+        placeholder="Escribe nombre, teléfono o email..."
+        value="${esc(selected.name||'')}">
+      <button class="client-combo-clear" type="button" data-client-combo-clear="${id}" title="Limpiar">×</button>
+      <select id="${id}" class="client-combo-select" tabindex="-1" aria-hidden="true">
+        ${clients.map(c=>`<option value="${esc(c.id)}" ${c.id===selectedId?'selected':''}>${esc(c.name||'Cliente')}</option>`).join('')}
+      </select>
+      <div id="${id}Results" class="client-combo-results" hidden></div>
+    </div>
+  </div>`;
+}
+function clientComboHaystack(c){
+  return clientSearchNormalize([c.name,c.phone,c.email,c.city,c.address,c.altName,c.altPhone,c.altEmail].join(' '));
+}
+function syncClientCombo(id){
+  const selectEl=$(id), input=$(id+'Search');
+  if(!selectEl||!input)return;
+  const c=clientBy(selectEl.value);
+  input.value=c.name||'';
+}
+function bindClientCombo(id){
+  const selectEl=$(id), input=$(id+'Search'), box=$(id+'Results');
+  if(!selectEl||!input||!box)return;
+  const clear=document.querySelector('[data-client-combo-clear="'+id+'"]');
+  const draw=()=>{
+    const q=clientSearchNormalize(input.value);
+    let rows=[...(state.clients||[])];
+    if(q){
+      const parts=q.split(' ').filter(Boolean);
+      rows=rows.filter(c=>parts.every(p=>clientComboHaystack(c).includes(p)));
+    }
+    rows=rows.slice(0,15);
+    box.innerHTML=rows.length?rows.map(c=>`<button type="button" class="client-combo-option" data-client-combo-id="${esc(c.id)}">
+      <b>${esc(c.name||'Cliente')}</b>
+      <small>${esc([c.phone,c.email,c.city].filter(Boolean).join(' · '))}</small>
+    </button>`).join(''):'<div class="client-combo-empty">No encontramos clientes.</div>';
+    box.hidden=false;
+    box.querySelectorAll('[data-client-combo-id]').forEach(btn=>btn.onclick=()=>{
+      selectEl.value=btn.dataset.clientComboId;
+      syncClientCombo(id);
+      box.hidden=true;
+      selectEl.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+  };
+  input.onfocus=draw;
+  input.oninput=draw;
+  input.onkeydown=e=>{
+    if(e.key==='Escape') box.hidden=true;
+    if(e.key==='Enter'){
+      const first=box.querySelector('[data-client-combo-id]');
+      if(first){e.preventDefault();first.click();}
+    }
+  };
+  input.onblur=()=>setTimeout(()=>{box.hidden=true;},180);
+  if(clear) clear.onclick=()=>{
+    input.value='';
+    selectEl.value='';
+    draw();
+    input.focus();
+  };
+  syncClientCombo(id);
+}
+function bindSearchableClientFields(){
+  bindClientCombo('sClient');
+  bindClientCombo('qClient');
+}
+
 function table(head,rows){return `<div class="table-wrap"><table><thead><tr>${head.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.join(''):`<tr><td colspan="${head.length}" class="muted">Sin registros.</td></tr>`}</tbody></table></div>`;}
 function action(c,id){return `<div class="actions"><button data-edit="${c}:${id}" type="button">Editar</button><button class="danger" data-del="${c}:${id}" type="button">Borrar</button></div>`;}
 
@@ -836,7 +912,7 @@ function resetQuoteEditMode(){
 }
 function fillQuoteForm(q){
   if(!q) return;
-  if($('qClient')) $('qClient').value=q.clientId||'';
+  if($('qClient')){$('qClient').value=q.clientId||'';syncClientCombo('qClient');}
   if($('qAsset')) $('qAsset').value=q.assetId||'';
   if($('qTeam')) $('qTeam').value=q.teamId||'';
   if($('qDate')) $('qDate').value=q.date||today();
@@ -875,7 +951,7 @@ async function editQuoteRecord(id){
 
 function fillServiceForm(s){
   if(!s) return;
-  if($('sClient')) $('sClient').value=s.clientId||'';
+  if($('sClient')){$('sClient').value=s.clientId||'';syncClientCombo('sClient');}
   if($('sAsset')) $('sAsset').value=s.assetId||'';
   if($('sTeam')) $('sTeam').value=s.teamId||'';
   if($('sDate')) $('sDate').value=s.date||today();
@@ -921,7 +997,7 @@ function bindServiceProductivity(){
   if(dup) dup.onclick=()=>{
     const last=[...state.services].sort((a,b)=>String(b.createdAt?.seconds||b.date||'').localeCompare(String(a.createdAt?.seconds||a.date||'')))[0];
     if(!last) return alert('No hay servicios para duplicar.');
-    if($('sClient')) $('sClient').value=last.clientId||'';
+    if($('sClient')){$('sClient').value=last.clientId||'';syncClientCombo('sClient');}
     if($('sAsset')) $('sAsset').value=last.assetId||'';
     if($('sTeam')) $('sTeam').value=last.teamId||'';
     if($('sServiceType')) $('sServiceType').value=last.serviceType||serviceOptions()[0];
@@ -1135,8 +1211,8 @@ function bindClientImporter(){
 function forms(){const i=industry();
   $('clientsTitle').textContent=i.clients;$('servicesTitle').textContent=i.services;if($('quotesTitle'))$('quotesTitle').textContent='Cotizaciones Pro';if($('followupsTitle'))$('followupsTitle').textContent='Seguimiento';$('teamTitle').textContent=i.team;$('assetsTitle').textContent=i.assets;$('payrollTitle').textContent=i.payroll;$('suppliersTitle').textContent=i.suppliers;$('supplierPaymentsTitle').textContent=i.supplierPayments;
   $('clientForm').innerHTML=input('Nombre','cName')+input('Teléfono','cPhone')+input('Email','cEmail')+input('Municipio','cCity')+input('Dirección completa','cAddress','text','','wide')+input('Referencia / instrucciones de acceso','cAccessNotes','text','','wide')+input('Enlace GPS opcional','cGpsUrl','url','','wide')+input('Contacto alterno','cAltName')+input('Tel. alterno','cAltPhone')+input('Email alterno','cAltEmail')+clientTagsSelectHtml('cTags','VIP')+input('Notas administrativas','cNotes','text','','wide')+'<button class="primary" type="submit">Guardar</button>';
-  $('serviceForm').innerHTML=select(i.client,'sClient',state.clients.map(c=>({value:c.id,label:c.name})))+select('Activo relacionado','sAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select(i.team,'sTeam',state.team.map(t=>({value:t.id,label:t.name})))+input('Fecha','sDate','date',today())+select('Estado','sStatus',[{value:'Pendiente',label:'Pendiente'},{value:'En proceso',label:'En proceso'},{value:'Completado',label:'Completado'},{value:'Facturado',label:'Facturado'}],'Pendiente')+select('Prioridad','sPriority',[{value:'Normal',label:'Normal'},{value:'Alta',label:'Alta'},{value:'Urgente',label:'Urgente'}],'Normal')+select('Servicio','sServiceType',serviceOptions().map(x=>({value:x,label:x})))+input('Descripción principal','sTitle','text','','wide')+input('Monto facturado','sAmount','number')+transportRouteFormHtml()+i.serviceFields.map((f,n)=>input(f,'sF'+n,'text','','wide')).join('')+`<div id="serviceEditBanner" class="wide edit-banner hidden"></div><div class="wide service-lines-card"><div class="line-head"><div><b>Partidas</b></div><strong id="sItemsTotal">$0.00</strong></div><div id="serviceItemsBox">${itemRowsHtml()}</div><button id="addServiceLine" class="ghost" type="button">+ Añadir servicio</button></div><div class="wide form-actions"><button id="serviceSubmitBtn" class="primary" type="submit">Guardar</button><button id="cancelServiceEdit" class="ghost hidden" type="button">Cancelar edición</button></div>`;
-  if($('quoteForm')) $('quoteForm').innerHTML=select(i.client,'qClient',state.clients.map(c=>({value:c.id,label:c.name})))+select('Activo relacionado','qAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select(i.team,'qTeam',[{value:'',label:'Sin asignar'}].concat(state.team.map(t=>({value:t.id,label:t.name}))))+input('Fecha','qDate','date',today())+input('Válida hasta','qValid','date',plusDays(15))+select('Estado','qStatus',['Borrador','Enviada','Aprobada','Rechazada','Convertida'].map(x=>({value:x,label:x})),'Borrador')+select('Prioridad','qPriority',['Normal','Alta','Urgente'].map(x=>({value:x,label:x})),'Normal')+select('Servicio','qServiceType',serviceOptions().map(x=>({value:x,label:x})))+input('Descripción profesional','qTitle','text','','wide')+input('Notas','qNotes','text','','wide')+input('Términos','qTerms','text','Precios válidos hasta la fecha indicada. Aprobación requerida para iniciar servicio.','wide')+`<div id="quoteEditBanner" class="wide edit-banner hidden"></div><div class="wide service-lines-card quote-lines-card"><div class="line-head"><div><b>Partidas de cotización</b><small class="muted">Servicio, materiales, mano de obra y extras.</small></div><strong id="qItemsTotal">$0.00</strong></div><div id="quoteItemsBox">${itemRowsHtml()}</div><button id="addQuoteLine" class="ghost" type="button">+ Añadir partida</button></div><div class="wide form-actions"><button id="quoteSubmitBtn" class="primary" type="submit">Guardar cotización</button><button id="cancelQuoteEdit" class="ghost hidden" type="button">Cancelar edición</button></div>`;
+  $('serviceForm').innerHTML=searchableClientSelect(i.client,'sClient')+select('Activo relacionado','sAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select(i.team,'sTeam',state.team.map(t=>({value:t.id,label:t.name})))+input('Fecha','sDate','date',today())+select('Estado','sStatus',[{value:'Pendiente',label:'Pendiente'},{value:'En proceso',label:'En proceso'},{value:'Completado',label:'Completado'},{value:'Facturado',label:'Facturado'}],'Pendiente')+select('Prioridad','sPriority',[{value:'Normal',label:'Normal'},{value:'Alta',label:'Alta'},{value:'Urgente',label:'Urgente'}],'Normal')+select('Servicio','sServiceType',serviceOptions().map(x=>({value:x,label:x})))+input('Descripción principal','sTitle','text','','wide')+input('Monto facturado','sAmount','number')+transportRouteFormHtml()+i.serviceFields.map((f,n)=>input(f,'sF'+n,'text','','wide')).join('')+`<div id="serviceEditBanner" class="wide edit-banner hidden"></div><div class="wide service-lines-card"><div class="line-head"><div><b>Partidas</b></div><strong id="sItemsTotal">$0.00</strong></div><div id="serviceItemsBox">${itemRowsHtml()}</div><button id="addServiceLine" class="ghost" type="button">+ Añadir servicio</button></div><div class="wide form-actions"><button id="serviceSubmitBtn" class="primary" type="submit">Guardar</button><button id="cancelServiceEdit" class="ghost hidden" type="button">Cancelar edición</button></div>`;
+  if($('quoteForm')) $('quoteForm').innerHTML=searchableClientSelect(i.client,'qClient')+select('Activo relacionado','qAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select(i.team,'qTeam',[{value:'',label:'Sin asignar'}].concat(state.team.map(t=>({value:t.id,label:t.name}))))+input('Fecha','qDate','date',today())+input('Válida hasta','qValid','date',plusDays(15))+select('Estado','qStatus',['Borrador','Enviada','Aprobada','Rechazada','Convertida'].map(x=>({value:x,label:x})),'Borrador')+select('Prioridad','qPriority',['Normal','Alta','Urgente'].map(x=>({value:x,label:x})),'Normal')+select('Servicio','qServiceType',serviceOptions().map(x=>({value:x,label:x})))+input('Descripción profesional','qTitle','text','','wide')+input('Notas','qNotes','text','','wide')+input('Términos','qTerms','text','Precios válidos hasta la fecha indicada. Aprobación requerida para iniciar servicio.','wide')+`<div id="quoteEditBanner" class="wide edit-banner hidden"></div><div class="wide service-lines-card quote-lines-card"><div class="line-head"><div><b>Partidas de cotización</b><small class="muted">Servicio, materiales, mano de obra y extras.</small></div><strong id="qItemsTotal">$0.00</strong></div><div id="quoteItemsBox">${itemRowsHtml()}</div><button id="addQuoteLine" class="ghost" type="button">+ Añadir partida</button></div><div class="wide form-actions"><button id="quoteSubmitBtn" class="primary" type="submit">Guardar cotización</button><button id="cancelQuoteEdit" class="ghost hidden" type="button">Cancelar edición</button></div>`;
   $('teamForm').innerHTML=input('Nombre','tName')+input('Teléfono','tPhone')+input('Email','tEmail')+input('Identificación personal ID','tPersonalId')+input('Seguro Social','tSsn','text','','','')+input('Licencia de conducir','tDriverLicense')+select('Vehículo asignado','tAssignedVehicle',[{value:'',label:'Sin vehículo'}].concat(vehicleAssetOptions().map(a=>({value:a.id,label:assetLabel(a)}))))+input('Puesto / Rol','tRole')+select('Estado','tStatus',['Activo','Inactivo','Contratista'].map(x=>({value:x,label:x})))+input('Salario base','tSalary','number','0')+input('% Comisión','tRate','number','0')+input('% Retención','tRetention','number','0')+input('Fecha ingreso','tStart','date',today())+'<button class="primary" type="submit">Guardar</button>';
   $('assetForm').innerHTML=select('Cliente asignado','aClient',[{value:'',label:'Sin cliente'}].concat(state.clients.map(c=>({value:c.id,label:c.name}))))+input('Nombre del activo','aName')+select('Categoría','aCategory',['Equipo','Vehículo','Herramienta','Mobiliario','Infraestructura','Tecnología','Inventario Especial','Otro'].map(x=>({value:x,label:x})))+input('Marca','aBrand')+input('Modelo','aModel')+input('Número de serie','aSerial')+input('Ubicación','aLocation')+select('Estado','aStatus',['Activo','En uso','En garantía','Requiere mantenimiento','Fuera de servicio','Inactivo','Baja'].map(x=>({value:x,label:x})))+input('Valor estimado','aValue','number')+input('Fecha de registro','aDate','date',today())+input('Fecha de compra','aPurchaseDate','date')+input('Caducidad del activo/documento','aExpiration','date')+input('Vencimiento de garantía','aWarrantyExpiration','date')+input('Próximo mantenimiento','aNextMaintenance','date')+input('Garantía / vigencia','aWarranty','text','','wide')+input('Notas administrativas','aNotes','text','','wide')+'<button class="primary" type="submit">Guardar activo</button>';
   $('supplierForm').innerHTML=input('Nombre suplidor','supName')+input('Teléfono','supPhone')+input('WhatsApp','supWhatsapp')+input('Email','supEmail')+input('Contacto','supContact')+input('Categoría','supCategory')+input('Límite crédito','supCredit','number','0')+input('Balance inicial / deuda','supOpening','number','0')+i.supplierFields.map((f,n)=>input(f,'supF'+n,'text','','wide')).join('')+'<button class="primary" type="submit">Guardar suplidor</button>';
@@ -1390,7 +1466,7 @@ function newQuoteForClient(clientId){
   const c=clientBy(clientId); if(!c.id)return;
   show('quotes');
   setTimeout(()=>{
-    if($('qClient')) $('qClient').value=c.id;
+    if($('qClient')){$('qClient').value=c.id;syncClientCombo('qClient');}
     if($('qDate')) $('qDate').value=today();
     if($('qValid')) $('qValid').value=plusDays(15);
     if($('qStatus')) $('qStatus').value='Borrador';
@@ -1401,7 +1477,7 @@ function newServiceForClient(clientId){
   const c=clientBy(clientId); if(!c.id)return;
   show('services');
   setTimeout(()=>{
-    if($('sClient')) $('sClient').value=c.id;
+    if($('sClient')){$('sClient').value=c.id;syncClientCombo('sClient');}
     if($('sDate')) $('sDate').value=today();
     if($('sStatus')) $('sStatus').value='Pendiente';
     openV2Form('serviceForm');
@@ -1719,7 +1795,7 @@ forms=function(){__v90Forms();renderContractForm();};
 const __v90Tables=tables;
 tables=function(){__v90Tables();renderContractsTable();};
 
-function render(){setVisuals();nav();forms();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(TITLES[state.activeView]||state.activeView);$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
+function render(){setVisuals();nav();forms();bindSearchableClientFields();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(TITLES[state.activeView]||state.activeView);$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
 async function add(c,data){if(!canCreate(c)){alert(`Límite alcanzado en plan ${plan().name}. Mejora tu plan.`);show('plans');return null;}return await addDoc(colPath(c),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});}
 
 function showClientSummary(id){
