@@ -1926,7 +1926,7 @@ body.v2-ready #appShell .main:has(#purchases.view.active){
   background-image:url('https://images.unsplash.com/photo-1515169067868-5387ec356754?auto=format&fit=crop&fm=jpg&q=76&w=2200');
 }
 body.v2-ready #appShell .main:has(#suppliers.view.active){
-  background-image:url('https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&fm=jpg&q=76&w=2200');
+  background-image:url('https://images.unsplash.com/photo-1741707041853-e5ef96e62bc9?auto=format&fit=crop&fm=jpg&q=76&w=2200');
 }
 body.v2-ready #appShell .main:has(#supplierPayments.view.active){
   background-image:url('https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&fm=jpg&q=76&w=2200');
@@ -1965,4 +1965,11 @@ body.v2-ready #appShell .main:has(.view.active:not(#dashboard)) .topbar{
         rgba(237,245,250,.87) 52%,
         rgba(226,238,246,.90) 100%);
   }
+}
+
+
+/* V20 — Supplier background correction */
+body.v2-ready #appShell .main:has(#suppliers.view.active){
+  background-image:url('https://images.unsplash.com/photo-1741707041853-e5ef96e62bc9?auto=format&fit=crop&fm=jpg&q=76&w=2200')!important;
+  background-position:center 42%!important;
 }
