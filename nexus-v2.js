@@ -58,6 +58,9 @@
         view.insertBefore(hero,card);
       }
       card.classList.add('school-module-card');
+      view.dataset.theme = id;
+      hero.dataset.theme = id;
+      card.dataset.theme = id;
 
       const actions=hero.querySelector('.school-module-actions');
       if(!actions.dataset.ready){
