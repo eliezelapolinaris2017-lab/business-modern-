@@ -1372,3 +1372,101 @@ body.v2-ready .office-chair{
   body.v2-ready .office-monitor{width:235px;height:145px}
   body.v2-ready .office-float-card{min-width:112px;padding:8px}
 }
+
+
+/* V13 — Office photo background + transparent color wash */
+body.v2-ready .office-ambient{
+  min-height:360px;
+  padding:30px 32px;
+  isolation:isolate;
+  background:#eef4f8;
+}
+body.v2-ready .office-ambient::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  background:
+    url("https://images.unsplash.com/photo-1770992203133-263e3034a367?auto=format&fit=crop&fm=jpg&q=76&w=2200")
+    center 48%/cover no-repeat;
+  opacity:.20;
+  filter:saturate(.86) contrast(.96);
+  transform:scale(1.02);
+}
+body.v2-ready .office-ambient::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(90deg,
+      rgba(247,250,252,.95) 0%,
+      rgba(241,247,251,.88) 36%,
+      rgba(10,45,72,.20) 68%,
+      rgba(7,29,45,.34) 100%),
+    linear-gradient(180deg,
+      rgba(255,255,255,.18),
+      rgba(13,53,86,.10));
+  pointer-events:none;
+}
+body.v2-ready .office-ambient-copy{
+  padding:6px 0;
+}
+body.v2-ready .office-ambient-copy h3{
+  text-shadow:0 1px 0 rgba(255,255,255,.75);
+}
+body.v2-ready .office-scene{
+  min-height:295px;
+  background:
+    linear-gradient(180deg,
+      rgba(239,247,252,.72) 0%,
+      rgba(250,252,254,.62) 48%,
+      rgba(229,239,246,.72) 100%);
+  border-color:rgba(255,255,255,.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.65),
+    0 18px 38px rgba(8,29,45,.12);
+  backdrop-filter:blur(7px) saturate(1.04);
+}
+body.v2-ready .office-window{
+  opacity:.56;
+}
+body.v2-ready .office-monitor{
+  box-shadow:
+    0 24px 42px rgba(8,28,46,.28),
+    0 0 0 1px rgba(255,255,255,.08);
+}
+body.v2-ready .office-float-card{
+  background:rgba(255,255,255,.82);
+  border-color:rgba(255,255,255,.70);
+  backdrop-filter:blur(12px);
+}
+body.v2-ready .office-live-row span{
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(8px);
+}
+@media(max-width:980px){
+  body.v2-ready .office-ambient{
+    min-height:0;
+    padding:22px;
+  }
+  body.v2-ready .office-ambient::before{
+    opacity:.14;
+    background-position:center;
+  }
+  body.v2-ready .office-ambient::after{
+    background:
+      linear-gradient(180deg,
+        rgba(247,250,252,.96) 0%,
+        rgba(240,247,251,.90) 50%,
+        rgba(9,43,69,.24) 100%);
+  }
+}
+@media(max-width:700px){
+  body.v2-ready .office-ambient{
+    padding:17px;
+  }
+  body.v2-ready .office-scene{
+    min-height:245px;
+  }
+}
