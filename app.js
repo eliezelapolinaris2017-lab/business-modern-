@@ -1420,8 +1420,55 @@ function collectInvoice(id){
     openV2Form('paymentForm');
   },60);
 }
+function clientSearchNormalize(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
+function filteredClients(){
+  const q=clientSearchNormalize(state.clientsSearch||'');
+  const rows=[...(state.clients||[])];
+  if(!q) return rows;
+  const parts=q.split(' ').filter(Boolean);
+  return rows.filter(c=>{
+    const hay=clientSearchNormalize([
+      c.name,c.phone,c.email,c.city,c.address,c.accessNotes,c.gpsUrl,
+      c.altName,c.altPhone,c.altEmail,c.tags,c.notes
+    ].join(' '));
+    return parts.every(part=>hay.includes(part));
+  });
+}
+function renderClientsTable(){
+  const box=$('clientsTable'); if(!box)return;
+  const rows=filteredClients();
+  box.innerHTML=`<div class="client-search-bar">
+    <div class="client-search-field">
+      <span>⌕</span>
+      <input id="clientsSearchInput" type="search" autocomplete="off" placeholder="Buscar cliente, teléfono, email, dirección o contacto..." value="${esc(state.clientsSearch||'')}">
+    </div>
+    <span class="client-search-count">${rows.length} de ${state.clients.length}</span>
+    <button id="clientsSearchClear" type="button">Limpiar</button>
+  </div>`+
+  table(['Cliente','Contacto','Etiquetas','Historial','Acción'],rows.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span></td><td><div class="actions v2-flow-actions"><button class="primary" data-client-quote="${c.id}" type="button">Cotizar</button><button data-client-service="${c.id}" type="button">Servicio</button><button data-client-summary="${c.id}" type="button">Historial</button><button data-client-portal="${c.id}" type="button">Portal</button>${action('clients',c.id)}</div></td></tr>`;}));
+
+  const input=$('clientsSearchInput');
+  if(input){
+    input.oninput=()=>{
+      state.clientsSearch=input.value;
+      renderClientsTable();
+      setTimeout(()=>{
+        const el=$('clientsSearchInput');
+        if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}
+      },0);
+    };
+  }
+  const clear=$('clientsSearchClear');
+  if(clear) clear.onclick=()=>{state.clientsSearch='';renderClientsTable();setTimeout(()=>$('clientsSearchInput')?.focus(),0);};
+
+  box.querySelectorAll('[data-client-summary]').forEach(b=>b.onclick=()=>showClientSummary(b.dataset.clientSummary));
+  box.querySelectorAll('[data-client-quote]').forEach(b=>b.onclick=()=>newQuoteForClient(b.dataset.clientQuote));
+  box.querySelectorAll('[data-client-service]').forEach(b=>b.onclick=()=>newServiceForClient(b.dataset.clientService));
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>remove(...b.dataset.del.split(':')));
+  box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editRecord(...b.dataset.edit.split(':')));
+}
 function tables(){const i=industry();
-  $('clientsTable').innerHTML=table(['Cliente','Contacto','Etiquetas','Historial','Acción'],state.clients.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span></td><td><div class="actions v2-flow-actions"><button class="primary" data-client-quote="${c.id}" type="button">Cotizar</button><button data-client-service="${c.id}" type="button">Servicio</button><button data-client-summary="${c.id}" type="button">Historial</button><button data-client-portal="${c.id}" type="button">Portal</button>${action('clients',c.id)}</div></td></tr>`;}));
+  renderClientsTable();
   renderDirectory();
   $('teamTable').innerHTML=table([i.team,'Información personal','Vehículo','Estado','Comisión','Nómina pagada','Balance','Acción'],state.team.map(t=>`<tr><td><b>${esc(t.name)}</b><br><span class="muted">${esc(t.role)} · ${esc(t.phone||'')}</span></td><td><span class="muted">ID: ${esc(t.personalId||'—')}</span><br><span class="muted">SSN: ${esc(maskSSN(t.ssn||t.socialSecurity||''))}</span><br><span class="muted">Lic.: ${esc(t.driverLicense||'—')}</span></td><td>${esc(t.assignedVehicleName||'Sin vehículo')}</td><td>${statusChip(t.status||'Activo')}</td><td>${money(teamCommission(t.id))}<br><span class="muted">Ret. ${money(teamRetention(t.id))}</span></td><td>${money(payrollPaid(t.id))}</td><td><b>${money(teamBalance(t.id))}</b></td><td>${action('team',t.id)}</td></tr>`));
   $('payrollTable').innerHTML=table(['Fecha',i.team,'Periodo','Bruto','Bonos','Retención / salida','Adelantos / otros','Neto','Acción'],state.payroll.map(p=>`<tr><td>${esc(p.date)}</td><td>${esc(p.teamName)}</td><td>${esc(p.period)}<br><span class="muted">${Number(p.hours||0)}h + ${Number(p.overtime||0)}h extra</span></td><td>${money(p.gross)}</td><td>${money(p.bonus)}</td><td>${money(payrollRetention(p))}<br><span class="muted">${esc(p.retentionType||'')} ${p.retentionDestination?'→ '+esc(p.retentionDestination):''}</span></td><td>${money(payrollAdvance(p)+payrollOtherDeductions(p))}</td><td><b>${money(payrollNet(p))}</b><br><span class="muted">${esc(p.method)}</span></td><td><div class="actions"><button data-paystub="${p.id}" type="button">PDF</button>${action('payroll',p.id)}</div></td></tr>`));
