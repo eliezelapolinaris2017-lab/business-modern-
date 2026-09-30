@@ -1609,3 +1609,53 @@ body.v2-ready #dashboard .school-home{
     min-height:auto;
   }
 }
+
+
+/* V16 — Auth single-field cleanup */
+body.v2-ready .auth-card.auth-card-premium .auth-field{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  min-height:52px!important;
+  padding:0 14px!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  border-radius:13px!important;
+  background:rgba(255,255,255,.055)!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+body.v2-ready .auth-card.auth-card-premium .auth-field:focus-within{
+  border-color:rgba(240,198,90,.72)!important;
+  box-shadow:0 0 0 3px rgba(240,198,90,.10)!important;
+}
+body.v2-ready .auth-card.auth-card-premium .auth-field input,
+body.v2-ready .auth-card.auth-card-premium .auth-field select{
+  flex:1!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:50px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  outline:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  appearance:none;
+  -webkit-appearance:none;
+  color:#fff!important;
+}
+body.v2-ready .auth-card.auth-card-premium .auth-field input:focus,
+body.v2-ready .auth-card.auth-card-premium .auth-field select:focus{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+body.v2-ready .auth-card.auth-card-premium .auth-field input:-webkit-autofill,
+body.v2-ready .auth-card.auth-card-premium .auth-field input:-webkit-autofill:hover,
+body.v2-ready .auth-card.auth-card-premium .auth-field input:-webkit-autofill:focus{
+  -webkit-text-fill-color:#fff!important;
+  -webkit-box-shadow:0 0 0 1000px transparent inset!important;
+  transition:background-color 9999s ease-out 0s;
+}
