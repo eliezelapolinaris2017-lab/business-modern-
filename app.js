@@ -1439,20 +1439,66 @@ async function copyDirectoryAddress(id){
 }
 async function toggleDirectoryFavorite(id){const c=clientBy(id);if(!c.id)return;await updateDoc(docPath('clients',id),{directoryFavorite:!c.directoryFavorite,updatedAt:serverTimestamp()});}
 function bindDirectoryControls(){const input=$('directorySearch');if(input&&!input.dataset.bound){input.dataset.bound='1';input.addEventListener('input',()=>{state.directorySearch=input.value;renderDirectory();});}const fav=$('directoryFavoritesOnly');if(fav&&!fav.dataset.bound){fav.dataset.bound='1';fav.addEventListener('change',()=>{state.directoryFavoritesOnly=fav.checked;renderDirectory();});}const clear=$('directoryClear');if(clear&&!clear.dataset.bound){clear.dataset.bound='1';clear.onclick=()=>{state.directorySearch='';state.directoryFavoritesOnly=false;if(input)input.value='';if(fav)fav.checked=false;renderDirectory();};}}
+function directoryInitials(name){
+  const parts=String(name||'Cliente').trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0,2).map(x=>x[0]?.toUpperCase()||'').join('')||'CL';
+}
 function renderDirectory(){
   const box=$('directoryList');if(!box)return;
   const rows=directoryFilteredClients();
   const input=$('directorySearch');if(input && input.value!==state.directorySearch)input.value=state.directorySearch||'';
   const fav=$('directoryFavoritesOnly');if(fav)fav.checked=!!state.directoryFavoritesOnly;
   const count=$('directoryCount');if(count)count.textContent=`${rows.length} cliente${rows.length===1?'':'s'}`;
+
   box.innerHTML=rows.length?rows.map(c=>{
     const address=clientFullAddress(c),map=mapsUrl(c),waze=wazeUrl(c),phone=String(c.phone||'').replace(/\D/g,'');
-    return `<article class="directory-card"><div class="directory-card-main"><div class="directory-name-row"><button class="directory-star" type="button" data-directory-fav="${c.id}" title="Favorito">${c.directoryFavorite?'★':'☆'}</button><div><h3>${esc(c.name||'Cliente')}</h3>${c.tags?`<small class="muted">${esc(c.tags)}</small>`:''}</div></div><div class="directory-address">${address?`<strong>📍 ${esc(address)}</strong>`:'<span class="muted">Sin dirección registrada</span>'}</div>${c.accessNotes?`<div class="directory-access"><b>Referencia:</b> ${esc(c.accessNotes)}</div>`:''}${c.notes?`<div class="directory-note">${esc(c.notes)}</div>`:''}${c.phone?`<div class="directory-phone">Tel. ${esc(c.phone)}</div>`:''}</div><div class="directory-actions">${map?`<a class="primary button-link" href="${esc(map)}" target="_blank" rel="noopener">Google Maps</a>`:''}${waze?`<a class="button-link" href="${esc(waze)}" target="_blank" rel="noopener">Waze</a>`:''}${address?`<button type="button" data-directory-copy="${c.id}">Copiar dirección</button>`:''}${phone?`<a class="button-link" href="tel:${phone}">Llamar</a><a class="button-link" href="https://wa.me/${phone}" target="_blank" rel="noopener">WhatsApp</a>`:''}<button type="button" data-client-summary="${c.id}">Ver ficha</button></div></article>`;
-  }).join(''):'<div class="empty-directory"><b>No encontramos clientes.</b><p>Prueba con otro nombre, calle, urbanización, pueblo o número de casa.</p></div>';
+    const contact=[c.phone,c.email].filter(Boolean).join(' · ');
+    const initials=directoryInitials(c.name);
+    return `<article class="directory-card directory-card-modern">
+      <div class="directory-card-top">
+        <div class="directory-avatar">${esc(initials)}</div>
+        <div class="directory-identity">
+          <div class="directory-title-row">
+            <div>
+              <h3>${esc(c.name||'Cliente')}</h3>
+              ${c.tags?`<div class="directory-tags">${clientTagHtml(c)}</div>`:''}
+            </div>
+            <button class="directory-star" type="button" data-directory-fav="${c.id}" title="Favorito">${c.directoryFavorite?'★':'☆'}</button>
+          </div>
+          ${contact?`<div class="directory-contact">${esc(contact)}</div>`:''}
+        </div>
+      </div>
+
+      <div class="directory-location-card">
+        <span class="directory-location-icon">⌖</span>
+        <div>
+          <small>Dirección</small>
+          ${address?`<strong>${esc(address)}</strong>`:'<strong class="muted">Sin dirección registrada</strong>'}
+        </div>
+      </div>
+
+      ${c.accessNotes?`<div class="directory-info-row"><span>Referencia</span><b>${esc(c.accessNotes)}</b></div>`:''}
+      ${c.notes?`<div class="directory-note-modern">${esc(c.notes)}</div>`:''}
+
+      <div class="directory-primary-actions">
+        ${map?`<a class="directory-action-main" href="${esc(map)}" target="_blank" rel="noopener"><span>⌖</span>Google Maps</a>`:''}
+        ${phone?`<a class="directory-action-main" href="https://wa.me/${phone}" target="_blank" rel="noopener"><span>◉</span>WhatsApp</a>`:''}
+      </div>
+
+      <div class="directory-secondary-actions">
+        ${waze?`<a href="${esc(waze)}" target="_blank" rel="noopener">Waze</a>`:''}
+        ${phone?`<a href="tel:${phone}">Llamar</a>`:''}
+        ${address?`<button type="button" data-directory-copy="${c.id}">Copiar dirección</button>`:''}
+        <button type="button" data-client-summary="${c.id}">Ver ficha</button>
+      </div>
+    </article>`;
+  }).join(''):'<div class="empty-directory directory-empty-modern"><span>⌕</span><b>No encontramos clientes</b><p>Prueba con otro nombre, teléfono, calle, urbanización o pueblo.</p></div>';
+
   box.querySelectorAll('[data-directory-copy]').forEach(b=>b.onclick=()=>copyDirectoryAddress(b.dataset.directoryCopy));
   box.querySelectorAll('[data-directory-fav]').forEach(b=>b.onclick=()=>toggleDirectoryFavorite(b.dataset.directoryFav));
   box.querySelectorAll('[data-client-summary]').forEach(b=>b.onclick=()=>showClientSummary(b.dataset.clientSummary));
 }
+
 function openV2Form(formId){
   const form=$(formId);
   if(!form) return;
