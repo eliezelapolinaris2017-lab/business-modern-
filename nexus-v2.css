@@ -1801,3 +1801,35 @@ body.v2-ready #settings .school-module-hero::before{background-image:url('https:
   body.v2-ready .auth-main-btn{min-height:52px!important}
   body.v2-ready #dashboard .office-ambient{min-height:240px!important;margin-top:8px!important}
 }
+
+
+/* V18 — Critical hidden-state fix
+   Never allow visual layers to override application visibility state. */
+body.v2-ready #appShell.hidden,
+body.v2-ready #authScreen.hidden,
+body.v2-ready .auth-card .hidden,
+body.v2-ready .auth-card .register-only.hidden,
+body.v2-ready .auth-field.hidden,
+body.v2-ready form .hidden,
+body.v2-ready [hidden]{
+  display:none!important;
+}
+
+/* Explicit auth states */
+body.v2-ready #authScreen:not(.hidden){
+  display:grid!important;
+  place-items:center!important;
+}
+body.v2-ready #appShell.app:not(.hidden){
+  display:grid!important;
+}
+
+/* Login mode must show only credentials */
+body.v2-ready .auth-card.auth-card-premium .register-only.hidden{
+  display:none!important;
+}
+
+/* Prevent sidebar/app bleed-through behind authentication */
+body.v2-ready:has(#authScreen:not(.hidden)) #appShell{
+  display:none!important;
+}
