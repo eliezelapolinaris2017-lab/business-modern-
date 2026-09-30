@@ -668,3 +668,63 @@ html.nexus-desktop-pwa body.v2-ready #appShell.app{
 html.nexus-desktop-pwa body.v2-ready #appShell .sidebar{
   width:210px!important;
 }
+
+
+/* V9 — Client search */
+body.v2-ready .client-search-bar{
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) auto auto;
+  gap:9px;
+  align-items:center;
+  margin:0 0 14px;
+  padding:10px;
+  border:1px solid #e4eaf0;
+  border-radius:15px;
+  background:#f8fafc;
+}
+body.v2-ready .client-search-field{
+  position:relative;
+}
+body.v2-ready .client-search-field>span{
+  position:absolute;
+  left:12px;top:50%;
+  transform:translateY(-50%);
+  color:#7890a4;
+  font-size:16px;
+  pointer-events:none;
+}
+body.v2-ready .client-search-field input{
+  width:100%;
+  min-height:44px;
+  padding:10px 12px 10px 36px;
+  border:1px solid #d6e0e8;
+  border-radius:12px;
+  background:#fff;
+  color:#1e3245;
+  outline:none;
+}
+body.v2-ready .client-search-field input:focus{
+  border-color:#5f9dcc;
+  box-shadow:0 0 0 4px rgba(30,95,138,.09);
+}
+body.v2-ready .client-search-count{
+  white-space:nowrap;
+  color:#708093;
+  font-size:10px;
+  font-weight:800;
+}
+body.v2-ready #clientsSearchClear{
+  min-height:40px;
+  padding:8px 11px;
+  border:0;
+  border-radius:10px;
+  background:#eef3f7;
+  color:#17364d;
+  font-size:10px;
+  font-weight:800;
+  box-shadow:none;
+}
+@media(max-width:700px){
+  body.v2-ready .client-search-bar{grid-template-columns:1fr auto}
+  body.v2-ready .client-search-field{grid-column:1/-1}
+}
