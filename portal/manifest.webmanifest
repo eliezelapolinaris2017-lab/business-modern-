@@ -1,0 +1,30 @@
+{
+  "name": "Nexus Portal del Cliente",
+  "short_name": "Portal Cliente",
+  "description": "Portal privado para consultar facturas, cotizaciones, servicios, equipos y balance.",
+  "start_url": "/portal/",
+  "scope": "/portal/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "any",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "https://suite.nexustoolspr.com/assets/logo.png?v=3",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://suite.nexustoolspr.com/assets/logo.png?v=3",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "/portal/"
+}

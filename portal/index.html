@@ -1,0 +1,17 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portal del Cliente</title>
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Portal Cliente">
+<link rel="manifest" href="./manifest.webmanifest?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="https://suite.nexustoolspr.com/assets/logo.png?v=3">
+<link rel="apple-touch-icon-precomposed" href="https://suite.nexustoolspr.com/assets/logo.png?v=3">
+<link rel="icon" type="image/png" href="https://suite.nexustoolspr.com/assets/logo.png?v=3">
+
+<link rel="stylesheet" href="../portal.css?v=79"></head><body>
+<div id="portalLogin" class="portal-login"><div class="login-card"><div class="brand-mark"><img src="../assets/logo.png" alt="Nexus Business"></div><h1>Portal del Cliente</h1><p>Escribe tu código privado de acceso.</p><form id="accessForm"><input id="accessCode" autocomplete="one-time-code" placeholder="Código de acceso" required><button type="submit">Entrar</button></form><small id="loginMsg"></small></div></div>
+<div id="portalApp" class="hidden"><header><div class="brand"><img id="businessLogo" class="hidden" alt="Logo"><div><h1 id="businessName">Portal del Cliente</h1><p id="businessSlogan"></p></div></div><div class="header-actions"><button id="installAppBtn" class="secondary hidden" type="button">Instalar app</button><button id="bookBtn">Agendar cita</button><button id="exitBtn" class="secondary">Salir</button></div></header>
+<main><section class="welcome"><div><span>Bienvenido</span><h2 id="clientName"></h2><p id="lastUpdate"></p></div><div class="contact" id="businessContact"></div></section><section id="summaryCards" class="cards"></section>
+<nav class="tabs"><button class="active" data-tab="overview">Resumen</button><button data-tab="invoices">Facturas</button><button data-tab="quotes">Cotizaciones</button><button data-tab="services">Servicios</button><button data-tab="assets">Equipos</button></nav>
+<section id="tabContent" class="panel"></section></main><footer id="portalFooter"></footer></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script type="module" src="../portal.js?v=79"></script></body></html>
