@@ -2565,13 +2565,24 @@ function followupGroup(row){
   return 'other';
 }
 function selectedFollowupGroup(){return ['maintenance','quotes','other'].includes(state.followupGroup)?state.followupGroup:'maintenance';}
-function followupGroupRows(){return (state.followups||[]).filter(row=>followupGroup(row)===selectedFollowupGroup());}
-function followupFilterKey(module){return module==='followups'?'followups_'+selectedFollowupGroup():module;}
+function selectedFollowupArchive(){return state.followupArchive==='completed'?'completed':'active';}
+function followupInSelectedArchive(row){return (followupStatus(row)==='Completado')===(selectedFollowupArchive()==='completed');}
+function followupGroupRows(){return (state.followups||[]).filter(row=>followupGroup(row)===selectedFollowupGroup() && followupInSelectedArchive(row));}
+function followupFilterKey(module){return module==='followups'?'followups_'+selectedFollowupGroup()+'_'+selectedFollowupArchive():module;}
 function renderFollowupGroups(){
   const box=$('followupGroups'); if(!box)return;
   const selected=selectedFollowupGroup();
+  const archive=selectedFollowupArchive();
+  const completedCount=(state.followups||[]).filter(row=>followupGroup(row)===selected && followupStatus(row)==='Completado').length;
   const groups=[['maintenance','Mantenimientos'],['quotes','Cotizaciones'],['other','Otros seguimientos']];
-  box.innerHTML=groups.map(([key,label])=>`<button type="button" role="tab" aria-selected="${selected===key}" class="${selected===key?'primary':''}" data-followup-group="${key}">${label} (${(state.followups||[]).filter(row=>followupGroup(row)===key).length})</button>`).join('');
+  box.innerHTML=groups.map(([key,label])=>`<button type="button" role="tab" aria-selected="${selected===key}" class="${selected===key?'primary':''}" data-followup-group="${key}">${label} (${(state.followups||[]).filter(row=>followupGroup(row)===key && followupInSelectedArchive(row)).length})</button>`).join('');
+  box.insertAdjacentHTML('beforeend',`<label style="margin-left:auto">Ver <select id="followupArchive" aria-label="Menú de seguimientos"><option value="active" ${archive==='active'?'selected':''}>Seguimientos activos</option><option value="completed" ${archive==='completed'?'selected':''}>Completados (${completedCount})</option></select></label>`);
+  $('followupArchive').onchange=()=>{
+    clearTimeout(v66SearchTimers.followups);
+    state.followupArchive=$('followupArchive').value;
+    v66RenderFollowups();
+    v66BindDynamicActions();
+  };
   box.querySelectorAll('[data-followup-group]').forEach(button=>button.onclick=()=>{
     clearTimeout(v66SearchTimers.followups);
     state.followupGroup=button.dataset.followupGroup;
