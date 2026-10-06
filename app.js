@@ -2557,13 +2557,40 @@ async function ensureQuoteFollowup(quote){
   if(exists) return;
   await add('followups',{clientId:quote.clientId||'',clientName:quote.clientName||'',assetId:quote.assetId||'',assetName:quote.assetName||'',sourceType:'quote',sourceId:quote.id,quoteNumber:quote.number||'',type:'Cotización',title:'Seguimiento de cotización '+(quote.number||''),dueDate:plusDays(2),intervalMonths:0,status:'Programado',priority:quote.priority||'Normal',channel:'WhatsApp',note:'Dar seguimiento a cotización enviada.'});
 }
+
+function followupGroup(row){
+  const type=String(row.type||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  if(type.includes('mantenimiento')) return 'maintenance';
+  if(type.includes('cotizacion') || (!type && row.sourceType==='quote')) return 'quotes';
+  return 'other';
+}
+function selectedFollowupGroup(){return ['maintenance','quotes','other'].includes(state.followupGroup)?state.followupGroup:'maintenance';}
+function followupGroupRows(){return (state.followups||[]).filter(row=>followupGroup(row)===selectedFollowupGroup());}
+function followupFilterKey(module){return module==='followups'?'followups_'+selectedFollowupGroup():module;}
+function renderFollowupGroups(){
+  const box=$('followupGroups'); if(!box)return;
+  const selected=selectedFollowupGroup();
+  const groups=[['maintenance','Mantenimientos'],['quotes','Cotizaciones'],['other','Otros seguimientos']];
+  box.innerHTML=groups.map(([key,label])=>`<button type="button" role="tab" aria-selected="${selected===key}" class="${selected===key?'primary':''}" data-followup-group="${key}">${label} (${(state.followups||[]).filter(row=>followupGroup(row)===key).length})</button>`).join('');
+  box.querySelectorAll('[data-followup-group]').forEach(button=>button.onclick=()=>{
+    clearTimeout(v66SearchTimers.followups);
+    state.followupGroup=button.dataset.followupGroup;
+    renderFollowupForm();
+    v66RenderFollowups();
+    v66BindDynamicActions();
+  });
+}
+
 function renderFollowupForm(){
   if(!$('followupForm')) return;
   const selectedClient=$('fClient')?.value||'';
+  const group=selectedFollowupGroup();
+  const types=group==='maintenance'?['Mantenimiento']:group==='quotes'?['Cotización']:['Instalación','Servicio','Garantía','Cobro','Otro'];
+  const title=group==='maintenance'?'Mantenimiento preventivo 6 meses':group==='quotes'?'Seguimiento de cotización':'Seguimiento';
   const clientsAlphabetical=[...(state.clients||[])]
     .filter(c=>c&&c.id)
     .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{sensitivity:'base',numeric:true}));
-  $('followupForm').innerHTML=select('Cliente','fClient',clientsAlphabetical.map(c=>({value:c.id,label:c.name||'Cliente sin nombre'})),selectedClient)+select('Activo relacionado','fAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select('Tipo','fType',['Mantenimiento','Cotización','Instalación','Servicio','Garantía','Cobro','Otro'].map(x=>({value:x,label:x})),'Mantenimiento')+input('Título / asunto','fTitle','text','Mantenimiento preventivo 6 meses','wide')+input('Fecha seguimiento','fDueDate','date',v50PlusMonths(today(),6))+input('Intervalo meses','fInterval','number','6')+select('Estado','fStatus',['Programado','Próximo','Completado','Cancelado'].map(x=>({value:x,label:x})),'Programado')+select('Prioridad','fPriority',['Normal','Alta','Urgente'].map(x=>({value:x,label:x})),'Normal')+select('Canal','fChannel',['WhatsApp','Llamada','Email','Visita'].map(x=>({value:x,label:x})),'WhatsApp')+input('Notas','fNote','text','','wide')+'<button class="primary" type="submit">Guardar seguimiento</button>';
+  $('followupForm').innerHTML=select('Cliente','fClient',clientsAlphabetical.map(c=>({value:c.id,label:c.name||'Cliente sin nombre'})),selectedClient)+select('Activo relacionado','fAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select('Tipo','fType',types.map(x=>({value:x,label:x})),types[0])+input('Título / asunto','fTitle','text',title,'wide')+input('Fecha seguimiento','fDueDate','date',group==='maintenance'?v50PlusMonths(today(),6):plusDays(2))+input('Intervalo meses','fInterval','number',group==='maintenance'?'6':'0')+select('Estado','fStatus',['Programado','Próximo','Completado','Cancelado'].map(x=>({value:x,label:x})),'Programado')+select('Prioridad','fPriority',['Normal','Alta','Urgente'].map(x=>({value:x,label:x})),'Normal')+select('Canal','fChannel',['WhatsApp','Llamada','Email','Visita'].map(x=>({value:x,label:x})),'WhatsApp')+input('Notas','fNote','text','','wide')+'<button class="primary" type="submit">Guardar seguimiento</button>';
 }
 function renderFollowupsTable(){
   const box=$('followupsTable'); if(!box) return;
@@ -2578,7 +2605,7 @@ function renderFollowupsTable(){
 function bindFollowupForm(){
   if(!$('followupForm') || $('followupForm').dataset.bound==='1') return;
   $('followupForm').dataset.bound='1';
-  $('followupForm').onsubmit=e=>{e.preventDefault();const c=clientBy($('fClient')?.value||''),a=assetBy($('fAsset')?.value||'');add('followups',{clientId:c.id||'',clientName:c.name||'',assetId:a.id||'',assetName:a.id?assetName(a):'',type:$('fType').value,title:$('fTitle').value,dueDate:$('fDueDate').value,intervalMonths:Number($('fInterval').value||6),status:$('fStatus').value,priority:$('fPriority').value,channel:$('fChannel').value,note:$('fNote').value,sourceType:'manual',sourceId:''});e.target.reset();};
+  $('followupForm').onsubmit=e=>{e.preventDefault();const c=clientBy($('fClient')?.value||''),a=assetBy($('fAsset')?.value||'');add('followups',{clientId:c.id||'',clientName:c.name||'',assetId:a.id||'',assetName:a.id?assetName(a):'',type:$('fType').value,title:$('fTitle').value,dueDate:$('fDueDate').value,intervalMonths:Number($('fInterval').value||0),status:$('fStatus').value,priority:$('fPriority').value,channel:$('fChannel').value,note:$('fNote').value,sourceType:'manual',sourceId:''});e.target.reset();};
 }
 function reportRange(){return {from:$('reportFrom')?.value||'',to:$('reportTo')?.value||''};}
 function reportDateOf(row,type){
@@ -2665,6 +2692,7 @@ authUI();bindForms();onAuthStateChanged(auth,u=>{if(u){$('authScreen').classList
    Añade buscadores propios sin eliminar funciones existentes. */
 state.moduleFilters = state.moduleFilters || {};
 function v66Filter(module){
+  module=followupFilterKey(module);
   state.moduleFilters = state.moduleFilters || {};
   state.moduleFilters[module] = state.moduleFilters[module] || {q:'',from:'',to:'',status:'all'};
   return state.moduleFilters[module];
@@ -2807,7 +2835,7 @@ function v66BindToolbar(module){
   }
   const bindImmediate=(id,key)=>{const el=$(id);if(!el)return;el.onchange=()=>{v66Filter(module)[key]=el.value;tables();};};
   bindImmediate(module+'From','from'); bindImmediate(module+'To','to'); bindImmediate(module+'Status','status');
-  document.querySelectorAll(`[data-clear-module-filter="${module}"]`).forEach(b=>b.onclick=()=>{state.moduleFilters[module]={q:'',from:'',to:'',status:'all'};tables();});
+  document.querySelectorAll(`[data-clear-module-filter="${module}"]`).forEach(b=>b.onclick=()=>{state.moduleFilters[followupFilterKey(module)]={q:'',from:'',to:'',status:'all'};tables();});
 }
 function v66RenderClients(){
   const box=$('clientsTable'); if(!box) return;
@@ -2917,8 +2945,10 @@ function v66RenderSimpleTables(){
 }
 function v66RenderFollowups(){
   const box=$('followupsTable'); if(!box) return;
-  const rows=v66ApplyModuleFilter(state.followups,'followups').sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
-  box.innerHTML=v66Toolbar('followups','Buscar seguimientos','Cliente, tipo, asunto, activo, estado, fecha...',state.followups,{dates:true,status:true})+
+  renderFollowupGroups();
+  const base=followupGroupRows();
+  const rows=v66ApplyModuleFilter(base,'followups').sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
+  box.innerHTML=v66Toolbar('followups','Buscar seguimientos','Cliente, asunto, activo, estado, fecha...',base,{dates:true,status:true})+
     table(['Fecha','Cliente','Activo','Seguimiento','Estado','Notas','Acción'],rows.map(f=>{const c=clientBy(f.clientId||''); const st=followupStatus(f); const phone=c.whatsapp||c.phone||'';return `<tr><td><b>${esc(f.dueDate||'')}</b><br><span class="tag">${esc(f.priority||'Normal')}</span></td><td>${esc(f.clientName||c.name||'')}<br><span class="muted">${esc(phone)}</span></td><td>${esc(f.assetName||'')}</td><td><b>${esc(f.title||f.type||'Seguimiento')}</b><br><span class="muted">${esc(f.type||'')}</span></td><td>${statusChip(st)}</td><td>${esc(f.note||'')}</td><td><div class="actions">${phone?`<button data-whatsapp-followup="${f.id}" type="button">WhatsApp</button>`:''}${st!=='Completado'?`<button data-complete-followup="${f.id}" type="button">Completar</button>`:''}${action('followups',f.id)}</div></td></tr>`;}));
   v66BindToolbar('followups');
 }
@@ -2989,6 +3019,7 @@ openDashboardAction=function(view,filter=''){
 /* V75 — Dashboard Action Center
    Cada KPI abre el módulo con el filtro exacto que representa. */
 function v75ResetModuleFilter(module){
+  module=followupFilterKey(module);
   state.moduleFilters = state.moduleFilters || {};
   state.moduleFilters[module] = {q:'',from:'',to:'',status:'all'};
   return state.moduleFilters[module];
