@@ -2658,7 +2658,7 @@ function scheduleEnabledPortalSync(){
     }
   },1200);
 }
-async function load(){unsub.forEach(x=>x());unsub=[];const snap=await getDoc(profRef());if(!snap.exists())await setDoc(profRef(),defaultProfile());unsub.push(onSnapshot(profRef(),s=>{state.profile=s.data()||defaultProfile();render();}));COLS.forEach(c=>unsub.push(onSnapshot(colPath(c),s=>{state[c]=s.docs.map(d=>({id:d.id,...d.data()}));$('syncStatus').textContent=T('Sincronizado');render();if(['clients','services','quotes','followups','invoices','payments','assets'].includes(c))scheduleEnabledPortalSync();},e=>{$('syncStatus').textContent=T('Firebase bloqueado');console.error(e);})));}
+async function load(){unsub.forEach(x=>x());unsub=[];const snap=await getDoc(profRef());if(!snap.exists())await setDoc(profRef(),defaultProfile());unsub.push(onSnapshot(profRef(),s=>{state.profile=s.data()||defaultProfile();render();}));COLS.forEach(c=>unsub.push(onSnapshot(colPath(c),s=>{const rows=s.docs.map(d=>({id:d.id,...d.data()}));state[c]=HISTORY_MODULES.has(c)?sortedHistory(rows):rows;$('syncStatus').textContent=T('Sincronizado');render();if(['clients','services','quotes','followups','invoices','payments','assets'].includes(c))scheduleEnabledPortalSync();},e=>{$('syncStatus').textContent=T('Firebase bloqueado');console.error(e);})));}
 authUI();bindForms();onAuthStateChanged(auth,u=>{if(u){$('authScreen').classList.add('hidden');$('appShell').classList.remove('hidden');load();}else{$('authScreen').classList.remove('hidden');$('appShell').classList.add('hidden');}});
 
 /* V66 — Search Center por módulo
@@ -2710,12 +2710,40 @@ function v66SearchText(row,module){
   const raw=base.map(safe).join(' ');
   return v66NormalizeSearch(raw)+' '+raw.replace(/\D/g,'');
 }
+
+// Histories use the transaction date, with deterministic ties and undated rows last.
+const HISTORY_MODULES = new Set(['billing','invoices','payments','quotes','services','purchases','supplierPayments','payroll','payrollRetentions','cashflow']);
+function historyTimestamp(value){
+  if(value == null || value === '') return null;
+  if(typeof value === 'object'){
+    if(typeof value.toMillis === 'function') return value.toMillis();
+    if(Number.isFinite(value.seconds)) return value.seconds*1000 + Number(value.nanoseconds||0)/1e6;
+    if(value instanceof Date) return Number.isFinite(value.getTime())?value.getTime():null;
+    return null;
+  }
+  if(typeof value === 'number') return Number.isFinite(value)?value:null;
+  const text=String(value).trim();
+  // Legacy US dates must compare chronologically, never alphabetically.
+  const us=text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const iso=us ? `${us[3]}-${us[1].padStart(2,'0')}-${us[2].padStart(2,'0')}` : text;
+  const result=Date.parse(iso);
+  return Number.isFinite(result)?result:null;
+}
+function historyNewestFirst(a,b){
+  const ad=historyTimestamp(a.date), bd=historyTimestamp(b.date);
+  if(ad!==bd) return ad===null?1:bd===null?-1:bd-ad;
+  const created=(historyTimestamp(b.createdAt)||0)-(historyTimestamp(a.createdAt)||0);
+  return created || String(b.number||b.invoiceNumber||'').localeCompare(String(a.number||a.invoiceNumber||''),'es',{numeric:true})
+    || String(a.id||'').localeCompare(String(b.id||''));
+}
+function sortedHistory(rows){return [...(rows||[])].sort(historyNewestFirst);}
+
 function v66ApplyModuleFilter(rows,module){
   const f=v66Filter(module);
   const q=v66NormalizeSearch(f.q||'');
   const digits=String(f.q||'').replace(/\D/g,'');
   const tokens=q.split(/\s+/).filter(Boolean);
-  return [...(rows||[])].filter(row=>{
+  return (HISTORY_MODULES.has(module)?sortedHistory(rows):[...(rows||[])]).filter(row=>{
     const hay=v66SearchText(row,module);
     if(tokens.length && !tokens.every(token=>hay.includes(token))) return false;
     if(digits.length>=3 && !hay.includes(digits)) return false;
@@ -2857,7 +2885,7 @@ function renderCashflowModule(){
   const box=$('cashTable'); if(!box)return;
   const w=cashWeekData();
   const filtered=v66ApplyModuleFilter(state.cashflow,'cashflow');
-  const sorted=[...filtered].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const sorted=sortedHistory(filtered);
   let running=cashCurrentBalance();
   const rowMap=new Map(sorted.map(x=>{const row={...x,running};running-=cashSigned(x);return [x.id,row];}));
   const dayRows=w.days.map(d=>`<tr><td><b>${esc(d.label)}</b><br><span class="muted">${esc(d.date)}</span></td><td>${money(d.collected)}</td><td>${money(d.purchases)}</td><td>${money(d.expenses)}</td><td><b class="${d.net<0?'cash-negative':'cash-positive'}">${money(d.net)}</b></td></tr>`);
