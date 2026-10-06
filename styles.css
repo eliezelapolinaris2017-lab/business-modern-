@@ -1052,17 +1052,3 @@ html.nexus-desktop-pwa .app{grid-template-columns:292px minmax(0,1fr)!important;
 html.nexus-desktop-pwa .sidebar{position:sticky!important;transform:none!important;display:flex!important;}
 html.nexus-desktop-pwa .icon-btn{display:none!important;}
 html.nexus-desktop-pwa .main{min-width:0!important;}
-
-/* Centro de mando de Servicios */
-.service-command{padding:18px;margin:18px 0;border:1px solid #cbd5e1;border-radius:14px;background:linear-gradient(120deg,#eff6ff,#f8fafc);color:#172033}
-.service-command p{margin:8px 0}.service-command span{font-size:13px}
-.service-command-dialog{width:min(920px,95vw);max-height:90vh;overflow:auto;border:1px solid #cbd5e1;border-radius:18px;padding:24px;background:#f8fafc;color:#172033}
-.service-command-dialog::backdrop{background:rgba(15,23,42,.6)}
-.service-command-dialog textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;background:#fff;color:#172033}
-.work-order-paper{background:#fff;padding:32px;margin-top:18px;border:1px solid #e2e8f0;border-radius:10px}
-.work-order-paper header{text-align:center;border-bottom:2px solid #172033;padding-bottom:12px}
-.work-order-paper header img{max-width:150px;max-height:85px;object-fit:contain}
-.work-order-paper h4{font-size:12px;letter-spacing:.06em;margin:20px 0 6px;color:#334155}
-.work-order-paper p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:13px}
-.work-order-paper footer{margin-top:24px;text-align:center;color:#64748b;font-size:11px}
-@media(max-width:600px){.service-command-dialog{padding:14px}.work-order-paper{padding:16px}}

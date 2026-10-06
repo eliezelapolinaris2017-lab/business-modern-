@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -957,7 +957,6 @@ function fillServiceForm(s){
   if($('sDate')) $('sDate').value=s.date||today();
   if($('sStatus')) $('sStatus').value=s.status||'Pendiente';
   if($('sPriority')) $('sPriority').value=s.priority||'Normal';
-  for(const [id,key] of [['sScheduledTime','scheduledTime'],['sWorkAddress','workAddress'],['sInstructions','instructions']]) if($(id)) $(id).value=s[key]||'';
   if($('sServiceType')){
     const val=s.serviceType||serviceTitle(s)||serviceOptions()[0]||'';
     if(val && ![...$('sServiceType').options].some(o=>o.value===val)){
@@ -1212,7 +1211,7 @@ function bindClientImporter(){
 function forms(){const i=industry();
   $('clientsTitle').textContent=i.clients;$('servicesTitle').textContent=i.services;if($('quotesTitle'))$('quotesTitle').textContent='Cotizaciones Pro';if($('followupsTitle'))$('followupsTitle').textContent='Seguimiento';$('teamTitle').textContent=i.team;$('assetsTitle').textContent=i.assets;$('payrollTitle').textContent=i.payroll;$('suppliersTitle').textContent=i.suppliers;$('supplierPaymentsTitle').textContent=i.supplierPayments;
   $('clientForm').innerHTML=input('Nombre','cName')+input('Teléfono','cPhone')+input('Email','cEmail')+input('Municipio','cCity')+input('Dirección completa','cAddress','text','','wide')+input('Referencia / instrucciones de acceso','cAccessNotes','text','','wide')+input('Enlace GPS opcional','cGpsUrl','url','','wide')+input('Contacto alterno','cAltName')+input('Tel. alterno','cAltPhone')+input('Email alterno','cAltEmail')+clientTagsSelectHtml('cTags','VIP')+input('Notas administrativas','cNotes','text','','wide')+'<button class="primary" type="submit">Guardar</button>';
-  $('serviceForm').innerHTML=searchableClientSelect(i.client,'sClient')+select('Activo relacionado','sAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select(i.team,'sTeam',[{value:'',label:'Sin asignar'}].concat(state.team.map(t=>({value:t.id,label:t.name+(t.status==='Inactivo'?' · Inactivo':'')}))))+input('Fecha','sDate','date',today())+select('Estado','sStatus',[{value:'Pendiente',label:'Pendiente'},{value:'En proceso',label:'En proceso'},{value:'Completado',label:'Completado'},{value:'Facturado',label:'Facturado'}],'Pendiente')+select('Prioridad','sPriority',[{value:'Normal',label:'Normal'},{value:'Alta',label:'Alta'},{value:'Urgente',label:'Urgente'}],'Normal')+select('Servicio','sServiceType',serviceOptions().map(x=>({value:x,label:x})))+input('Descripción principal','sTitle','text','','wide')+input('Importe del servicio','sAmount','number')+input('Hora programada','sScheduledTime','time')+input('Dirección del trabajo (opcional)','sWorkAddress','text','','wide')+input('Instrucciones para el empleado','sInstructions','text','','wide')+transportRouteFormHtml()+i.serviceFields.map((f,n)=>input(f,'sF'+n,'text','','wide')).join('')+`<div id="serviceEditBanner" class="wide edit-banner hidden"></div><div class="wide service-lines-card"><div class="line-head"><div><b>Partidas</b></div><strong id="sItemsTotal">$0.00</strong></div><div id="serviceItemsBox">${itemRowsHtml()}</div><button id="addServiceLine" class="ghost" type="button">+ Añadir servicio</button></div><div class="wide form-actions"><button id="serviceSubmitBtn" class="primary" type="submit">Guardar</button><button id="cancelServiceEdit" class="ghost hidden" type="button">Cancelar edición</button></div>`;
+  $('serviceForm').innerHTML=searchableClientSelect(i.client,'sClient')+select('Activo relacionado','sAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select(i.team,'sTeam',state.team.map(t=>({value:t.id,label:t.name})))+input('Fecha','sDate','date',today())+select('Estado','sStatus',[{value:'Pendiente',label:'Pendiente'},{value:'En proceso',label:'En proceso'},{value:'Completado',label:'Completado'},{value:'Facturado',label:'Facturado'}],'Pendiente')+select('Prioridad','sPriority',[{value:'Normal',label:'Normal'},{value:'Alta',label:'Alta'},{value:'Urgente',label:'Urgente'}],'Normal')+select('Servicio','sServiceType',serviceOptions().map(x=>({value:x,label:x})))+input('Descripción principal','sTitle','text','','wide')+input('Monto facturado','sAmount','number')+transportRouteFormHtml()+i.serviceFields.map((f,n)=>input(f,'sF'+n,'text','','wide')).join('')+`<div id="serviceEditBanner" class="wide edit-banner hidden"></div><div class="wide service-lines-card"><div class="line-head"><div><b>Partidas</b></div><strong id="sItemsTotal">$0.00</strong></div><div id="serviceItemsBox">${itemRowsHtml()}</div><button id="addServiceLine" class="ghost" type="button">+ Añadir servicio</button></div><div class="wide form-actions"><button id="serviceSubmitBtn" class="primary" type="submit">Guardar</button><button id="cancelServiceEdit" class="ghost hidden" type="button">Cancelar edición</button></div>`;
   if($('quoteForm')) $('quoteForm').innerHTML=searchableClientSelect(i.client,'qClient')+select('Activo relacionado','qAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select(i.team,'qTeam',[{value:'',label:'Sin asignar'}].concat(state.team.map(t=>({value:t.id,label:t.name}))))+input('Fecha','qDate','date',today())+input('Válida hasta','qValid','date',plusDays(15))+select('Estado','qStatus',['Borrador','Enviada','Aprobada','Rechazada','Convertida'].map(x=>({value:x,label:x})),'Borrador')+select('Prioridad','qPriority',['Normal','Alta','Urgente'].map(x=>({value:x,label:x})),'Normal')+select('Servicio','qServiceType',serviceOptions().map(x=>({value:x,label:x})))+input('Descripción profesional','qTitle','text','','wide')+input('Notas','qNotes','text','','wide')+input('Términos','qTerms','text','Precios válidos hasta la fecha indicada. Aprobación requerida para iniciar servicio.','wide')+`<div id="quoteEditBanner" class="wide edit-banner hidden"></div><div class="wide service-lines-card quote-lines-card"><div class="line-head"><div><b>Partidas de cotización</b><small class="muted">Servicio, materiales, mano de obra y extras.</small></div><strong id="qItemsTotal">$0.00</strong></div><div id="quoteItemsBox">${itemRowsHtml()}</div><button id="addQuoteLine" class="ghost" type="button">+ Añadir partida</button></div><div class="wide form-actions"><button id="quoteSubmitBtn" class="primary" type="submit">Guardar cotización</button><button id="cancelQuoteEdit" class="ghost hidden" type="button">Cancelar edición</button></div>`;
   $('teamForm').innerHTML=input('Nombre','tName')+input('Teléfono','tPhone')+input('Email','tEmail')+input('Identificación personal ID','tPersonalId')+input('Seguro Social','tSsn','text','','','')+input('Licencia de conducir','tDriverLicense')+select('Vehículo asignado','tAssignedVehicle',[{value:'',label:'Sin vehículo'}].concat(vehicleAssetOptions().map(a=>({value:a.id,label:assetLabel(a)}))))+input('Puesto / Rol','tRole')+select('Estado','tStatus',['Activo','Inactivo','Contratista'].map(x=>({value:x,label:x})))+input('Salario base','tSalary','number','0')+input('% Comisión','tRate','number','0')+input('% Retención','tRetention','number','0')+input('Fecha ingreso','tStart','date',today())+'<button class="primary" type="submit">Guardar</button>';
   $('assetForm').innerHTML=select('Cliente asignado','aClient',[{value:'',label:'Sin cliente'}].concat(state.clients.map(c=>({value:c.id,label:c.name}))))+input('Nombre del activo','aName')+select('Categoría','aCategory',['Equipo','Vehículo','Herramienta','Mobiliario','Infraestructura','Tecnología','Inventario Especial','Otro'].map(x=>({value:x,label:x})))+input('Marca','aBrand')+input('Modelo','aModel')+input('Número de serie','aSerial')+input('Ubicación','aLocation')+select('Estado','aStatus',['Activo','En uso','En garantía','Requiere mantenimiento','Fuera de servicio','Inactivo','Baja'].map(x=>({value:x,label:x})))+input('Valor estimado','aValue','number')+input('Fecha de registro','aDate','date',today())+input('Fecha de compra','aPurchaseDate','date')+input('Caducidad del activo/documento','aExpiration','date')+input('Vencimiento de garantía','aWarrantyExpiration','date')+input('Próximo mantenimiento','aNextMaintenance','date')+input('Garantía / vigencia','aWarranty','text','','wide')+input('Notas administrativas','aNotes','text','','wide')+'<button class="primary" type="submit">Guardar activo</button>';
@@ -1855,7 +1854,6 @@ async function duplicateService(id){
   if(!canCreate('services')){alert('Límite de servicios alcanzado.');show('plans');return;}
   const copy={...s,date:today(),status:'Pendiente',createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
   delete copy.id; delete copy.createdAt; delete copy.updatedAt;
-  for(const key of ['completion','completedAt','startedAt','invoiceId','invoicedAt','dispatchedAt','workOrderNumber']) delete copy[key];
   await add('services',copy);
 }
 async function duplicateInvoice(id){
@@ -2210,29 +2208,7 @@ async function editRecord(c,id){
   };
   m.classList.remove('hidden');
 }
-async function createInvoice(serviceId){
-  const s=state.services.find(x=>x.id===serviceId); if(!s)return;
-  const existing=serviceInvoice(s);
-  if(existing){previewInvoice(existing.id);return;}
-  if(s.status!=='Completado')return alert('Completa el servicio antes de facturarlo.');
-  if(!canCreate('invoices')){alert('Límite de facturas alcanzado.');show('plans');return;}
-  try{
-    const invoiceId='service-'+s.id;
-    await runTransaction(db,async tx=>{
-      const sr=docPath('services',s.id),ir=docPath('invoices',invoiceId);
-      const [serviceSnap,invoiceSnap]=await Promise.all([tx.get(sr),tx.get(ir)]);
-      if(invoiceSnap.exists())return;
-      if(!serviceSnap.exists())throw new Error('El servicio ya no existe.');
-      const fresh={...serviceSnap.data(),id:s.id};
-      if(fresh.invoiceId)throw new Error('Este servicio ya tiene factura. Recarga el listado.');
-      if(fresh.status!=='Completado')throw new Error('Completa el servicio antes de facturarlo.');
-      const totals=invoiceTotalsFromService(fresh);
-      tx.set(ir,{number:'INV-'+s.id.toUpperCase(),date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items:fresh.items?.length?fresh.items:[{description:serviceTitle(fresh),qty:1,price:serviceSubtotal(fresh)}],fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-      tx.update(sr,{status:'Facturado',invoiceId,invoicedAt:serverTimestamp(),updatedAt:serverTimestamp()});
-    });
-    show('billing');
-  }catch(e){alert('No se pudo facturar: '+e.message);}
-}
+async function createInvoice(serviceId){if(!canCreate('invoices')){alert('Límite de facturas alcanzado.');show('plans');return;}const s=state.services.find(x=>x.id===serviceId);if(!s)return;const totals=invoiceTotalsFromService(s);const number='INV-'+String(Date.now()).slice(-7);await add('invoices',{number,date:today(),serviceId:s.id,clientId:s.clientId,clientName:s.clientName,serviceTitle:serviceTitle(s),items:s.items||[],fields:s.fields||[],subtotal:totals.subtotal,ivu:totals.ivu,taxPercent:totals.taxPercent,total:totals.total,status:'Pendiente',dueDate:plusDays(15),notes:'',terms:'Pago según acuerdo.'});}
 function docHeader(title){const p=profile(),logo=p.logoPdf||p.logoDashboard;return `<div class="doc-page"><div class="doc-body"><div class="doc-head">${logo?`<img class="doc-logo" src="${logo}">`:''}<div class="doc-title">${esc(p.businessName||'Empresa')}</div><div>${esc(p.address||'')}</div><div>${esc(p.phone||'')} ${p.email?' · '+esc(p.email):''} ${p.web?' · '+esc(p.web):''}</div><div>${p.merchant?'Registro: '+esc(p.merchant):''}</div></div><h2 style="text-align:center">${esc(title)}</h2>`;}
 function docFooter(){const p=profile();return `</div><div class="doc-foot">${esc(p.businessName||'Empresa')}</div></div>`;}
 function niceDate(v){if(!v)return'';const parts=String(v).split('-');if(parts.length===3){const d=new Date(Number(parts[0]),Number(parts[1])-1,Number(parts[2]));return d.toLocaleDateString('es-PR',{year:'numeric',month:'long',day:'numeric'});}return String(v);}
@@ -2427,26 +2403,13 @@ function bindForms(){
     const title=enteredTitle || items[0]?.description || selectedService;
     const route=transportRouteFromForm();
     const serviceFields=industry().serviceFields.map((_,n)=>$('sF'+n)?.value||'');
-    if(!c.id) return alert('Selecciona un cliente para la hoja de servicio.');
-    if(!$('sDate').value) return alert('Indica la fecha del servicio.');
-    const previous=state.services.find(x=>x.id===state.editingServiceId);
-    const linkedInvoice=previous && serviceInvoice(previous);
-    const selectedStatus=$('sStatus')?.value||'Pendiente';
-    if(selectedStatus==='Facturado' && !linkedInvoice) return alert('Utiliza Facturar después de completar el servicio.');
-    const payload={scheduledTime:$('sScheduledTime')?.value||'',workAddress:$('sWorkAddress')?.value.trim()||'',instructions:$('sInstructions')?.value.trim()||'',clientId:c.id||'',clientName:c.name||'',assetId:a.id||'',assetName:a.id?assetName(a):'',teamId:t.id||'',teamName:t.name||'',date:$('sDate').value,status:linkedInvoice?'Facturado':selectedStatus,priority:$('sPriority')?.value||'Normal',serviceType:selectedService,title,amount:totalFromItems>0?totalFromItems:Number($('sAmount').value||0),items,fields:serviceFields,route};
-    try{
+    const payload={clientId:c.id||'',clientName:c.name||'',assetId:a.id||'',assetName:a.id?assetName(a):'',teamId:t.id||'',teamName:t.name||'',date:$('sDate').value,status:$('sStatus')?.value||'Pendiente',priority:$('sPriority')?.value||'Normal',serviceType:selectedService,title,amount:totalFromItems>0?totalFromItems:Number($('sAmount').value||0),items,fields:serviceFields,route};
     if(state.editingServiceId){
-      await runTransaction(db,async tx=>{
-        const ref=docPath('services',state.editingServiceId),snap=await tx.get(ref);
-        if(!snap.exists())throw new Error('El servicio ya no existe.');
-        const fresh=snap.data();
-        tx.update(ref,{...payload,status:fresh.invoiceId||linkedInvoice?'Facturado':payload.status,updatedAt:serverTimestamp()});
-      });
+      await updateDoc(docPath('services',state.editingServiceId),{...payload,updatedAt:serverTimestamp()});
       resetServiceEditMode();
     }else{
       await add('services',payload);
     }
-    }catch(err){alert('No se pudo guardar el servicio: '+err.message);return;}
     e.target.reset();
     if($('sDate')) $('sDate').value=today();
     setServiceItems([]);
@@ -2476,7 +2439,7 @@ function bindForms(){
   $('purchaseForm').onsubmit=e=>{e.preventDefault();const s=supplierBy($('puSupplier').value);if(!s.id)return alert('Selecciona suplidor.');const subtotal=Number($('puSubtotal').value||0),tax=Number($('puTax').value||0),total=subtotal+tax;add('purchases',{supplierId:s.id,supplierName:s.name,date:$('puDate').value,dueDate:$('puDue').value,concept:$('puConcept').value,reference:$('puRef').value,number:$('puRef').value||('PO-'+String(Date.now()).slice(-6)),subtotal,tax,total,status:$('puStatus').value,note:$('puNote').value});e.target.reset();};
   $('paymentForm').onsubmit=async e=>{e.preventDefault();const inv=state.invoices.find(x=>x.id===$('pInvoice').value);if(!inv)return alert('Selecciona factura.');if(invoiceStatus(inv)==='Cancelada')return alert('No se puede cobrar una factura cancelada.');const amount=Number($('pAmount').value||0);if(amount<=0)return alert('Monto inválido.');const bal=invoiceBalance(inv);if(amount>bal+0.01 && !confirm('El cobro excede el balance. ¿Registrar de todos modos?')) return;const selectedMethod=$('pMethod').value;await add('payments',{invoiceId:inv.id,invoiceNumber:inv.number,date:$('pDate').value,method:selectedMethod,amount,note:$('pNote').value});await add('cashflow',{date:$('pDate').value,type:'Ingreso',concept:`Cobro ${inv.number}`,amount});const newBal=Math.max(0,bal-amount);await updateDoc(docPath('invoices',inv.id),{status:newBal<=0?'Pagada':amount>0?'Parcial':invoiceStatus(inv),paymentMethod:selectedMethod,updatedAt:serverTimestamp()});e.target.reset();};
   $('cashForm').onsubmit=e=>{e.preventDefault();add('cashflow',{date:$('xDate').value,type:$('xType').value,concept:$('xConcept').value,amount:Number($('xAmount').value||0)});e.target.reset();};
-  $('saveSettings').onclick=saveSettings;$('invoiceFromService').onclick=()=>{const s=state.services.find(s=>s.status==='Completado'&&!serviceInvoice(s));if(s)createInvoice(s.id);else alert('No hay servicios completados pendientes de facturar.');};
+  $('saveSettings').onclick=saveSettings;$('invoiceFromService').onclick=()=>{const s=state.services.find(s=>!state.invoices.some(i=>i.serviceId===s.id));if(s)createInvoice(s.id);else alert('No hay servicios pendientes de facturar.');};
   document.querySelectorAll('.report-option').forEach(b=>b.onclick=()=>selectReport(b.dataset.reportType));
   if($('reportViewBtn')) $('reportViewBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());};
   if($('reportPdfBtn')) $('reportPdfBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());setTimeout(downloadCurrentPreview,250);};
@@ -2893,19 +2856,11 @@ function v66RenderClients(){
   v66BindToolbar('clients');
 }
 function v66RenderServices(){
-  const box=$('servicesTable'); if(!box)return;
+  const box=$('servicesTable'); if(!box) return; const i=industry();
   const rows=v66ApplyModuleFilter(state.services,'services');
-  const completed=state.services.filter(s=>s.status==='Completado'&&!serviceInvoice(s)).length;
-  box.innerHTML=`<div class="service-command"><b>Centro de mando · Servicios</b><p>Hoja de servicio → Orden de trabajo → Cierre → Factura</p><span>${state.services.filter(s=>!['Completado','Facturado'].includes(s.status)).length} trabajos abiertos · ${completed} listos para facturar</span></div>`+
-    v66Toolbar('services','Buscar órdenes de trabajo','Cliente, servicio, activo, estado, empleado, fecha...',state.services,{dates:true,status:true})+
-    table(['Orden / Fecha','Cliente','Empleado','Trabajo','Estado','Importe','Acciones'],rows.map(s=>{
-      const inv=serviceInvoice(s);
-      return `<tr><td><b>${esc(workOrderNumber(s))}</b><br>${esc(s.date)} ${esc(s.scheduledTime||'')}<br><span class="tag">${esc(s.priority||'Normal')}</span></td><td>${esc(s.clientName)}</td><td>${esc(s.teamName||'Sin asignar')}</td><td><b>${esc(serviceTitle(s))}</b><br>${esc(s.assetName||'')}<br><span class="muted">${esc(s.instructions||'')}</span></td><td>${statusChip(inv?'Facturado':s.status||'Pendiente')}</td><td>${money(serviceAmount(s))}</td><td><div class="actions"><button data-work-order="${s.id}" type="button">Hoja / Orden PDF</button>${!inv&&!['Completado','Facturado'].includes(s.status)?`${s.status==='Pendiente'?`<button data-start-service="${s.id}" type="button">Iniciar</button>`:''}<button data-close-service="${s.id}" type="button">Cerrar servicio</button>`:''}${inv?`<button data-preview-invoice="${inv.id}" type="button">${esc(inv.number)}</button>`:s.status==='Completado'?`<button class="primary" data-invoice="${s.id}" type="button">Facturar</button>`:'<span class="muted">Facturación al completar</span>'}<button data-dup-service="${s.id}" type="button">Duplicar</button>${action('services',s.id)}</div></td></tr>`;
-    }));
+  box.innerHTML=v66Toolbar('services','Buscar servicios','Cliente, servicio, activo, estado, técnico, fecha...',state.services,{dates:true,status:true})+
+    table(['Fecha',i.client,'Activo','Servicio','Estado','Monto','Factura','Acción'],rows.map(s=>{const inv=state.invoices.find(x=>x.serviceId===s.id),amount=serviceAmount(s);return `<tr><td>${esc(s.date)}<br><span class="tag">${esc(s.priority||'Normal')}</span></td><td>${esc(s.clientName)}</td><td>${esc(s.assetName||'')}</td><td><b>${esc(serviceTitle(s))}</b><br><span class="muted">${esc((s.fields||[]).filter(Boolean).slice(0,3).join(' · '))}</span></td><td><span class="status-chip">${esc(s.status||'Pendiente')}</span></td><td>${money(amount)}</td><td>${inv?esc(inv.number):`<button data-invoice="${s.id}" type="button">Facturar</button>`}</td><td><div class="actions"><button data-dup-service="${s.id}" type="button">Duplicar</button>${action('services',s.id)}</div></td></tr>`;}));
   v66BindToolbar('services');
-  box.querySelectorAll('[data-work-order]').forEach(b=>b.onclick=()=>openWorkOrder(b.dataset.workOrder));
-  box.querySelectorAll('[data-start-service]').forEach(b=>b.onclick=()=>startServiceWork(b.dataset.startService));
-  box.querySelectorAll('[data-close-service]').forEach(b=>b.onclick=()=>openServiceClosure(b.dataset.closeService));
 }
 function v66RenderQuotes(){
   const box=$('quotesTable'); if(!box) return;
@@ -3236,98 +3191,3 @@ function bindClientPortalButtons(){
 }
 const __v77BindDynamicActions=v66BindDynamicActions;
 v66BindDynamicActions=function(){__v77BindDynamicActions();bindClientPortalButtons();};
-
-/* Servicios: despacho, orden de trabajo y cierre operativo. */
-function serviceInvoice(s){return state.invoices.find(i=>i.serviceId===s.id || (s.invoiceId && i.id===s.invoiceId));}
-function workOrderNumber(s){return s.workOrderNumber||'OT-'+String(s.id||'').toUpperCase();}
-function workOrderSections(s){
-  const c=clientBy(s.clientId)||{},a=assetBy(s.assetId)||{};
-  const labels=industry().serviceFields;
-  const sections=[
-    ['PROGRAMACIÓN',`${workOrderNumber(s)}\nFecha: ${s.date||'Por coordinar'} ${s.scheduledTime||''}\nEmpleado: ${s.teamName||'Sin asignar'}\nPrioridad: ${s.priority||'Normal'} · Estado: ${s.status||'Pendiente'}`],
-    ['CLIENTE Y UBICACIÓN',`${s.clientName||c.name||''}\nTeléfono: ${c.phone||''}\nDirección: ${s.workAddress||c.address||''}${c.city?' · '+c.city:''}\nAcceso: ${c.accessNotes||'Sin instrucciones adicionales'}${c.altName?'\nContacto alterno: '+c.altName+' '+(c.altPhone||''):''}${c.gpsUrl?'\nGPS: '+c.gpsUrl:''}`],
-    ['TRABAJO SOLICITADO',serviceTitle(s)],
-    ['EQUIPO', [s.assetName,a.brand,a.model,a.serial?'Serial: '+a.serial:'',a.location].filter(Boolean).join(' · ')||'Sin equipo relacionado'],
-    ['INSTRUCCIONES',s.instructions||'Realizar el trabajo indicado y reportar hallazgos antes de autorizar trabajos adicionales.'],
-  ];
-  const fields=(s.fields||[]).map((v,n)=>v?`${labels[n]||'Detalle'}: ${v}`:'').filter(Boolean);
-  if(fields.length)sections.push(['DETALLES TÉCNICOS',fields.join('\n')]);
-  if(s.route?.origin||s.route?.destination)sections.push(['RUTA',`${s.route.origin||''} → ${s.route.destination||''}`]);
-  if(s.items?.length)sections.push(['ALCANCE / PARTIDAS',s.items.map(it=>`${it.qty??1} × ${it.description||'Servicio'}`).join('\n')]);
-  sections.push(['CIERRE DEL SERVICIO',s.completion?`Fecha: ${s.completion.date||''}\nInforme: ${s.completion.report||''}\nMateriales utilizados: ${s.completion.materials||'Ninguno reportado'}\nRecibido por: ${s.completion.receivedBy||'No indicado'}`:'Trabajo realizado: _______________________________________\nHallazgos / materiales: ____________________________________\nHora de inicio: __________ Hora de cierre: __________\nEmpleado: __________________ Cliente: __________________\nFirma empleado: ______________ Firma cliente: ______________']);
-  return sections;
-}
-function serviceDialog(title,body){
-  $('serviceCommandDialog')?.remove();
-  const dialog=document.createElement('dialog');dialog.id='serviceCommandDialog';dialog.className='service-command-dialog';
-  dialog.innerHTML=`<div class="section-head"><h2>${esc(title)}</h2><button type="button" data-close-dialog aria-label="Cerrar">×</button></div>${body}`;
-  document.body.appendChild(dialog);
-  dialog.querySelector('[data-close-dialog]').onclick=()=>dialog.close();
-  dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return dialog;
-}
-function openWorkOrder(id){
-  const s=state.services.find(s=>s.id===id);if(!s)return;
-  const p=profile(),logo=p.logoPdf||p.logoDashboard;
-  const sections=workOrderSections(s);
-  const dialog=serviceDialog('Hoja de servicio / Orden de trabajo',`<p class="muted">Exporta el PDF para compartirlo con ${esc(s.teamName||'el empleado')}. Incluye el alcance y espacio para documentar el cierre.</p><div class="actions"><button class="primary" type="button" data-export-order>Exportar PDF</button><button type="button" data-print-order>Imprimir</button></div><div class="work-order-paper"><header>${logo?`<img src="${esc(logo)}" alt="Logo de la empresa">`:''}<h2>${esc(p.businessName||'Empresa')}</h2><p>${esc(p.phone||'')} · ${esc(p.email||'')}</p><h3>ORDEN DE TRABAJO</h3></header>${sections.map(([title,text])=>`<section><h4>${esc(title)}</h4><p>${esc(text)}</p></section>`).join('')}<footer>${esc(workOrderNumber(s))} · Hoja operativa</footer></div>`);
-  dialog.querySelector('[data-export-order]').onclick=async e=>{
-    const btn=e.currentTarget;btn.disabled=true;btn.textContent='Generando PDF...';
-    try{await exportWorkOrderPdf(s);}catch(err){alert('No se pudo exportar la orden: '+err.message);}finally{btn.disabled=false;btn.textContent='Exportar PDF';}
-  };
-  dialog.querySelector('[data-print-order]').onclick=()=>{
-    const w=window.open('','_blank');if(!w)return alert('Permite ventanas emergentes para imprimir.');
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(workOrderNumber(s))}</title><style>@page{size:letter;margin:18mm}body{font:12px Arial;color:#172033}header{text-align:center;border-bottom:2px solid #172033}header img{max-width:150px;max-height:85px}h4{margin:18px 0 6px}p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}section{break-inside:avoid}footer{margin-top:24px;text-align:center}</style></head><body>${dialog.querySelector('.work-order-paper').innerHTML}</body></html>`);
-    w.document.close();
-    Promise.all([...w.document.images].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;}))).then(()=>{w.focus();w.print();});
-  };
-}
-async function exportWorkOrderPdf(s){
-  if(!window.jspdf?.jsPDF)throw new Error('El generador PDF no está disponible. Recarga la página.');
-  const pdf=new window.jspdf.jsPDF({unit:'pt',format:'letter'}),p=profile();
-  const left=42,width=528,bottom=728;let y=42;
-  const footer=()=>{pdf.setFontSize(8);pdf.setTextColor(100);pdf.text(workOrderNumber(s)+' · '+pdf.getNumberOfPages(),left,756);};
-  const line=(text,bold=false)=>{
-    pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(bold?11:10);pdf.setTextColor(25,35,50);
-    const lines=pdf.splitTextToSize(String(text||'').replace(/→/g,' a '),width);
-    for(const value of lines){if(y+14>bottom){footer();pdf.addPage();y=42;}pdf.text(value,left,y);y+=14;}
-  };
-  const logo=p.logoPdf||p.logoDashboard;
-  if(logo){
-    const img=new Image();img.crossOrigin='anonymous';img.src=logo;
-    await Promise.race([img.decode().catch(()=>{}),new Promise(resolve=>setTimeout(resolve,3000))]);
-    if(img.naturalWidth){try{const ratio=Math.min(140/img.naturalWidth,65/img.naturalHeight);pdf.addImage(img,'PNG',left,y,img.naturalWidth*ratio,img.naturalHeight*ratio);y+=img.naturalHeight*ratio+16;}catch(e){console.warn('Logo PDF',e);}}
-  }
-  line(p.businessName||'Empresa',true);line([p.phone,p.email,p.address].filter(Boolean).join(' · '));y+=10;line('ORDEN DE TRABAJO',true);
-  for(const [title,text] of workOrderSections(s)){y+=14;if(y+42>bottom){footer();pdf.addPage();y=42;}line(title,true);line(text);}
-  footer();pdf.save(workOrderNumber(s)+'.pdf');
-}
-function openServiceClosure(id){
-  const s=state.services.find(s=>s.id===id);if(!s||serviceInvoice(s))return;
-  const dialog=serviceDialog('Cerrar servicio',`<p><b>${esc(workOrderNumber(s))}</b> · ${esc(s.clientName)} · ${esc(s.teamName||'Sin asignar')}</p><p class="muted">Registra el informe del empleado. Al guardar, el servicio quedará listo para facturar.</p><form id="serviceClosureForm" class="form-grid">${input('Fecha de culminación','scDate','date',today())}<div class="wide"><label for="scReport">Trabajo realizado / hallazgos</label><textarea id="scReport" required rows="4" maxlength="12000"></textarea></div><div class="wide"><label for="scMaterials">Materiales utilizados</label><textarea id="scMaterials" rows="2" maxlength="4000"></textarea></div>${input('Recibido por (cliente)','scReceivedBy')}<button type="submit" class="primary">Guardar cierre</button></form>`);
-  $('serviceClosureForm').onsubmit=async e=>{
-    e.preventDefault();const report=$('scReport').value.trim();if(!report)return alert('Indica el trabajo realizado.');
-    const completion={date:$('scDate').value,report,materials:$('scMaterials').value.trim(),receivedBy:$('scReceivedBy').value.trim(),teamId:s.teamId||'',teamName:s.teamName||''};
-    if(!completion.date)return alert('Indica la fecha de culminación.');
-    const btn=e.target.querySelector('[type=submit]');btn.disabled=true;
-    try{
-      await runTransaction(db,async tx=>{
-        const ref=docPath('services',id),snap=await tx.get(ref);
-        if(!snap.exists())throw new Error('El servicio ya no existe.');
-        const fresh=snap.data();if(fresh.invoiceId||fresh.status==='Facturado')throw new Error('El servicio ya está facturado.');
-        tx.update(ref,{completion,status:'Completado',completedAt:serverTimestamp(),updatedAt:serverTimestamp()});
-      });
-      dialog.close();
-    }catch(err){alert('No se pudo cerrar el servicio: '+err.message);btn.disabled=false;}
-  };
-}
-
-async function startServiceWork(id){
-  try{await runTransaction(db,async tx=>{
-    const ref=docPath('services',id),snap=await tx.get(ref);
-    if(!snap.exists())throw new Error('El servicio ya no existe.');
-    const s=snap.data();if(s.status!=='Pendiente')return;
-    if(!s.teamId)throw new Error('Asigna un empleado antes de iniciar el trabajo.');
-    if(state.team?.find(t=>t.id===s.teamId)?.status==='Inactivo')throw new Error('El empleado asignado está inactivo.');
-    tx.update(ref,{status:'En proceso',startedAt:serverTimestamp(),updatedAt:serverTimestamp()});
-  });}catch(e){alert('No se pudo iniciar el servicio: '+e.message);}
-}
