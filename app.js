@@ -2342,7 +2342,563 @@ async function wipeAllData(){
 }
 function bindDataSettings(){
   const exp=$('exportBackupBtn'); if(exp) exp.onclick=exportBackup;
-  const imp=$('importDat…13017 tokens truncated…oduleFilter(state.services,'services');
+  const imp=$('importDataFile'); if(imp) imp.onchange=()=>handleImportFile(imp);
+  const wipe=$('wipeAllDataBtn'); if(wipe) wipe.onclick=wipeAllData;
+}
+
+function fileData(input){return new Promise(res=>{const f=input?.files?.[0];if(!f)return res('');const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);});}
+async function saveSettings(){const p={...profile()};['businessName','slogan','phone','whatsapp','email','web','address','merchant','representative','tax','transportRatePerMile','transportBaseCharge','dailyGoal','primaryColor','secondaryColor','language','calendarProvider','confirmafyCalendarUrl','googleCalendarUrl'].forEach(k=>p[k]=$('set_'+k)?.value||'');p.industry=$('set_industry').value;p.customServices={...(p.customServices||{})};p.customServices[p.industry]=($('set_services')?.value||'').split('\n').map(x=>x.trim()).filter(Boolean);for(const k of ['logoDashboard','logoPdf','favicon','signature']){const v=await fileData($('set_'+k));if(v)p[k]=v;}if(onboardingProgress()>=50) p.onboardingSkipped=false; await setDoc(profRef(),p,{merge:true});alert(T('Guardado.'));}
+
+
+function reportRows(type){
+  const rows=[];
+  if(type==='executive'){
+    rows.push(['Concepto','Total'],['Clientes',state.clients.length],['Servicios',state.services.length],['Facturado',sum(state.invoices,'total')],['Cobrado',sum(state.payments,'amount')],['Nómina pagada',state.payroll.reduce((a,x)=>a+payrollNet(x),0)],['Suplidores pagados',sum(state.supplierPayments,'amount')]);
+  }else if(type==='finance'){
+    const f=financialSummary(); rows.push(['Indicador','Total'],['Facturado',f.invoiced],['Cobrado',f.paid],['Por cobrar',f.receivable],['Vencido',f.overdue],['Gastos',f.expenses],['Caja neta',f.net],['Ingreso del mes',f.monthIncome],['Gasto del mes',f.monthExpenses],['Neto del mes',f.monthNet]);
+  }else if(type==='receivable'){
+    rows.push(['Factura','Cliente','Vence','Total','Pagado','Balance','Estado']); state.invoices.filter(inv=>invoiceBalance(inv)>0 && invoiceStatus(inv)!=='Cancelada').forEach(inv=>rows.push([inv.number,inv.clientName,inv.dueDate||'',inv.total,invoicePaid(inv),invoiceBalance(inv),invoiceStatus(inv)]));
+  }else if(type==='invoices'){
+    rows.push(['Factura','Cliente','Total','Pagado','Balance','Estado']); state.invoices.forEach(x=>rows.push([x.number,x.clientName,x.total,invoicePaid(x),invoiceBalance(x),invoiceStatus(x)]));
+  }else if(type==='payments'){
+    rows.push(['Fecha','Factura','Método','Monto']); state.payments.forEach(x=>rows.push([x.date,x.invoiceNumber,x.method,x.amount]));
+  }else if(type==='payroll'){
+    rows.push(['Fecha','Empleado','Periodo','Bruto','Bonos','Retenciones','Adelantos','Otros descuentos','Neto']); state.payroll.forEach(x=>rows.push([x.date,x.teamName,x.period,x.gross,x.bonus,payrollRetention(x),payrollAdvance(x),payrollOtherDeductions(x),payrollNet(x)]));
+  }else if(type==='retentions'){
+    rows.push(['Fecha','Empleado','Tipo','Destino','Monto','Estado','Fecha límite','Pagado','Referencia']); state.payrollRetentions.forEach(r=>rows.push([r.date,r.teamName,r.type,r.destination,r.amount,retentionStatus(r),r.dueDate||'',r.paidAt||'',r.reference||'']));
+  }else if(type==='suppliers'){
+    rows.push(['Suplidor','Compras','Pagado','Balance']); state.suppliers.forEach(x=>rows.push([x.name,supplierPurchasesTotal(x.id),supplierPaid(x.id),supplierBalance(x.id)]));
+  }else if(type==='purchases'){
+    rows.push(['Fecha','Suplidor','Concepto','Total','Pagado','Balance','Estado']); state.purchases.forEach(x=>rows.push([x.date,x.supplierName,x.concept,x.total,purchasePaid(x.id),purchaseBalance(x),purchaseStatus(x)]));
+  }else if(type==='ops'){
+    const o=operationalSummary(); rows.push(['Indicador','Total'],['Empleados activos',o.employees],['Nómina pendiente',o.payrollDue],['Suplidores',o.suppliers],['Compras registradas',o.purchases],['Cuentas por pagar',o.purchaseDebt],['Compras vencidas',o.overduePurchases]);
+  }else if(type==='quotes'){
+    rows.push(['Cotización','Cliente','Válida','Total','Estado']); state.quotes.forEach(q=>{const t=quoteTotals(q); rows.push([q.number,q.clientName,q.validUntil||'',t.total,quoteStatus(q)]);});
+  }else if(type==='assetsClient'){
+    rows.push(['Cliente','Activo','Categoría','Ubicación','Estado']); state.assets.forEach(a=>rows.push([a.clientName||'Sin cliente',assetName(a),assetCategory(a),assetLocation(a),assetStatus(a)]));
+  }else if(type==='assetsStatus'){
+    const groups={}; state.assets.forEach(a=>{const st=assetStatus(a); groups[st]=(groups[st]||0)+1;}); rows.push(['Estado','Cantidad']); Object.entries(groups).forEach(([st,c])=>rows.push([st,c]));
+  }else{
+    rows.push(['Fecha','Cliente','Activo','Servicio','Monto']); state.services.forEach(x=>rows.push([x.date,x.clientName,x.assetName||'',serviceTitle(x),serviceAmount(x)]));
+  }
+  return rows;
+}
+function csvEscape(v){return '"'+String(v??'').replace(/"/g,'""')+'"';}
+function exportReport(type){
+  if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}
+  const rows=reportRows(type); if(!rows.length)return;
+  const csv=rows.map(r=>r.map(csvEscape).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`nexus-${type||'reporte'}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
+function currentReportType(){
+  const selected=document.querySelector('.report-option.selected:not(.report-hidden)') || document.querySelector('.report-option:not(.report-hidden)');
+  return selected?.dataset.reportType || 'executive';
+}
+function selectReport(type){
+  document.querySelectorAll('.report-option').forEach(btn=>btn.classList.toggle('selected', btn.dataset.reportType===type));
+}
+function filterReportCenter(){
+  const q=($('reportSearch')?.value||'').toLowerCase().trim();
+  document.querySelectorAll('.report-option').forEach(item=>{
+    const hay=(item.dataset.reportName||item.textContent||'').toLowerCase();
+    item.classList.toggle('report-hidden', !!q && !hay.includes(q));
+  });
+  const selected=document.querySelector('.report-option.selected');
+  if(selected && selected.classList.contains('report-hidden')){
+    const first=document.querySelector('.report-option:not(.report-hidden)');
+    if(first) selectReport(first.dataset.reportType);
+  }
+}
+function downloadCurrentPreview(){
+  const btn=$('downloadPreview'); if(btn) btn.click();
+}
+
+function bindForms(){
+  $('clientForm').onsubmit=e=>{e.preventDefault();add('clients',{name:$('cName').value,phone:$('cPhone').value,email:$('cEmail').value,city:$('cCity').value,address:$('cAddress').value,accessNotes:$('cAccessNotes')?.value||'',gpsUrl:$('cGpsUrl')?.value||'',altName:$('cAltName')?.value||'',altPhone:$('cAltPhone')?.value||'',altEmail:$('cAltEmail')?.value||'',tags:readClientTags('cTags'),notes:$('cNotes')?.value||''});e.target.reset();};
+  $('serviceForm').onsubmit=async e=>{
+    e.preventDefault();
+    const c=state.clients.find(x=>x.id===$('sClient').value)||{},t=state.team.find(x=>x.id===$('sTeam').value)||{},a=assetBy($('sAsset')?.value||'');
+    const items=getServiceItems();
+    const enteredTitle=($('sTitle')?.value||'').trim();
+    const totalFromItems=serviceItemsTotal(items);
+    const selectedService=$('sServiceType')?.value||industry().service;
+    const title=enteredTitle || items[0]?.description || selectedService;
+    const route=transportRouteFromForm();
+    const serviceFields=industry().serviceFields.map((_,n)=>$('sF'+n)?.value||'');
+    if(!c.id) return alert('Selecciona un cliente para la hoja de servicio.');
+    if(!$('sDate').value) return alert('Indica la fecha del servicio.');
+    const previous=state.services.find(x=>x.id===state.editingServiceId);
+    const linkedInvoice=previous && serviceInvoice(previous);
+    const selectedStatus=$('sStatus')?.value||'Pendiente';
+    if(selectedStatus==='Facturado' && !linkedInvoice) return alert('Utiliza Facturar después de completar el servicio.');
+    const payload={scheduledTime:$('sScheduledTime')?.value||'',workAddress:$('sWorkAddress')?.value.trim()||'',instructions:$('sInstructions')?.value.trim()||'',clientId:c.id||'',clientName:c.name||'',assetId:a.id||'',assetName:a.id?assetName(a):'',teamId:t.id||'',teamName:t.name||'',date:$('sDate').value,status:linkedInvoice?'Facturado':selectedStatus,priority:$('sPriority')?.value||'Normal',serviceType:selectedService,title,amount:totalFromItems>0?totalFromItems:Number($('sAmount').value||0),items,fields:serviceFields,route};
+    if(previous && previous.teamId!==payload.teamId)Object.assign(payload,{employeePortalId:'',employeeDispatchKey:'',employeeLastEventId:'',employeeLastAction:'',employeeIssue:null});
+    try{
+    if(state.editingServiceId){
+      await runTransaction(db,async tx=>{
+        const ref=docPath('services',state.editingServiceId),snap=await tx.get(ref);
+        if(!snap.exists())throw new Error('El servicio ya no existe.');
+        const fresh=snap.data();
+        tx.update(ref,{...payload,status:fresh.invoiceId||linkedInvoice?'Facturado':payload.status,updatedAt:serverTimestamp()});
+      });
+      resetServiceEditMode();
+    }else{
+      await add('services',payload);
+    }
+    }catch(err){alert('No se pudo guardar el servicio: '+err.message);return;}
+    e.target.reset();
+    if($('sDate')) $('sDate').value=today();
+    setServiceItems([]);
+    if(isTransport()) updateTransportTotal();
+  };
+  $('cancelServiceEdit') && ($('cancelServiceEdit').onclick=()=>{ $('serviceForm').reset(); if($('sDate')) $('sDate').value=today(); setServiceItems([]); resetServiceEditMode(); if(isTransport()) updateTransportTotal(); });
+  if($('quoteForm')) $('quoteForm').onsubmit=async e=>{e.preventDefault();const c=clientBy($('qClient')?.value||'');if(!c.id)return alert('Selecciona cliente.');const a=assetBy($('qAsset')?.value||'');const t=teamBy($('qTeam')?.value||'');const items=getQuoteItems();const subtotal=serviceItemsTotal(items);const ivu=subtotal*taxRate();const payload={clientId:c.id,clientName:c.name,assetId:a.id||'',assetName:a.id?assetName(a):'',teamId:t.id||'',teamName:t.name||'',date:$('qDate').value,validUntil:$('qValid').value,status:$('qStatus').value,priority:$('qPriority').value,serviceType:$('qServiceType').value,title:$('qTitle').value,items,subtotal,ivu,taxPercent:taxPercent(),total:subtotal+ivu,notes:$('qNotes').value,terms:$('qTerms').value,updatedAt:serverTimestamp()};if(state.editingQuoteId){await updateDoc(docPath('quotes',state.editingQuoteId),payload);resetQuoteEditMode();}else{await add('quotes',{number:quoteNumber(),...payload});}e.target.reset();setQuoteItems([{description:'',qty:1,price:''}]);};
+  if($('cancelQuoteEdit')) $('cancelQuoteEdit').onclick=()=>{resetQuoteEditMode();$('quoteForm')?.reset();setQuoteItems([{description:'',qty:1,price:''}]);};
+  $('teamForm').onsubmit=e=>{e.preventDefault();const v=assetBy($('tAssignedVehicle')?.value||'');add('team',{name:$('tName').value,phone:$('tPhone').value,email:$('tEmail').value,personalId:$('tPersonalId')?.value||'',ssn:formatSSNInput($('tSsn')?.value||''),driverLicense:$('tDriverLicense')?.value||'',assignedVehicleId:v.id||'',assignedVehicleName:v.id?assetName(v):'',role:$('tRole').value,status:$('tStatus')?.value||'Activo',salary:Number($('tSalary').value||0),rate:Number($('tRate').value||0),retention:Number($('tRetention').value||0),startDate:$('tStart').value});e.target.reset();};
+  $('assetForm').onsubmit=e=>{e.preventDefault();const c=clientBy($('aClient')?.value||'');add('assets',{clientId:c.id||'',clientName:c.name||'',industry:profile().industry||'hvac',name:$('aName').value,category:$('aCategory').value,brand:$('aBrand')?.value||'',model:$('aModel')?.value||'',serial:$('aSerial')?.value||'',location:$('aLocation').value,status:$('aStatus').value,value:Number($('aValue').value||0),date:$('aDate').value,purchaseDate:$('aPurchaseDate')?.value||'',expirationDate:$('aExpiration')?.value||'',warrantyExpirationDate:$('aWarrantyExpiration')?.value||'',nextMaintenanceDate:$('aNextMaintenance')?.value||'',warranty:$('aWarranty').value,notes:$('aNotes').value});e.target.reset();};
+  $('supplierForm').onsubmit=e=>{e.preventDefault();add('suppliers',{name:$('supName').value,phone:$('supPhone').value,whatsapp:$('supWhatsapp')?.value||'',email:$('supEmail').value,contact:$('supContact')?.value||'',category:$('supCategory')?.value||'',creditLimit:Number($('supCredit')?.value||0),openingBalance:Number($('supOpening').value||0),fields:industry().supplierFields.map((_,n)=>$('supF'+n)?.value||'')});e.target.reset();};
+  $('supplierPaymentForm').onclick=e=>{if(e.target?.id==='reconcileSupplierPayments')reconcileGeneralSupplierPayments();};
+  $('supplierPaymentForm').onchange=e=>{if(e.target?.id==='spSupplier')syncSupplierPurchaseOptions();};
+  $('supplierPaymentForm').onsubmit=async e=>{
+    e.preventDefault();
+    const s=supplierBy($('spSupplier').value);if(!s.id)return alert('Selecciona suplidor.');
+    const pu=state.purchases.find(x=>x.id===($('spPurchase')?.value||''))||{};
+    if(pu.id&&pu.supplierId!==s.id)return alert('La compra seleccionada pertenece a otro suplidor.');
+    const amount=Number($('spAmount').value||0);if(!(amount>0))return alert('Escribe un monto válido.');
+    const allocations=pu.id?[]:allocationsForGeneralPayment(s.id,amount);
+    await add('supplierPayments',{supplierId:s.id,supplierName:s.name,purchaseId:pu.id||'',purchaseNumber:pu.number||pu.reference||'',allocations,date:$('spDate').value,method:$('spMethod').value,amount,note:$('spNote').value});
+    await add('cashflow',{date:$('spDate').value,type:'Gasto',concept:`Pago suplidor ${s.name}${pu.id?' · '+(pu.number||pu.concept):''}`,amount});
+    e.target.reset();
+    if(!pu.id&&allocations.length){alert(`Pago registrado. ${money(allocations.reduce((a,x)=>a+Number(x.amount||0),0))} aplicado automáticamente a ${allocations.length} compra(s) pendiente(s).`);}
+  };
+  $('payrollForm').onsubmit=async e=>{e.preventDefault();const t=teamBy($('prTeam').value);if(!t.id)return alert('Selecciona empleado/equipo.');const gross=Number($('prGross').value||0),bonus=Number($('prBonus')?.value||0),retention=Number($('prRetention')?.value||0),ded=Number($('prDeductions').value||0),adv=Number($('prAdvance')?.value||0),retType=$('prRetentionType')?.value||'Hacienda',retDest=$('prRetentionDest')?.value||'Departamento de Hacienda',retDue=$('prRetentionDue')?.value||plusDays(15),net=Math.max(0,gross+bonus-retention-ded-adv);const payrollRef=await add('payroll',{teamId:t.id,teamName:t.name,date:$('prDate').value,period:$('prPeriod').value,hours:Number($('prHours')?.value||0),overtime:Number($('prOvertime')?.value||0),gross,bonus,retention,retentionType:retType,retentionDestination:retDest,retentionDueDate:retDue,advance:adv,deductions:ded,totalDeductions:retention+ded+adv,net,method:$('prMethod').value,note:$('prNote').value});const payrollId=payrollRef?.id||'';if(retention>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:retType,destination:retDest,amount:retention,status:'Pendiente',dueDate:retDue,note:$('prNote').value});}if(adv>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:'Adelanto al empleado',destination:t.name,amount:adv,status:'Aplicada',dueDate:$('prDate').value,paidAt:$('prDate').value,note:'Adelanto descontado en nómina'});}if(ded>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:'Descuento interno',destination:'Empresa',amount:ded,status:'Aplicada',dueDate:$('prDate').value,paidAt:$('prDate').value,note:'Descuento aplicado en nómina'});}await add('cashflow',{date:$('prDate').value,type:'Gasto',concept:`Nómina ${t.name}`,amount:net,note:`Bruto ${money(gross)} · Bonos ${money(bonus)} · Retenciones ${money(retention)} → ${retDest} · Adelantos ${money(adv)} · Otros descuentos ${money(ded)} · Neto ${money(net)}`});e.target.reset();};
+  $('purchaseForm').onsubmit=e=>{e.preventDefault();const s=supplierBy($('puSupplier').value);if(!s.id)return alert('Selecciona suplidor.');const subtotal=Number($('puSubtotal').value||0),tax=Number($('puTax').value||0),total=subtotal+tax;add('purchases',{supplierId:s.id,supplierName:s.name,date:$('puDate').value,dueDate:$('puDue').value,concept:$('puConcept').value,reference:$('puRef').value,number:$('puRef').value||('PO-'+String(Date.now()).slice(-6)),subtotal,tax,total,status:$('puStatus').value,note:$('puNote').value});e.target.reset();};
+  $('paymentForm').onsubmit=async e=>{e.preventDefault();const inv=state.invoices.find(x=>x.id===$('pInvoice').value);if(!inv)return alert('Selecciona factura.');if(invoiceStatus(inv)==='Cancelada')return alert('No se puede cobrar una factura cancelada.');const amount=Number($('pAmount').value||0);if(amount<=0)return alert('Monto inválido.');const bal=invoiceBalance(inv);if(amount>bal+0.01 && !confirm('El cobro excede el balance. ¿Registrar de todos modos?')) return;const selectedMethod=$('pMethod').value;await add('payments',{invoiceId:inv.id,invoiceNumber:inv.number,date:$('pDate').value,method:selectedMethod,amount,note:$('pNote').value});await add('cashflow',{date:$('pDate').value,type:'Ingreso',concept:`Cobro ${inv.number}`,amount});const newBal=Math.max(0,bal-amount);await updateDoc(docPath('invoices',inv.id),{status:newBal<=0?'Pagada':amount>0?'Parcial':invoiceStatus(inv),paymentMethod:selectedMethod,updatedAt:serverTimestamp()});e.target.reset();};
+  $('cashForm').onsubmit=e=>{e.preventDefault();add('cashflow',{date:$('xDate').value,type:$('xType').value,concept:$('xConcept').value,amount:Number($('xAmount').value||0)});e.target.reset();};
+  $('saveSettings').onclick=saveSettings;$('invoiceFromService').onclick=()=>{const s=state.services.find(s=>s.status==='Completado'&&!serviceInvoice(s));if(s)createInvoice(s.id);else alert('No hay servicios completados pendientes de facturar.');};
+  document.querySelectorAll('.report-option').forEach(b=>b.onclick=()=>selectReport(b.dataset.reportType));
+  if($('reportViewBtn')) $('reportViewBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());};
+  if($('reportPdfBtn')) $('reportPdfBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());setTimeout(downloadCurrentPreview,250);};
+  if($('reportExportBtn')) $('reportExportBtn').onclick=()=>exportReport(currentReportType());
+  if($('reportSearch')) $('reportSearch').oninput=filterReportCenter;
+  $('printPreview').onclick=()=>{const html=state.previewHtml||$('reportPreview').innerHTML;const w=open('','_blank');if(!w){alert('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e intenta nuevamente.');return;}w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><link rel="stylesheet" href="styles.css?v=98"><style>@page{size:letter;margin:.38in;}html,body{margin:0!important;padding:0!important;background:#fff!important;width:100%!important;}body{display:block!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}.doc-page{box-sizing:border-box!important;width:100%!important;max-width:none!important;min-height:calc(11in - .76in)!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;transform:none!important;zoom:1!important;display:flex!important;flex-direction:column!important;overflow:visible!important;}.doc-body{flex:1 1 auto!important;padding:0 0 .08in 0!important;}.doc-foot,.clean-doc-footer{position:static!important;margin-top:auto!important;text-align:center!important;}.doc-table,.clean-items{width:100%!important;table-layout:fixed!important;}.clean-items td,.clean-items th{overflow-wrap:anywhere!important;word-break:normal!important;}@media print{html,body{width:100%!important;height:auto!important}.doc-page{page-break-after:auto!important;break-after:auto!important}}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},500));<\/script></body></html>`);w.document.close();};
+  $('downloadPreview').onclick=async()=>{const btn=$('downloadPreview');const original=btn?.textContent||'Descargar PDF';try{if(!window.html2canvas)throw new Error('html2canvas no está disponible');if(!window.jspdf?.jsPDF)throw new Error('jsPDF no está disponible');if(btn){btn.disabled=true;btn.textContent='Generando PDF...';}const host=document.createElement('div');host.style.cssText='position:fixed;left:-12000px;top:0;width:816px;background:#fff;z-index:-1;pointer-events:none;';host.innerHTML=state.previewHtml||$('reportPreview').innerHTML;document.body.appendChild(host);const page=host.querySelector('.doc-page')||host.firstElementChild||host;page.style.boxSizing='border-box';page.style.width='816px';page.style.maxWidth='816px';page.style.margin='0';page.style.boxShadow='none';page.style.border='0';page.style.background='#fff';await new Promise(r=>setTimeout(r,120));const canvas=await window.html2canvas(page,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false,windowWidth:816,scrollX:0,scrollY:0});host.remove();const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true});const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight(),margin=24,usableW=pageW-margin*2,usableH=pageH-margin*2;const imgW=canvas.width,imgH=canvas.height;const scale=Math.min(usableW/imgW,usableH/imgH);const drawW=imgW*scale,drawH=imgH*scale;const x=(pageW-drawW)/2,y=margin;const img=canvas.toDataURL('image/jpeg',0.96);pdf.addImage(img,'JPEG',x,y,drawW,drawH,undefined,'FAST');pdf.save('nexus-documento.pdf');}catch(err){console.error('PDF export error',err);alert('No se pudo generar el PDF. Recarga Nexus e inténtalo otra vez.');}finally{if(btn){btn.disabled=false;btn.textContent=original;}}};
+  if($('sideUpgrade')) $('sideUpgrade').onclick=()=>{if(canUpgradePlan())show('plans');};$('mobileMenu').onclick=()=>document.querySelector('.sidebar').classList.toggle('open');$('logoutBtn').onclick=()=>signOut(auth);if($('globalSearch')) $('globalSearch').oninput=renderGlobalSearch;
+}
+
+
+/* V50 CLEAN: Seguimiento + Report Center por fechas */
+function v50PlusMonths(dateString, months=6){
+  const base=dateString?new Date(String(dateString)+'T12:00:00'):new Date();
+  if(Number.isNaN(base.getTime())) return plusDays(180);
+  const day=base.getDate();
+  base.setMonth(base.getMonth()+Number(months||6));
+  if(base.getDate()<day) base.setDate(0);
+  return base.toISOString().slice(0,10);
+}
+function followupStatus(f){
+  const stored=String(f?.status||'').trim();
+  if(stored==='Completado' || stored==='Cancelado') return stored;
+  const due=String(f?.dueDate||'');
+  if(due && due<today()) return 'Vencido';
+  if(due && due<=plusDays(14)) return 'Próximo';
+  return stored || 'Programado';
+}
+function followupSummary(){
+  const rows=state.followups||[];
+  const open=rows.filter(f=>!['Completado','Cancelado'].includes(followupStatus(f)));
+  const dueSoon=rows.filter(f=>['Programado','Próximo'].includes(followupStatus(f)) && String(f.dueDate||'')>=today() && String(f.dueDate||'')<=plusDays(14));
+  const overdue=rows.filter(f=>followupStatus(f)==='Vencido');
+  return {total:rows.length,open:open.length,dueSoon:dueSoon.length,overdue:overdue.length,maintenance:rows.filter(f=>f.type==='Mantenimiento').length,quotes:rows.filter(f=>f.type==='Cotización').length,installations:rows.filter(f=>f.type==='Instalación').length};
+}
+const OASIS_BOOKING_URL='https://confirmafy.com/oasis-services-pr';
+function calendarProvider(){return String(profile().calendarProvider||'confirmafy').toLowerCase();}
+function configuredCalendarUrl(){
+  const p=profile(), provider=calendarProvider();
+  const confirmafy=String(p.confirmafyCalendarUrl||OASIS_BOOKING_URL).trim();
+  const google=String(p.googleCalendarUrl||'').trim();
+  return provider==='google' ? (google||confirmafy||OASIS_BOOKING_URL) : (confirmafy||google||OASIS_BOOKING_URL);
+}
+function configuredCalendarLabel(){return calendarProvider()==='google'?'Google Calendar':'Confirmafy';}
+function openConfiguredCalendar(){
+  const url=configuredCalendarUrl();
+  if(!url){alert('Configura primero el enlace del calendario en Configuración.');return;}
+  window.open(url,'_blank','noopener');
+}
+function isQuoteFollowup(f){
+  const type=String(f?.type||'').toLowerCase();
+  const source=String(f?.sourceType||'').toLowerCase();
+  const title=String(f?.title||'').toLowerCase();
+  return type.includes('cotiz') || source==='quote' || title.includes('cotiz');
+}
+function followupMessage(f){
+  const c=clientBy(f.clientId||'');
+  const name=String(f.clientName||c.name||'').trim();
+  if(isQuoteFollowup(f)){
+    const quote=state.quotes.find(q=>q.id===f.sourceId) || {};
+    const number=String(f.quoteNumber||quote.number||'').trim();
+    const reference=number ? ` ${number}` : '';
+    return `Hola${name?', '+name:''}. 👋
+
+Le escribimos para dar seguimiento a la cotización${reference} que le enviamos. Deseamos confirmar si pudo revisarla y saber si tiene alguna pregunta, necesita algún ajuste o desea continuar con el servicio.
+
+Quedamos atentos para ayudarle y coordinar los próximos pasos.
+
+Gracias por considerar a Oasis Air Cleaner Services LLC.`;
+  }
+  return `Hola${name?', '+name:''}. 👋
+
+Solo queríamos darle seguimiento desde nuestra última visita para asegurarnos de que su aire acondicionado continúe funcionando correctamente.
+
+Si desea programar su próximo mantenimiento o necesita asistencia, estaremos encantados de ayudarle.
+
+📅 Agende su cita cuando le sea más conveniente:
+${configuredCalendarUrl()}
+
+Gracias por confiar en Oasis Air Cleaner Services LLC.`;
+}
+function followupWhatsappUrl(f){
+  const c=clientBy(f.clientId||'');
+  const raw=String(c.whatsapp||c.phone||'').replace(/\D/g,'');
+  const phone=raw.length===10?'1'+raw:raw;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(followupMessage(f))}`;
+}
+async function sendFollowupWhatsapp(id){
+  const f=(state.followups||[]).find(x=>x.id===id); if(!f) return;
+  const url=followupWhatsappUrl(f);
+  open(url,'_blank');
+  const sentAt=new Date().toISOString();
+  await updateDoc(docPath('followups',id),{status:'En espera de ser atendido',sentAt,lastSentAt:sentAt,channel:'WhatsApp',updatedAt:serverTimestamp()}).catch(console.warn);
+  if(f.clientId) await updateDoc(docPath('clients',f.clientId),{followupStatus:'En espera de ser atendido',lastFollowupAt:sentAt,updatedAt:serverTimestamp()}).catch(console.warn);
+}
+async function completeFollowup(id){
+  const f=(state.followups||[]).find(x=>x.id===id); if(!f)return;
+  await updateDoc(docPath('followups',id),{status:'Completado',completedAt:today(),updatedAt:serverTimestamp()});
+  if(String(f.type||'')==='Mantenimiento'){
+    const copy={...f,status:'Programado',dueDate:v50PlusMonths(f.dueDate||today(),Number(f.intervalMonths||6)),completedAt:'',note:f.note||'Mantenimiento recurrente estándar cada 6 meses.'};
+    delete copy.id; delete copy.createdAt; delete copy.updatedAt;
+    await add('followups',copy);
+  }
+}
+async function createMaintenanceFollowupFromService(service){
+  if(!service?.id || !canCreate('followups')) return;
+  const exists=(state.followups||[]).some(f=>f.sourceId===service.id && f.sourceType==='service' && String(f.type||'')==='Mantenimiento' && followupStatus(f)!=='Cancelado');
+  if(exists) return;
+  const a=assetBy(service.assetId||'');
+  await add('followups',{clientId:service.clientId||'',clientName:service.clientName||'',assetId:service.assetId||'',assetName:service.assetName||assetName(a)||'',sourceType:'service',sourceId:service.id,type:'Mantenimiento',title:'Mantenimiento preventivo 6 meses',dueDate:v50PlusMonths(service.date||today(),6),intervalMonths:6,status:'Programado',priority:'Normal',channel:'WhatsApp',note:'Seguimiento automático estándar: mantenimiento preventivo cada 6 meses.'});
+}
+async function ensureQuoteFollowup(quote){
+  if(!quote?.id || !canCreate('followups')) return;
+  const exists=(state.followups||[]).some(f=>f.sourceType==='quote' && f.sourceId===quote.id);
+  if(exists) return;
+  await add('followups',{clientId:quote.clientId||'',clientName:quote.clientName||'',assetId:quote.assetId||'',assetName:quote.assetName||'',sourceType:'quote',sourceId:quote.id,quoteNumber:quote.number||'',type:'Cotización',title:'Seguimiento de cotización '+(quote.number||''),dueDate:plusDays(2),intervalMonths:0,status:'Programado',priority:quote.priority||'Normal',channel:'WhatsApp',note:'Dar seguimiento a cotización enviada.'});
+}
+
+function followupGroup(row){
+  const type=String(row.type||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  if(type.includes('mantenimiento')) return 'maintenance';
+  if(type.includes('cotizacion') || (!type && row.sourceType==='quote')) return 'quotes';
+  return 'other';
+}
+function selectedFollowupGroup(){return ['maintenance','quotes','other'].includes(state.followupGroup)?state.followupGroup:'maintenance';}
+function selectedFollowupArchive(){return state.followupArchive==='completed'?'completed':'active';}
+function followupInSelectedArchive(row){return (followupStatus(row)==='Completado')===(selectedFollowupArchive()==='completed');}
+function followupGroupRows(){return (state.followups||[]).filter(row=>followupGroup(row)===selectedFollowupGroup() && followupInSelectedArchive(row));}
+function followupFilterKey(module){return module==='followups'?'followups_'+selectedFollowupGroup()+'_'+selectedFollowupArchive():module;}
+function renderFollowupGroups(){
+  const box=$('followupGroups'); if(!box)return;
+  const selected=selectedFollowupGroup();
+  const archive=selectedFollowupArchive();
+  const completedCount=(state.followups||[]).filter(row=>followupGroup(row)===selected && followupStatus(row)==='Completado').length;
+  const groups=[['maintenance','Mantenimientos'],['quotes','Cotizaciones'],['other','Otros seguimientos']];
+  box.innerHTML=groups.map(([key,label])=>`<button type="button" role="tab" aria-selected="${selected===key}" class="${selected===key?'primary':''}" data-followup-group="${key}">${label} (${(state.followups||[]).filter(row=>followupGroup(row)===key && followupInSelectedArchive(row)).length})</button>`).join('');
+  box.insertAdjacentHTML('beforeend',`<label style="margin-left:auto">Ver <select id="followupArchive" aria-label="Menú de seguimientos"><option value="active" ${archive==='active'?'selected':''}>Seguimientos activos</option><option value="completed" ${archive==='completed'?'selected':''}>Completados (${completedCount})</option></select></label>`);
+  $('followupArchive').onchange=()=>{
+    clearTimeout(v66SearchTimers.followups);
+    state.followupArchive=$('followupArchive').value;
+    v66RenderFollowups();
+    v66BindDynamicActions();
+  };
+  box.querySelectorAll('[data-followup-group]').forEach(button=>button.onclick=()=>{
+    clearTimeout(v66SearchTimers.followups);
+    state.followupGroup=button.dataset.followupGroup;
+    renderFollowupForm();
+    v66RenderFollowups();
+    v66BindDynamicActions();
+  });
+}
+
+function renderFollowupForm(){
+  if(!$('followupForm')) return;
+  const selectedClient=$('fClient')?.value||'';
+  const group=selectedFollowupGroup();
+  const types=group==='maintenance'?['Mantenimiento']:group==='quotes'?['Cotización']:['Instalación','Servicio','Garantía','Cobro','Otro'];
+  const title=group==='maintenance'?'Mantenimiento preventivo 6 meses':group==='quotes'?'Seguimiento de cotización':'Seguimiento';
+  const clientsAlphabetical=[...(state.clients||[])]
+    .filter(c=>c&&c.id)
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{sensitivity:'base',numeric:true}));
+  $('followupForm').innerHTML=select('Cliente','fClient',clientsAlphabetical.map(c=>({value:c.id,label:c.name||'Cliente sin nombre'})),selectedClient)+select('Activo relacionado','fAsset',[{value:'',label:'Sin activo'}].concat(state.assets.map(a=>({value:a.id,label:assetLabel(a)}))),'')+select('Tipo','fType',types.map(x=>({value:x,label:x})),types[0])+input('Título / asunto','fTitle','text',title,'wide')+input('Fecha seguimiento','fDueDate','date',group==='maintenance'?v50PlusMonths(today(),6):plusDays(2))+input('Intervalo meses','fInterval','number',group==='maintenance'?'6':'0')+select('Estado','fStatus',['Programado','Próximo','Completado','Cancelado'].map(x=>({value:x,label:x})),'Programado')+select('Prioridad','fPriority',['Normal','Alta','Urgente'].map(x=>({value:x,label:x})),'Normal')+select('Canal','fChannel',['WhatsApp','Llamada','Email','Visita'].map(x=>({value:x,label:x})),'WhatsApp')+input('Notas','fNote','text','','wide')+'<button class="primary" type="submit">Guardar seguimiento</button>';
+}
+function renderFollowupsTable(){
+  const box=$('followupsTable'); if(!box) return;
+  const rows=[...(state.followups||[])].sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||''))).map(f=>{
+    const c=clientBy(f.clientId||''); const st=followupStatus(f); const phone=c.whatsapp||c.phone||'';
+    return `<tr><td><b>${esc(f.dueDate||'')}</b><br><span class="tag">${esc(f.priority||'Normal')}</span></td><td>${esc(f.clientName||c.name||'')}<br><span class="muted">${esc(phone)}</span></td><td>${esc(f.assetName||'')}</td><td><b>${esc(f.title||f.type||'Seguimiento')}</b><br><span class="muted">${esc(f.type||'')}</span></td><td>${statusChip(st)}</td><td>${esc(f.note||'')}</td><td><div class="actions">${phone?`<button data-whatsapp-followup="${f.id}" type="button">WhatsApp</button>`:''}${st!=='Completado'?`<button data-complete-followup="${f.id}" type="button">Completar</button>`:''}${action('followups',f.id)}</div></td></tr>`;
+  });
+  box.innerHTML=table(['Fecha','Cliente','Activo','Seguimiento','Estado','Notas','Acción'],rows);
+  document.querySelectorAll('[data-whatsapp-followup]').forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.whatsappFollowup); if(f) sendFollowupWhatsapp(f.id);});
+  document.querySelectorAll('[data-complete-followup]').forEach(b=>b.onclick=()=>completeFollowup(b.dataset.completeFollowup));
+}
+function bindFollowupForm(){
+  if(!$('followupForm') || $('followupForm').dataset.bound==='1') return;
+  $('followupForm').dataset.bound='1';
+  $('followupForm').onsubmit=e=>{e.preventDefault();const c=clientBy($('fClient')?.value||''),a=assetBy($('fAsset')?.value||'');add('followups',{clientId:c.id||'',clientName:c.name||'',assetId:a.id||'',assetName:a.id?assetName(a):'',type:$('fType').value,title:$('fTitle').value,dueDate:$('fDueDate').value,intervalMonths:Number($('fInterval').value||0),status:$('fStatus').value,priority:$('fPriority').value,channel:$('fChannel').value,note:$('fNote').value,sourceType:'manual',sourceId:''});e.target.reset();};
+}
+function reportRange(){return {from:$('reportFrom')?.value||'',to:$('reportTo')?.value||''};}
+function reportDateOf(row,type){
+  if(type==='followups') return row.dueDate||row.date||'';
+  if(type==='receivable') return row.dueDate||row.date||'';
+  if(type==='quotes') return row.date||row.validUntil||'';
+  if(type==='assetsClient'||type==='assetsStatus'||type==='suppliers'||type==='ops') return row.date||row.createdAt?.seconds||'';
+  return row.date||row.dueDate||row.createdAt?.seconds||'';
+}
+function inReportRange(row,type){
+  const {from,to}=reportRange(); if(!from && !to) return true;
+  const d=String(reportDateOf(row,type)||'').slice(0,10); if(!d) return false;
+  if(from && d<from) return false; if(to && d>to) return false; return true;
+}
+function withFilteredState(type,fn){
+  const old={services:state.services,quotes:state.quotes,followups:state.followups,invoices:state.invoices,payments:state.payments,payroll:state.payroll,payrollRetentions:state.payrollRetentions,purchases:state.purchases,supplierPayments:state.supplierPayments,cashflow:state.cashflow,assets:state.assets};
+  try{
+    state.services=old.services.filter(x=>inReportRange(x,'services'));
+    state.quotes=old.quotes.filter(x=>inReportRange(x,'quotes'));
+    state.followups=old.followups.filter(x=>inReportRange(x,'followups'));
+    state.invoices=old.invoices.filter(x=>inReportRange(x,type==='receivable'?'receivable':'invoices'));
+    state.payments=old.payments.filter(x=>inReportRange(x,'payments'));
+    state.payroll=old.payroll.filter(x=>inReportRange(x,'payroll'));
+    state.payrollRetentions=old.payrollRetentions.filter(x=>inReportRange(x,'retentions'));
+    state.purchases=old.purchases.filter(x=>inReportRange(x,'purchases'));
+    state.supplierPayments=old.supplierPayments.filter(x=>inReportRange(x,'supplierPayments'));
+    state.cashflow=old.cashflow.filter(x=>inReportRange(x,'cashflow'));
+    return fn();
+  }finally{Object.assign(state,old);}
+}
+function selectedReportPeriodHtml(){const {from,to}=reportRange();return (from||to)?`<p><b>Periodo:</b> ${esc(from||'Inicio')} al ${esc(to||'Hoy')}</p>`:'';}
+function previewFollowupsReport(){
+  let html=docHeader('REPORTE DE SEGUIMIENTO').replace('</h2>','</h2>'+selectedReportPeriodHtml());
+  const rows=(state.followups||[]).sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||''))).map(f=>`<tr><td>${esc(f.dueDate||'')}</td><td>${esc(f.clientName||'')}</td><td>${esc(f.type||'')}</td><td>${esc(f.title||'')}</td><td>${esc(followupStatus(f))}</td><td>${esc(f.note||'')}</td></tr>`).join('');
+  html+=`<table class="doc-table"><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Seguimiento</th><th>Estado</th><th>Notas</th></tr>${rows}</table>`+docFooter();
+  state.previewHtml=html; $('reportPreview').innerHTML=html;
+}
+const __v50Forms=forms;
+forms=function(){__v50Forms();renderFollowupForm();};
+const __v50Tables=tables;
+tables=function(){__v50Tables();renderFollowupsTable();};
+const __v50BindForms=bindForms;
+bindForms=function(){__v50BindForms();bindFollowupForm();};
+const __v50Kpis=kpis;
+kpis=function(){__v50Kpis();const fu=followupSummary();const k=$('kpis');if(k && state.activeView==='dashboard'){k.insertAdjacentHTML('beforeend',`<div class="kpi" onclick="show('followups')"><span>Seguimientos</span><b>${fu.open}</b><small>${fu.dueSoon} próximos · ${fu.overdue} vencidos</small></div>`);}};
+const __v50Preview=preview;
+preview=function(type){
+  if(type==='followups') return withFilteredState(type,previewFollowupsReport);
+  return withFilteredState(type,()=>__v50Preview(type));
+};
+const __v50ReportRows=reportRows;
+reportRows=function(type){
+  if(type==='followups') return withFilteredState(type,()=>{const rows=[['Fecha','Cliente','Activo','Tipo','Seguimiento','Estado','Prioridad','Canal','Notas']];state.followups.forEach(f=>rows.push([f.dueDate||'',f.clientName||'',f.assetName||'',f.type||'',f.title||'',followupStatus(f),f.priority||'',f.channel||'',f.note||'']));return rows;});
+  return withFilteredState(type,()=>__v50ReportRows(type));
+};
+
+
+const __v50Add=add;
+add=async function(c,data){
+  const ref=await __v50Add(c,data);
+  try{
+    if(ref?.id && c==='quotes') await ensureQuoteFollowup({...data,id:ref.id});
+    if(ref?.id && c==='services' && (data.status==='Completado' || String(data.serviceType||data.title||'').toLowerCase().includes('instal'))) await createMaintenanceFollowupFromService({...data,id:ref.id});
+  }catch(e){console.warn('Seguimiento automático no creado:',e);}
+  return ref;
+};
+
+function authUI(){$('authIndustry').innerHTML=Object.entries(INDUSTRIES).map(([id,x])=>`<option value="${id}">${T(x.name)}</option>`).join('');$('showLogin').onclick=()=>{mode='login';document.querySelectorAll('.register-only').forEach(x=>x.classList.add('hidden'));$('authSubmit').textContent=T('Entrar');$('showLogin').classList.add('active');$('showRegister').classList.remove('active');};$('showRegister').onclick=()=>{mode='register';document.querySelectorAll('.register-only').forEach(x=>x.classList.remove('hidden'));$('authSubmit').textContent=T('Crear cuenta');$('showRegister').classList.add('active');$('showLogin').classList.remove('active');};$('authForm').onsubmit=async e=>{e.preventDefault();$('authMsg').textContent=T('Procesando...');try{if(mode==='register'){const cred=await createUserWithEmailAndPassword(auth,$('authEmail').value,$('authPassword').value);await setDoc(doc(db,'users',cred.user.uid),{...defaultProfile(),businessName:$('authBusiness').value||'Mi Negocio',industry:$('authIndustry').value,email:$('authEmail').value});}else await signInWithEmailAndPassword(auth,$('authEmail').value,$('authPassword').value);$('authMsg').textContent='';}catch(err){$('authMsg').textContent=err.message;}};}
+let portalSyncTimer=null;
+function scheduleEnabledPortalSync(){
+  clearTimeout(portalSyncTimer);
+  portalSyncTimer=setTimeout(async()=>{
+    const enabled=(state.clients||[]).filter(c=>c.portalEnabled&&c.portalToken);
+    for(const c of enabled){
+      try{await syncClientPortal(c.id,{openAfter:false,copyLink:false,notify:false});}
+      catch(e){console.warn('No se pudo sincronizar portal de '+(c.name||c.id),e);}
+    }
+  },1200);
+}
+async function load(){const loadingOwner=uid();unsub.forEach(x=>x());unsub=[];const snap=await getDoc(profRef());if(uid()!==loadingOwner)return;if(!snap.exists())await setDoc(profRef(),defaultProfile());unsub.push(onSnapshot(profRef(),s=>{if(uid()!==loadingOwner)return;state.profile=s.data()||defaultProfile();render();employeeCommand.schedule();}));COLS.forEach(c=>unsub.push(onSnapshot(colPath(c),s=>{if(uid()!==loadingOwner)return;const rows=s.docs.map(d=>({id:d.id,...d.data()}));state[c]=HISTORY_MODULES.has(c)?sortedHistory(rows):rows;$('syncStatus').textContent=T('Sincronizado');render();if(['clients','services','quotes','followups','invoices','payments','assets'].includes(c))scheduleEnabledPortalSync();if(['team','services','clients','assets'].includes(c))employeeCommand.schedule();},e=>{$('syncStatus').textContent=T('Firebase bloqueado');console.error(e);})));}
+let previousAccountId='';
+authUI();bindForms();onAuthStateChanged(auth,u=>{if((u?.uid||'')!==previousAccountId){employeeCommand.reset();COLS.forEach(c=>state[c]=[]);state.profile=null;previousAccountId=u?.uid||'';}if(u){$('authScreen').classList.add('hidden');$('appShell').classList.remove('hidden');load();}else{employeeCommand.reset();unsub.forEach(stop=>stop());unsub=[];$('authScreen').classList.remove('hidden');$('appShell').classList.add('hidden');}});
+
+/* V66 — Search Center por módulo
+   Añade buscadores propios sin eliminar funciones existentes. */
+state.moduleFilters = state.moduleFilters || {};
+function v66Filter(module){
+  module=followupFilterKey(module);
+  state.moduleFilters = state.moduleFilters || {};
+  state.moduleFilters[module] = state.moduleFilters[module] || {q:'',from:'',to:'',status:'all'};
+  return state.moduleFilters[module];
+}
+function v66DateValue(row,module){
+  const value = module==='followups' ? (row.dueDate||row.date) :
+    module==='quotes' ? (row.date||row.validUntil) :
+    module==='billing' ? (row.date||row.dueDate) :
+    module==='purchases' ? (row.date||row.dueDate) :
+    module==='team' ? (row.startDate||row.date) :
+    (row.date||row.dueDate||row.createdAt?.seconds||'');
+  if(typeof value === 'number') return new Date(value*1000).toISOString().slice(0,10);
+  return String(value||'').slice(0,10);
+}
+function v66Status(row,module){
+  try{
+    if(module==='billing') return invoiceStatus(row);
+    if(module==='quotes') return quoteStatus(row);
+    if(module==='followups') return followupStatus(row);
+    if(module==='purchases') return purchaseStatus(row);
+    if(module==='assets') return assetStatus(row);
+  }catch(e){}
+  return String(row.status||row.type||'').trim();
+}
+function v66NormalizeSearch(value){
+  return String(value ?? '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-zA-Z0-9@.]+/g,' ')
+    .toLowerCase().trim();
+}
+function v66SearchText(row,module){
+  const safe = v => String(v ?? '');
+  const base = [
+    row.number,row.reference,row.invoiceNumber,row.quoteNumber,row.clientName,row.name,row.title,row.concept,row.serviceTitle,
+    row.serviceType,row.assetName,row.teamName,row.supplierName,row.phone,row.whatsapp,row.altPhone,row.email,row.altEmail,row.city,row.address,row.status,
+    row.note,row.notes,row.terms,row.method,row.category,row.location,row.role,row.personalId,row.driverLicense,row.serial,row.vin,row.plate,row.expirationDate,row.warranty
+  ];
+  if(Array.isArray(row.tags)) base.push(row.tags.join(' '));
+  if(Array.isArray(row.fields)) base.push(row.fields.map(f=>typeof f==='object'?Object.values(f).join(' '):f).join(' '));
+  if(Array.isArray(row.items)) base.push(row.items.map(i=>[i.description,i.desc,i.name,i.qty,i.price,i.total].join(' ')).join(' '));
+  if(row.route) base.push([row.route.origin,row.route.destination,row.route.miles].join(' '));
+  base.push(v66Status(row,module));
+  const raw=base.map(safe).join(' ');
+  return v66NormalizeSearch(raw)+' '+raw.replace(/\D/g,'');
+}
+
+// Histories use the transaction date, with deterministic ties and undated rows last.
+const HISTORY_MODULES = new Set(['billing','invoices','payments','quotes','services','purchases','supplierPayments','payroll','payrollRetentions','cashflow']);
+function historyTimestamp(value){
+  if(value == null || value === '') return null;
+  if(typeof value === 'object'){
+    if(typeof value.toMillis === 'function') return value.toMillis();
+    if(Number.isFinite(value.seconds)) return value.seconds*1000 + Number(value.nanoseconds||0)/1e6;
+    if(value instanceof Date) return Number.isFinite(value.getTime())?value.getTime():null;
+    return null;
+  }
+  if(typeof value === 'number') return Number.isFinite(value)?value:null;
+  const text=String(value).trim();
+  // Legacy US dates must compare chronologically, never alphabetically.
+  const us=text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const iso=us ? `${us[3]}-${us[1].padStart(2,'0')}-${us[2].padStart(2,'0')}` : text;
+  const result=Date.parse(iso);
+  return Number.isFinite(result)?result:null;
+}
+function historyNewestFirst(a,b){
+  const ad=historyTimestamp(a.date), bd=historyTimestamp(b.date);
+  if(ad!==bd) return ad===null?1:bd===null?-1:bd-ad;
+  const created=(historyTimestamp(b.createdAt)||0)-(historyTimestamp(a.createdAt)||0);
+  return created || String(b.number||b.invoiceNumber||'').localeCompare(String(a.number||a.invoiceNumber||''),'es',{numeric:true})
+    || String(a.id||'').localeCompare(String(b.id||''));
+}
+function sortedHistory(rows){return [...(rows||[])].sort(historyNewestFirst);}
+
+function v66ApplyModuleFilter(rows,module){
+  const f=v66Filter(module);
+  const q=v66NormalizeSearch(f.q||'');
+  const digits=String(f.q||'').replace(/\D/g,'');
+  const tokens=q.split(/\s+/).filter(Boolean);
+  return (HISTORY_MODULES.has(module)?sortedHistory(rows):[...(rows||[])]).filter(row=>{
+    const hay=v66SearchText(row,module);
+    if(tokens.length && !tokens.every(token=>hay.includes(token))) return false;
+    if(digits.length>=3 && !hay.includes(digits)) return false;
+    const d=v66DateValue(row,module);
+    if(f.from && (!d || d<f.from)) return false;
+    if(f.to && (!d || d>f.to)) return false;
+    if(f.status && f.status!=='all'){
+      const st=v66Status(row,module).toLowerCase();
+      if(st!==String(f.status).toLowerCase()) return false;
+    }
+    return true;
+  });
+}
+function v66UniqueStatuses(rows,module){
+  return [...new Set((rows||[]).map(r=>v66Status(r,module)).filter(Boolean))].sort();
+}
+function v66Toolbar(module,label,placeholder,rows,{dates=true,status=true}={}){
+  const f=v66Filter(module);
+  const statuses=v66UniqueStatuses(rows,module);
+  return `<div class="module-search-bar" data-module-search="${esc(module)}">
+    <div class="module-search-title"><b>${esc(label)}</b><small>${rows.length} registros</small></div>
+    <input id="${module}Search" type="search" value="${esc(f.q)}" placeholder="${esc(placeholder)}">
+    ${dates?`<input id="${module}From" type="date" value="${esc(f.from)}"><input id="${module}To" type="date" value="${esc(f.to)}">`:''}
+    ${status&&statuses.length?`<select id="${module}Status"><option value="all">Todos los estados</option>${statuses.map(s=>`<option value="${esc(s)}" ${String(f.status)===String(s)?'selected':''}>${esc(s)}</option>`).join('')}</select>`:''}
+    <button type="button" data-clear-module-filter="${esc(module)}">Limpiar</button>
+  </div>`;
+}
+const v66SearchTimers={};
+function v68RefreshSearch(module, sourceInput){
+  const value=sourceInput?.value ?? v66Filter(module).q ?? '';
+  const start=sourceInput?.selectionStart ?? value.length;
+  const end=sourceInput?.selectionEnd ?? start;
+  v66Filter(module).q=value;
+  tables();
+  requestAnimationFrame(()=>{
+    const replacement=$(module+'Search');
+    if(!replacement) return;
+    replacement.focus({preventScroll:true});
+    try{ replacement.setSelectionRange(start,end); }catch(e){}
+  });
+}
+function v66BindToolbar(module){
+  const search=$(module+'Search');
+  if(search){
+    search.oninput=()=>{
+      v66Filter(module).q=search.value;
+      clearTimeout(v66SearchTimers[module]);
+      v66SearchTimers[module]=setTimeout(()=>v68RefreshSearch(module,search),750);
+    };
+    search.onkeydown=e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        clearTimeout(v66SearchTimers[module]);
+        v68RefreshSearch(module,search);
+      }
+    };
+    search.onsearch=()=>{
+      clearTimeout(v66SearchTimers[module]);
+      v68RefreshSearch(module,search);
+    };
+  }
+  const bindImmediate=(id,key)=>{const el=$(id);if(!el)return;el.onchange=()=>{v66Filter(module)[key]=el.value;tables();};};
+  bindImmediate(module+'From','from'); bindImmediate(module+'To','to'); bindImmediate(module+'Status','status');
+  document.querySelectorAll(`[data-clear-module-filter="${module}"]`).forEach(b=>b.onclick=()=>{state.moduleFilters[followupFilterKey(module)]={q:'',from:'',to:'',status:'all'};tables();});
+}
+function v66RenderClients(){
+  const box=$('clientsTable'); if(!box) return;
+  const rows=v66ApplyModuleFilter(state.clients,'clients');
+  box.innerHTML=v66Toolbar('clients','Buscar clientes','Nombre, teléfono, email, dirección, ciudad o etiqueta...',state.clients,{dates:false,status:false})+
+    table(['Cliente','Contacto','Etiquetas','Historial','Acción'],rows.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span></td><td><div class="actions"><button data-client-summary="${c.id}" type="button">Ver historial</button><button data-client-portal="${c.id}" type="button">Portal</button>${action('clients',c.id)}</div></td></tr>`;}));
+  v66BindToolbar('clients');
+}
+function v66RenderServices(){
+  const box=$('servicesTable'); if(!box)return;
+  const rows=v66ApplyModuleFilter(state.services,'services');
   const completed=state.services.filter(s=>s.status==='Completado'&&!serviceInvoice(s)).length;
   box.innerHTML=`<div class="service-command"><b>Centro de mando · Servicios</b><p>Hoja de servicio → Orden de trabajo → Cierre → Factura</p><span>${state.services.filter(s=>!['Completado','Facturado'].includes(s.status)).length} trabajos abiertos · ${completed} listos para facturar</span><p id="employeeSyncStatus" role="status">Los reportes de empleados se sincronizan mientras Nexus esté abierto o al volver a entrar.</p></div>`+
     v66Toolbar('services','Buscar órdenes de trabajo','Cliente, servicio, activo, estado, empleado, fecha...',state.services,{dates:true,status:true})+
