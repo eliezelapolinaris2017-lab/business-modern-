@@ -1973,3 +1973,83 @@ body.v2-ready #appShell .main:has(#suppliers.view.active){
   background-image:url('https://images.unsplash.com/photo-1741707041853-e5ef96e62bc9?auto=format&fit=crop&fm=jpg&q=76&w=2200')!important;
   background-position:center 42%!important;
 }
+
+
+/* V95 — Report Center colapsado por defecto */
+#appShell #reports .report-center-card{
+  min-height:0!important;
+}
+#appShell #reports .report-workspace{
+  width:100%;
+  margin:0;
+  border:0;
+}
+#appShell #reports .report-workspace-toggle{
+  list-style:none;
+  width:100%;
+  min-height:66px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:15px 17px;
+  border:1px solid #e4eaf0;
+  border-radius:16px;
+  background:#f8fafc;
+  color:#17364d;
+  cursor:pointer;
+  user-select:none;
+  transition:background .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+#appShell #reports .report-workspace-toggle::-webkit-details-marker{display:none}
+#appShell #reports .report-workspace-toggle:hover{
+  background:#fff;
+  border-color:#cad9e5;
+  box-shadow:0 10px 24px rgba(8,29,45,.06);
+}
+#appShell #reports .report-workspace-toggle::after{
+  content:"+";
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border-radius:11px;
+  background:#eaf3f9;
+  color:#175f91;
+  font-size:22px;
+  font-weight:700;
+  line-height:1;
+}
+#appShell #reports .report-workspace[open] .report-workspace-toggle::after{content:"−"}
+#appShell #reports .report-toggle-copy{
+  min-width:0;
+  display:grid;
+  gap:4px;
+  text-align:left;
+}
+#appShell #reports .report-toggle-copy strong{
+  font-size:14px;
+  font-weight:850;
+  color:#17364d;
+}
+#appShell #reports .report-toggle-copy small{
+  color:#6f8190;
+  font-size:12px;
+  line-height:1.35;
+}
+#appShell #reports .report-toggle-open{display:none}
+#appShell #reports .report-workspace[open] .report-toggle-closed{display:none}
+#appShell #reports .report-workspace[open] .report-toggle-open{display:block}
+#appShell #reports .report-workspace-content{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid #edf1f4;
+}
+@media(max-width:680px){
+  #appShell #reports .report-workspace-toggle{
+    min-height:60px;
+    padding:13px 14px;
+  }
+  #appShell #reports .report-toggle-copy small{font-size:11px}
+}
