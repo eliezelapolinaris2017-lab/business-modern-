@@ -20,7 +20,7 @@
   <title>Nexus Business V2</title>
   <link id="faviconLink" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ctext x='32' y='41' text-anchor='middle' font-size='30' fill='white' font-family='Arial'%3EN%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css?v=98" />
-  <link rel="stylesheet" href="nexus-v2.css?v=20" />
+  <link rel="stylesheet" href="nexus-v2.css?v=21" />
 
   <style id="criticalModuleLayout">
     /* V12 CRITICAL: un módulo visible a la vez. No más módulos apilados. */
@@ -241,44 +241,50 @@
       <section id="cashflow" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Flujo de caja</h2><span id="cashflowLimit" class="limit-chip"></span></div><form id="cashForm" class="form-grid"></form><div id="cashTable"></div></div></section>
       <section id="reports" class="view" hidden aria-hidden="true">
         <div class="card report-center-card report-scroll-only">
-          <div class="section-head clean-head">
-            <div>
-              <h2>Report Center</h2>
+          <details id="reportWorkspace" class="report-workspace">
+            <summary class="report-workspace-toggle">
+              <span class="report-toggle-copy">
+                <strong class="report-toggle-closed">Abrir centro de reportes</strong>
+                <strong class="report-toggle-open">Ocultar centro de reportes</strong>
+                <small>Buscar, filtrar, ver, crear PDF o exportar solo cuando lo necesites.</small>
+              </span>
+            </summary>
+
+            <div class="report-workspace-content">
+              <div class="report-center-tools">
+                <input id="reportSearch" type="search" placeholder="Buscar reporte..." autocomplete="off">
+                <input id="reportFrom" type="date" title="Desde">
+                <input id="reportTo" type="date" title="Hasta">
+              </div>
+
+              <div class="report-scroll-box" id="reportCenterList" role="listbox" aria-label="Reportes disponibles">
+                <button class="report-option selected" type="button" data-report-type="executive" data-report-name="ejecutivo dashboard executive general clientes ventas">Ejecutivo</button>
+                <button class="report-option" type="button" data-report-type="services" data-report-name="servicios services trabajos jobs clientes activos montos">Servicios</button>
+                <button class="report-option" type="button" data-report-type="quotes" data-report-name="cotizaciones quotes estimates propuestas ventas proyectadas aprobadas vencidas">Cotizaciones</button>
+                <button class="report-option" type="button" data-report-type="followups" data-report-name="seguimiento followups mantenimientos cotizaciones instalaciones recordatorios vencidos proximos">Seguimiento</button>
+                <button class="report-option" type="button" data-report-type="assetsClient" data-report-name="activos assets cliente customer">Activos por Cliente</button>
+                <button class="report-option" type="button" data-report-type="assetsStatus" data-report-name="activos assets estado status">Activos por Estado</button>
+                <button class="report-option" type="button" data-report-type="invoices" data-report-name="facturacion facturas invoices pagos balance estado">Facturación</button>
+                <button class="report-option" type="button" data-report-type="payments" data-report-name="cobros payments pagos recibidos historial">Cobros</button>
+                <button class="report-option" type="button" data-report-type="finance" data-report-name="flujo caja cash flow financiero ingresos gastos neto">Flujo de Caja</button>
+                <button class="report-option" type="button" data-report-type="receivable" data-report-name="cuentas cobrar receivable vencidas overdue pendientes">Cuentas por Cobrar</button>
+                <button class="report-option" type="button" data-report-type="payroll" data-report-name="nomina payroll empleados retenciones descuentos neto">Nómina</button>
+                <button class="report-option" type="button" data-report-type="retentions" data-report-name="retenciones payroll hacienda asume sinot gobierno empleado pendientes pagadas">Retenciones</button>
+                <button class="report-option" type="button" data-report-type="purchases" data-report-name="compras purchases cuentas pagar cxp suppliers">Compras / CxP</button>
+                <button class="report-option" type="button" data-report-type="suppliers" data-report-name="suplidores vendors suppliers proveedores balances">Suplidores</button>
+                <button class="report-option" type="button" data-report-type="ops" data-report-name="operacional operaciones productivity empleados compras cuentas pagar">Operacional</button>
+              </div>
+
+              <div class="report-selected-actions">
+                <button id="reportViewBtn" type="button">Ver</button>
+                <button id="reportPdfBtn" type="button">PDF</button>
+                <button id="reportExportBtn" type="button">Exportar</button>
+              </div>
+
+              <div id="reportPreview" class="paper"></div>
+              <div class="report-actions report-preview-actions"><button id="printPreview" type="button">Imprimir</button><button id="downloadPreview" type="button">Descargar PDF</button></div>
             </div>
-          </div>
-
-          <div class="report-center-tools">
-            <input id="reportSearch" type="search" placeholder="Buscar reporte..." autocomplete="off">
-            <input id="reportFrom" type="date" title="Desde">
-            <input id="reportTo" type="date" title="Hasta">
-          </div>
-
-          <div class="report-scroll-box" id="reportCenterList" role="listbox" aria-label="Reportes disponibles">
-            <button class="report-option selected" type="button" data-report-type="executive" data-report-name="ejecutivo dashboard executive general clientes ventas">Ejecutivo</button>
-            <button class="report-option" type="button" data-report-type="services" data-report-name="servicios services trabajos jobs clientes activos montos">Servicios</button>
-            <button class="report-option" type="button" data-report-type="quotes" data-report-name="cotizaciones quotes estimates propuestas ventas proyectadas aprobadas vencidas">Cotizaciones</button>
-            <button class="report-option" type="button" data-report-type="followups" data-report-name="seguimiento followups mantenimientos cotizaciones instalaciones recordatorios vencidos proximos">Seguimiento</button>
-            <button class="report-option" type="button" data-report-type="assetsClient" data-report-name="activos assets cliente customer">Activos por Cliente</button>
-            <button class="report-option" type="button" data-report-type="assetsStatus" data-report-name="activos assets estado status">Activos por Estado</button>
-            <button class="report-option" type="button" data-report-type="invoices" data-report-name="facturacion facturas invoices pagos balance estado">Facturación</button>
-            <button class="report-option" type="button" data-report-type="payments" data-report-name="cobros payments pagos recibidos historial">Cobros</button>
-            <button class="report-option" type="button" data-report-type="finance" data-report-name="flujo caja cash flow financiero ingresos gastos neto">Flujo de Caja</button>
-            <button class="report-option" type="button" data-report-type="receivable" data-report-name="cuentas cobrar receivable vencidas overdue pendientes">Cuentas por Cobrar</button>
-            <button class="report-option" type="button" data-report-type="payroll" data-report-name="nomina payroll empleados retenciones descuentos neto">Nómina</button>
-            <button class="report-option" type="button" data-report-type="retentions" data-report-name="retenciones payroll hacienda asume sinot gobierno empleado pendientes pagadas">Retenciones</button>
-            <button class="report-option" type="button" data-report-type="purchases" data-report-name="compras purchases cuentas pagar cxp suppliers">Compras / CxP</button>
-            <button class="report-option" type="button" data-report-type="suppliers" data-report-name="suplidores vendors suppliers proveedores balances">Suplidores</button>
-            <button class="report-option" type="button" data-report-type="ops" data-report-name="operacional operaciones productivity empleados compras cuentas pagar">Operacional</button>
-          </div>
-
-          <div class="report-selected-actions">
-            <button id="reportViewBtn" type="button">Ver</button>
-            <button id="reportPdfBtn" type="button">PDF</button>
-            <button id="reportExportBtn" type="button">Exportar</button>
-          </div>
-
-          <div id="reportPreview" class="paper"></div>
-          <div class="report-actions report-preview-actions"><button id="printPreview" type="button">Imprimir</button><button id="downloadPreview" type="button">Descargar PDF</button></div>
+          </details>
         </div>
       </section>
       <section id="plans" class="view" hidden aria-hidden="true"><div class="card"><h2>Planes</h2><div id="plansGrid" class="plans"></div></div></section>
