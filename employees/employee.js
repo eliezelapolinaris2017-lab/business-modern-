@@ -6,8 +6,13 @@ import {employeeEmail,employeePassword,employeeKey,seal,unseal,randomToken,valid
 const app=initializeApp(firebaseConfig,'employee-portal'),auth=initializeAuth(app,{persistence:inMemoryPersistence}),db=getFirestore(app);
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const url=new URL(location.href);
-if(!url.searchParams.get('access')){try{const stored=JSON.parse(localStorage.getItem('nexusEmployeeAccess')||'null');if(stored?.id&&stored?.secret){url.searchParams.set('access',stored.id);url.hash=stored.secret;history.replaceState(null,'',url.href);}}catch{}}
-const portalId=url.searchParams.get('access')||'',secret=url.hash.slice(1),focusOrder=url.searchParams.get('order');
+const tokenPattern=/^[a-f0-9]{48}$/;
+let portalId=url.searchParams.get('access')||'',secret=url.searchParams.get('key')||url.hash.slice(1);
+// Safari and installed web apps may use separate storage. Keep identity in the launch URL.
+if(!portalId&&!secret){try{const stored=JSON.parse(localStorage.getItem('nexusEmployeeAccess')||'null');if(tokenPattern.test(stored?.id)&&tokenPattern.test(stored?.secret)){portalId=stored.id;secret=stored.secret;}}catch{}}
+const hasAccess=tokenPattern.test(portalId)&&tokenPattern.test(secret);
+if(hasAccess){url.searchParams.set('access',portalId);url.searchParams.set('key',secret);url.hash='';history.replaceState(null,'',url.href);try{localStorage.setItem('nexusEmployeeAccess',JSON.stringify({id:portalId,secret}));}catch{}}
+const focusOrder=url.searchParams.get('order');
 let key,data,stop,tab='active',pending=new Map(),dialogOrder='',dialogAction='',photos=[],loadingPhotos=false,viewVersion=0,locked=true,photoVersion=0,submitting=false;
 function localDate(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function message(id,text,error=false){$(id).textContent=text;$(id).classList.toggle('error',error);}
@@ -16,6 +21,11 @@ function photoHtml(list){return (list||[]).filter(p=>typeof p==='string'&&/^data
 function mergedOrders(){return (data?.orders||[]).map(order=>({...order,...(pending.get(order.id)||{})}));}
 function render(){
   $('businessName').textContent=data.business?.name||'Mis órdenes de trabajo';$('employeeName').textContent=data.employeeName||'';
+  const employee=data.employee||{};
+  const avatar=employee.photo||'';$('employeePhoto').hidden=!(avatar.startsWith('data:image/jpeg;base64,')||safeUrl(avatar));if(!$('employeePhoto').hidden)$('employeePhoto').src=avatar;
+  $('profileName').textContent=data.employeeName||'Mi perfil';$('profileRole').textContent=employee.role||'Equipo de servicio';
+  $('profileDetails').innerHTML=[['Código',employee.code],['Teléfono',employee.phone],['Email',employee.email],['Ingreso',employee.startDate],['Vehículo',employee.vehicle],['Certificaciones',employee.certifications]].filter(([,v])=>v).map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('');
+  $('profileNotes').textContent=employee.notes||'';
   const logo=data.business?.logo||'';if(logo.startsWith('data:image/')||safeUrl(logo)){ $('businessLogo').src=logo;$('businessLogo').hidden=false;}else $('businessLogo').hidden=true;
   const orders=mergedOrders(),closed=orders.filter(o=>['Completado','Facturado'].includes(o.status));
   $('summary').innerHTML=`<div><strong>${orders.length-closed.length}</strong><span>Por realizar</span></div><div><strong>${orders.filter(o=>o.status==='En proceso').length}</strong><span>En proceso</span></div><div><strong>${closed.length}</strong><span>Completadas</span></div>`;
@@ -29,7 +39,7 @@ function render(){
   document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));
 }
 async function lock(text=''){
-  locked=true;viewVersion++;photoVersion++;stop?.();stop=null;key=null;data=null;pending.clear();photos=[];$('pin').value='';$('orders').innerHTML='';$('summary').innerHTML='';$('photoPreview').innerHTML='';$('workspace').hidden=true;$('login').hidden=false;$('businessLogo').hidden=true;$('businessLogo').removeAttribute('src');$('businessName').textContent='Mis órdenes de trabajo';$('employeeName').textContent='Tu trabajo, organizado.';if($('workDialog').open)$('workDialog').close();message('loginMessage',text);await signOut(auth);
+  locked=true;viewVersion++;photoVersion++;stop?.();stop=null;key=null;data=null;pending.clear();photos=[];$('employeePhoto').removeAttribute('src');$('employeePhoto').hidden=true;$('profileName').textContent='';$('profileRole').textContent='';$('profileDetails').innerHTML='';$('profileNotes').textContent='';$('pin').value='';$('orders').innerHTML='';$('summary').innerHTML='';$('photoPreview').innerHTML='';$('workspace').hidden=true;$('login').hidden=false;$('businessLogo').hidden=true;$('businessLogo').removeAttribute('src');$('businessName').textContent='Mis órdenes de trabajo';$('employeeName').textContent='Tu trabajo, organizado.';if($('workDialog').open)$('workDialog').close();message('loginMessage',text);await signOut(auth);
 }
 $('loginForm').onsubmit=async e=>{
   e.preventDefault();const btn=$('loginButton');btn.disabled=true;message('loginMessage','Verificando acceso…');
@@ -97,8 +107,11 @@ $('updateForm').onsubmit=async e=>{
 $('closeDialog').onclick=()=>{if(!submitting){photoVersion++;$('workDialog').close();}};$('workDialog').addEventListener('cancel',e=>{if(submitting)e.preventDefault();else photoVersion++;});$('logout').onclick=()=>lock();
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
 window.addEventListener('offline',()=>message('syncMessage','Sin internet. Conecta para enviar actualizaciones.',true));
-if(!portalId||!secret){message('loginMessage','Abre el enlace personal que te envió la oficina. Este portal no tiene acceso público.',true);$('loginButton').disabled=true;}
-if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+if(!hasAccess){message('loginMessage','Este icono no tiene tu enlace personal. Pégalo aquí para recuperar el acceso.',true);$('loginButton').disabled=true;$('recoverAccess').hidden=false;}
+$('recoverForm').onsubmit=e=>{e.preventDefault();try{const link=new URL($('personalLink').value.trim());const id=link.searchParams.get('access'),value=link.searchParams.get('key')||link.hash.slice(1);if(!tokenPattern.test(id)||!tokenPattern.test(value))throw new Error();const target=new URL('./',location.href);target.searchParams.set('access',id);target.searchParams.set('key',value);location.replace(target.href);}catch{message('loginMessage','Pega el enlace personal completo que te envió la oficina.',true);}};
+function personalizedManifest(){if(!hasAccess)return;const manifest=new URL('./manifest.webmanifest',location.href);manifest.searchParams.set('access',portalId);manifest.searchParams.set('key',secret);document.querySelector('link[rel="manifest"]').href=manifest.href;$('installHelp').textContent='Acceso preparado. En Safari: Compartir → Añadir a pantalla de inicio. El icono nuevo conservará tu enlace; utiliza tu PIN al entrar.';}
+if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('controllerchange',personalizedManifest);navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(()=>navigator.serviceWorker.ready).then(()=>{if(navigator.serviceWorker.controller)personalizedManifest();}).catch(()=>{$('installHelp').textContent='Abre tu enlace personal en Safari antes de añadirlo al inicio.';});}
+
 
 let installPrompt;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;const button=$('installPortal');button.hidden=false;});
 $('installPortal').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;$('installPortal').hidden=true;}};

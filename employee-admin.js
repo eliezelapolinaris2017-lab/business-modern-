@@ -9,7 +9,7 @@ export function createEmployeeCommand({db,uid,state,profile,clientBy,assetBy,ser
   const ref=(id)=>doc(db,'clientPortals',id),teamRef=id=>doc(db,'users',uid(),'team',id),serviceRef=id=>doc(db,'users',uid(),'services',id);
   const enabled=t=>t.status!=='Inactivo'&&t.employeePortal?.enabled===true;
   const keyFor=async p=>{const id=p.id+':'+p.secret;if(!keys.has(id))keys.set(id,employeeKey(p.id,p.secret,p.pin));return keys.get(id);};
-  function link(p,orderId=''){const u=new URL('employees/',location.href);u.searchParams.set('access',p.id);if(orderId)u.searchParams.set('order',orderId);u.hash=p.secret;return u.href;}
+  function link(p,orderId=''){const u=new URL('employees/',location.href);u.searchParams.set('access',p.id);if(orderId)u.searchParams.set('order',orderId);u.searchParams.set('key',p.secret);return u.href;}
   async function provision(t){
     if(provisioning.has(t.id))return provisioning.get(t.id);
     const promise=doProvision(t);provisioning.set(t.id,promise);
@@ -25,13 +25,18 @@ export function createEmployeeCommand({db,uid,state,profile,clientBy,assetBy,ser
       const credential=await createUserWithEmailAndPassword(employeeAuth,employeeEmail(p.id),employeePassword(p.secret,p.pin));p.authUid=credential.user.uid;
       if(uid()!==owner)throw new Error('La sesión administrativa cambió. Vuelve a entrar.');
       // Metadata and ciphertext are owned by the business. Employee writes are separate.
-      const envelope=await seal(await keyFor(p),{business:business(),employeeName:t.name,orders:[]},'orders:'+p.id);
+      const envelope=await seal(await keyFor(p),{business:business(),employeeName:t.name,employee:employeeProfile(t),orders:[]},'orders:'+p.id);
       if(uid()!==owner)throw new Error('La sesión administrativa cambió.');
       await setDoc(ref(p.id),{kind:'employee-orders-v1',ownerId:owner,enabled:true,envelope,updatedAt:serverTimestamp()});
       if(uid()!==owner)throw new Error('La sesión administrativa cambió.');
       await updateDoc(teamRef(t.id),{employeePortal:p});t.employeePortal=p;
       return p;
     }finally{await signOut(employeeAuth).catch(()=>{});await deleteApp(secondary).catch(()=>{});}
+  }
+  function employeeProfile(t){return {photo:t.employeePhoto||'',role:t.role||'',phone:t.phone||'',email:t.email||'',code:t.employeeCode||'',startDate:t.startDate||'',vehicle:t.assignedVehicleName||'',certifications:t.employeeCertifications||'',notes:t.employeeNotes||''};}
+  async function prepareProfilePhoto(file){
+    if(file.size>20000000)throw new Error('La foto supera 20 MB.');const image=new Image(),objectUrl=URL.createObjectURL(file);
+    try{image.src=objectUrl;await image.decode();const ratio=Math.min(1,480/image.naturalWidth,480/image.naturalHeight),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*ratio));canvas.height=Math.max(1,Math.round(image.naturalHeight*ratio));const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);const photo=canvas.toDataURL('image/jpeg',.7);if(photo.length>180000)throw new Error('Usa una foto más sencilla.');return photo;}finally{URL.revokeObjectURL(objectUrl);}
   }
   function business(){const p=profile();return {name:p.businessName||'Nexus',phone:p.phone||'',logo:p.logoPdf||p.logoDashboard||''};}
   function order(s){
@@ -43,7 +48,7 @@ export function createEmployeeCommand({db,uid,state,profile,clientBy,assetBy,ser
     const orders=state.services.filter(s=>s.teamId===t.id&&s.employeePortalId===p.id&&s.employeeDispatchKey).map(order).sort((a,b)=>b.date.localeCompare(a.date));
     // Evidence stays on the original service/response; the portal index stays compact.
     const visible=[...orders.filter(s=>!['Completado','Facturado'].includes(s.status)),...orders.filter(s=>['Completado','Facturado'].includes(s.status)).slice(0,30)];
-    const payload={business:business(),employeeName:t.name,orders:visible};const serialized=JSON.stringify(payload);
+    const payload={business:business(),employeeName:t.name,employee:employeeProfile(t),orders:visible};const serialized=JSON.stringify(payload);
     if(lastPayload.get(p.id)===serialized)return;
     if(serialized.length>650000)throw new Error('Reduce las evidencias o archiva órdenes antiguas antes de sincronizar.');
     const envelope=await seal(await keyFor(p),payload,'orders:'+p.id);
@@ -106,6 +111,8 @@ export function createEmployeeCommand({db,uid,state,profile,clientBy,assetBy,ser
     const t=state.team.find(t=>t.id===id);if(!t)return;
     const p=await provision(t);await publish(t);
     const d=dialog('Acceso del empleado',`<p><b>${esc(t.name)}</b></p><p>PIN personal: <strong class="employee-pin">${esc(p.pin)}</strong></p><p class="muted">Entrega el PIN al empleado. El enlace abre únicamente sus órdenes; el PIN protege el contenido.</p><input class="employee-link" readonly value="${esc(link(p))}" aria-label="Enlace del portal"><div class="actions"><button type="button" data-copy-employee>Copiar enlace</button><button type="button" data-revoke-employee class="danger">Desactivar acceso</button></div><p data-access-message role="status"></p>`);
+    const form=document.createElement('form');form.innerHTML=`<h3>Perfil del empleado</h3>${t.employeePhoto&&/^data:image\/jpeg;base64,/.test(t.employeePhoto)?`<img src="${esc(t.employeePhoto)}" alt="Foto actual del empleado" style="width:88px;height:88px;object-fit:cover;border-radius:18px">`:''}<label>Foto del empleado<input name="photo" type="file" accept="image/*"></label><label><input name="removePhoto" type="checkbox"> Quitar foto actual</label>${[['role','Puesto / Rol',t.role],['employeeCode','Código del empleado',t.employeeCode],['employeeCertifications','Certificaciones / licencias',t.employeeCertifications],['employeeNotes','Información operativa para el empleado',t.employeeNotes]].map(([name,label,value])=>`<label>${label}<input name="${name}" maxlength="1000" value="${esc(value||'')}"></label>`).join('')}<p class="muted">También verá su teléfono, email, fecha de ingreso y vehículo registrados en Equipo.</p><button type="submit" class="primary">Guardar perfil y actualizar portal</button><p data-profile-message role="status"></p>`;d.append(form);
+    form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button'),msg=form.querySelector('[data-profile-message]');button.disabled=true;msg.textContent='Guardando perfil…';try{const fields={};for(const name of ['role','employeeCode','employeeCertifications','employeeNotes'])fields[name]=form.elements[name].value.trim();const file=form.elements.photo.files[0];if(file)fields.employeePhoto=await prepareProfilePhoto(file);else if(form.elements.removePhoto.checked)fields.employeePhoto='';await updateDoc(teamRef(t.id),fields);Object.assign(t,fields);await publish(t);schedule();msg.textContent='Perfil guardado y portal actualizado.';}catch(err){msg.textContent='No se pudo actualizar: '+err.message;}finally{button.disabled=false;}};
     d.querySelector('[data-copy-employee]').onclick=async()=>{try{await navigator.clipboard.writeText(link(p));d.querySelector('[data-access-message]').textContent='Enlace copiado.';}catch{d.querySelector('.employee-link').select();d.querySelector('[data-access-message]').textContent='Selecciona y copia el enlace.';}};
     d.querySelector('[data-revoke-employee]').onclick=async e=>{e.currentTarget.disabled=true;try{await updateDoc(ref(p.id),{enabled:false});await updateDoc(teamRef(t.id),{'employeePortal.enabled':false});t.employeePortal.enabled=false;schedule();d.close();}catch(err){e.currentTarget.disabled=false;d.querySelector('[data-access-message]').textContent=err.message;}};
   }
