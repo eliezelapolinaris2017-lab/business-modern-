@@ -1,3 +1,63 @@
 :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#edf2f7;font-synthesis:none}*{box-sizing:border-box}body{margin:0}main{max-width:880px;margin:auto;padding:32px 20px 24px}.brand{display:flex;gap:16px;align-items:center;margin-bottom:30px}.brand img{width:76px;max-height:76px;object-fit:contain}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;color:#64748b}h1{font-size:28px;line-height:1.2;margin:7px 0}h2{font-size:23px;margin:10px 0}p{line-height:1.55}.brand p{margin:0;color:#64748b}.panel,.order{background:#fff;border:1px solid #dce3ed;border-radius:22px;padding:24px;box-shadow:0 8px 24px #17203306}.panel{max-width:480px;margin:50px auto}.panel p{color:#64748b}.badge{font-size:11px;font-weight:800;color:#0369a1;letter-spacing:.1em}label{font-size:13px;font-weight:700;display:block;margin:18px 0 8px}input,textarea{width:100%;padding:14px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;font:inherit;color:#172033}#pin{font-size:32px;text-align:center;letter-spacing:12px}button,a.action{border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#172033;padding:12px 16px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center}button:disabled{opacity:.55;cursor:wait}.primary{background:#0f172a;color:#fff;border-color:#0f172a}.panel button,#submitUpdate{width:100%;margin-top:18px;padding:16px}.quiet{background:transparent}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}.toolbar p{font-size:12px;color:#64748b}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}.summary div{background:#fff;border:1px solid #dce3ed;border-radius:16px;padding:16px}.summary strong{display:block;font-size:25px}.summary span{font-size:11px;color:#64748b}.tabs{display:flex;gap:8px;margin:22px 0 14px}.tabs .selected{background:#0f172a;color:#fff}.order{margin-bottom:16px}.order-header{display:flex;gap:12px;justify-content:space-between;align-items:flex-start}.order-number{font-size:10px;font-weight:800;color:#64748b;overflow-wrap:anywhere}.order h2{font-size:21px}.status{font-size:11px;border-radius:20px;background:#e0f2fe;color:#0369a1;padding:7px 10px;white-space:nowrap}.completed{background:#dcfce7;color:#166534}.order .meta{font-size:13px;color:#64748b;margin:8px 0}.order .location{margin:14px 0;padding:14px;background:#f8fafc;border-radius:12px}.order .location p{font-size:13px;margin:5px 0}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.actions .complete{background:#047857;color:#fff;border-color:#047857}.instructions{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}.issue{background:#fff7ed;border-left:3px solid #f97316;padding:12px;border-radius:8px;font-size:13px}.empty{padding:50px 20px;text-align:center;color:#64748b}.photos{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.photos img{height:80px;width:80px;object-fit:cover;border-radius:10px}.photos a{border:0}.install-note,footer{text-align:center;color:#64748b;font-size:12px;line-height:1.6}footer{margin-top:32px}dialog{width:min(560px,94vw);max-height:92vh;border:0;border-radius:22px;padding:24px;overflow:auto;color:#172033;box-shadow:0 20px 80px #0003}dialog::backdrop{background:#0f172a99}.dialog-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.dialog-head button{font-size:20px;padding:8px 14px}[hidden]{display:none!important}.error{color:#b91c1c!important}.success{color:#047857!important}@media(max-width:600px){main{padding:24px 14px}h1{font-size:24px}.order{padding:20px 16px}.actions>*{flex:1 1 42%}.panel{margin:28px auto}.summary div{padding:14px 10px}.summary strong{font-size:23px}dialog{padding:20px 16px}}
 
 body{background:radial-gradient(ellipse at top right,#dbeafe 0,transparent 45%),#edf2f7}main{padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}.brand{padding:18px 4px}.employee-profile{display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:24px;border-radius:22px;color:#fff;background:linear-gradient(130deg,#0f172a,#164e63);box-shadow:0 16px 40px #164e631a}.employee-profile img{width:84px;height:84px;object-fit:cover;border-radius:22px;border:3px solid #ffffff60}.employee-profile .eyebrow{color:#a5f3fc}.employee-profile h2{margin:7px 0;font-size:25px}.employee-profile p{margin:0;color:#dbeafe}.employee-profile details{flex-basis:100%;border-top:1px solid #ffffff30;padding-top:14px}.employee-profile summary{cursor:pointer;font-size:14px;font-weight:700}.employee-profile dl{display:grid;grid-template-columns:1fr 1fr;gap:14px}.employee-profile dt{font-size:11px;color:#a5f3fc}.employee-profile dd{margin:4px 0 0;font-size:14px;overflow-wrap:anywhere}.summary div{border-top:3px solid #0891b2}.actions button,.actions a{min-height:46px}input:focus,textarea:focus{outline:3px solid #93c5fd;outline-offset:2px}.order-header{flex-wrap:wrap}.panel{margin:24px auto}#recoverAccess input{font-size:16px}.employee-profile #profileNotes{white-space:pre-wrap}#pin{font-size:28px;letter-spacing:8px}
+
+/* Readable field portal: large text and touch controls, including iPhone desktop mode. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-size:19px;line-height:1.55}
+main{max-width:760px;width:100%}
+.brand>div,.employee-profile>div,.order-header>div{min-width:0}
+h1{font-size:30px;overflow-wrap:anywhere}
+.brand p{font-size:18px;color:#475569}
+.eyebrow,.badge{font-size:13px}
+.employee-profile h2{font-size:32px}
+.employee-profile p,.employee-profile dd{font-size:19px}
+.employee-profile summary{font-size:18px;min-height:48px;display:flex;align-items:center}
+.employee-profile dt{font-size:15px}
+.employee-profile img{width:96px;height:96px}
+.toolbar p{font-size:16px;color:#475569}
+button,a.action{font-size:18px;min-height:56px;line-height:1.35;padding:16px}
+.summary strong{font-size:36px;line-height:1.2}
+.summary span{font-size:16px;color:#475569}
+.summary div{padding:18px 12px}
+.tabs button{flex:1}
+.order h2{font-size:28px}
+.order-number{font-size:14px;color:#475569}
+.status{font-size:15px;padding:9px 13px}
+.order .meta{font-size:18px;color:#475569}
+.order .location b{font-size:20px}
+.order .location p,.instructions,.issue{font-size:20px;line-height:1.6}
+.order ul{font-size:19px;padding-left:24px}
+label{font-size:18px}
+input,textarea{font-size:20px;min-height:54px}
+.panel h2,.dialog-head h2{font-size:28px}
+.panel p{font-size:19px}
+.install-note,footer{font-size:16px;color:#475569}
+@media(max-width:700px),(pointer:coarse){
+ main{padding:18px 12px 28px;padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(28px,env(safe-area-inset-bottom))}
+ .brand{gap:12px;margin-bottom:20px;padding:12px 0;align-items:flex-start}
+ .brand img{width:64px;max-height:76px;flex-shrink:0}
+ h1{font-size:28px;line-height:1.25}
+ .brand p{font-size:18px}
+ .employee-profile{padding:22px 18px;gap:14px}
+ .employee-profile h2{font-size:30px}
+ .employee-profile dl{grid-template-columns:1fr}
+ .summary{gap:8px}
+ .summary div{padding:16px 10px}
+ .summary strong{font-size:34px}
+ .summary span{font-size:16px;line-height:1.4;display:block}
+ .toolbar{align-items:flex-start;margin-top:12px}
+ .toolbar p{margin:0}
+ .toolbar button{font-size:16px;min-height:48px;padding:12px;flex-shrink:0}
+ .order{padding:22px 18px;margin-bottom:22px}
+ .order h2{font-size:28px}
+ .order .location{padding:16px}
+ .actions{gap:12px}
+ .actions>*{flex:1 1 100%;width:100%;min-height:58px;font-size:19px}
+ .tabs{gap:10px}
+ .tabs button{font-size:18px;padding:16px 10px}
+ .panel{padding:24px 18px}
+ dialog{padding:24px 18px}
+ .photos img{width:100px;height:100px}
+}
+@media(display-mode:standalone){#installHelp{display:none}}

@@ -1,5 +1,5 @@
-const CACHE='nexus-employee-v2';
-const SHELL=['./','./employee.css?v=2','./employee.js?v=2','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','../employee-security.js','../firebase-config.js'];
+const CACHE='nexus-employee-v3';
+const SHELL=['./','./employee.css?v=3','./employee.js?v=2','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','../employee-security.js','../firebase-config.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));self.skipWaiting();});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('nexus-employee-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
