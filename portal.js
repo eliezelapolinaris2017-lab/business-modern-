@@ -29,9 +29,9 @@ function printPortalDocument(key){
     .doc-page,.portal-pdf{box-sizing:border-box!important;width:100%!important;max-width:740px!important;min-height:0!important;height:auto!important;margin:20px auto!important;padding:16px!important;box-shadow:none!important;transform:none!important;zoom:1!important}
     table{width:100%!important;table-layout:fixed!important}td,th{white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
     .doc-foot,.clean-doc-footer{position:static!important;margin-top:24px!important}.pdf-business img{max-width:125px;max-height:60px;object-fit:contain}
-    .print-controls{padding:16px;text-align:center}.print-controls button{padding:12px 20px;font-size:16px}
+    .print-controls{position:sticky;bottom:0;padding:16px;text-align:center;background:rgba(255,255,255,.96);border-top:1px solid #dbe3ef;box-shadow:0 -8px 30px #0f172a12}.print-controls button{padding:14px 24px;font-size:16px;border:0;border-radius:12px;background:#172d50;color:white;cursor:pointer}
     @media print{.print-controls{display:none!important}.doc-page,.portal-pdf{max-width:none!important;margin:0!important;padding:0!important}.pdf-head{display:flex!important}.pdf-meta{display:grid!important;grid-template-columns:1fr 180px!important}.pdf-totals{width:310px!important;margin-left:auto!important}.pdf-business{text-align:right!important}.pdf-business img{margin-left:auto!important}}
-    </style></head><body><div class="print-controls"><button onclick="window.print()">Imprimir / Guardar PDF</button></div>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},350));<\/script></body></html>`);
+    </style></head><body>${html}<div class="print-controls"><button onclick="window.print()">Imprimir / Guardar PDF</button></div></body></html>`);
   w.document.close();
 }
 
@@ -41,8 +41,26 @@ function render(){
     const {type,id}=d.sharedDocument;
     const row=(type==='invoice'?d.invoices:d.quotes)?.find(x=>x.id===id);
     if(!row) throw new Error('Documento no disponible.');
-    $('portalApp').innerHTML=`<main class="panel"><h2>${type==='invoice'?'Factura':'Cotización'} ${esc(row.number||'')}</h2><p>${esc(c.name||'')} · ${esc(b.name||'')}</p><p>Pulse el botón para imprimir el documento o guardarlo como PDF.</p>${actionButtons(type,id)}</main>`;
-    bindPdfButtons();return;
+    document.body.classList.add('shared-portal');
+    const label=type==='invoice'?'Factura':'Cotización';
+    $('portalApp').innerHTML=`<header class="client-brand"><div class="client-brand-inner">${b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name||'Logo')}">`:''}<div><strong>${esc(b.name||'Portal del cliente')}</strong><span>Atención al cliente · Documentos</span></div><span class="client-badge">Portal del cliente</span></div></header><main class="client-document-shell"><section class="client-document-hero"><span class="client-eyebrow">SU DOCUMENTO ESTÁ LISTO</span><h1>Hola, ${esc(c.name||'bienvenido')}.</h1><p>Su ${label.toLowerCase()} está disponible. Ábrala para imprimirla o guardarla como PDF.</p><div class="client-document-details"><div><span>Documento</span><strong>${esc(row.number||label)}</strong></div><div><span>Total</span><strong>${money(row.total)}</strong></div><div><span>Estado</span><strong>${esc(row.status||'Emitida')}</strong></div></div></section><section class="client-preview-card"><div class="client-preview-title"><div><span class="client-eyebrow">VISTA PREVIA</span><h2>${label} ${esc(row.number||'')}</h2></div><span class="client-paper-label">PDF</span></div><button type="button" class="client-thumbnail-button" aria-label="Abrir ${label.toLowerCase()} ${esc(row.number||'')}"><span class="client-thumbnail-stage"><iframe title="Vista pequeña de ${label.toLowerCase()}" tabindex="-1" sandbox="allow-same-origin"></iframe></span><span class="client-thumbnail-caption">Abrir ${label.toLowerCase()} ↗</span></button><p class="client-preview-help">Al abrir el documento, encontrará «Imprimir / Guardar PDF» en la parte inferior.</p><button type="button" class="client-open-document">Abrir ${label.toLowerCase()}</button></section><footer class="client-document-footer">${esc(b.name||'')}<br>${esc([b.phone,b.email].filter(Boolean).join(' · '))}</footer></main>`;
+    const open=()=>printPortalDocument(type+':'+id);
+    document.querySelector('.client-thumbnail-button').onclick=open;
+    document.querySelector('.client-open-document').onclick=open;
+    const frame=document.querySelector('.client-thumbnail-stage iframe');
+    const stage=document.querySelector('.client-thumbnail-stage');
+    const css=new URL(d.printHtml?'./styles.css':'./portal.css',import.meta.url).href;
+    frame.srcdoc=`<!doctype html><html><head><link rel="stylesheet" href="${esc(css)}"><style>html,body{margin:0!important;padding:0!important;width:816px!important;background:white!important;display:block!important}.doc-page,.portal-pdf{box-sizing:border-box!important;width:816px!important;max-width:816px!important;margin:0!important;transform:none!important;zoom:1!important;box-shadow:none!important}td,th{white-space:normal!important;overflow-wrap:anywhere!important}img{max-width:100%}</style></head><body>${d.printHtml||documentHtml(type,row)}</body></html>`;
+    const resize=()=>{
+      const width=Math.min(stage.clientWidth,360),scale=width/816;
+      const height=Math.max(1056,frame.contentDocument?.body?.scrollHeight||1056);
+      frame.style.height=height+'px';frame.style.transform=`scale(${scale})`;
+      stage.style.height=Math.ceil(height*scale)+'px';
+      frame.style.left=((stage.clientWidth-width)/2)+'px';
+    };
+    frame.onload=resize;
+    if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
+    return;
   }
   $('businessName').textContent=b.name||'Portal del Cliente';$('businessSlogan').textContent=b.slogan||'';$('clientName').textContent=c.name||'Cliente';
   $('lastUpdate').textContent='Información actualizada: '+new Date(d.updatedAt).toLocaleString('es-PR');
