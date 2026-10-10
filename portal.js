@@ -10,18 +10,38 @@ const chip=s=>`<span class="chip">${esc(s||'—')}</span>`;
 function card(title,value,detail=''){return `<article class="metric"><small>${esc(title)}</small><strong>${esc(value)}</strong><span>${esc(detail)}</span></article>`}
 function empty(msg){return `<div class="empty">${esc(msg)}</div>`}
 function table(headers,rows){return `<div class="table-wrap"><table><thead><tr>${headers.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`}
-function actionButtons(type,id){return `<div class="portal-doc-actions"><button type="button" data-view-pdf="${type}:${esc(id)}">Ver PDF</button><button type="button" class="secondary" data-download-pdf="${type}:${esc(id)}">Descargar PDF</button></div>`}
+function actionButtons(type,id){return `<div class="portal-doc-actions"><button type="button" data-print-document="${type}:${esc(id)}">Imprimir / Guardar PDF</button></div>`}
 function bindPdfButtons(){
-  document.querySelectorAll('[data-view-pdf]').forEach(b=>b.onclick=()=>openDocumentPdf(b.dataset.viewPdf,false));
-  document.querySelectorAll('[data-download-pdf]').forEach(b=>b.onclick=()=>openDocumentPdf(b.dataset.downloadPdf,true));
+  document.querySelectorAll('[data-print-document]').forEach(b=>b.onclick=()=>printPortalDocument(b.dataset.printDocument));
 }
+function printPortalDocument(key){
+  const [type,id]=String(key||'').split(':');
+  const row=(type==='invoice'?data.invoices:data.quotes)?.find(x=>String(x.id)===id);
+  if(!row){alert('Documento no disponible.');return;}
+  const original=data.sharedDocument&&data.printHtml;
+  const html=original||documentHtml(type,row);
+  const css=new URL(original?'./styles.css':'./portal.css',import.meta.url).href;
+  const w=window.open('','_blank');
+  if(!w){alert('Permita ventanas emergentes para imprimir el documento.');return;}
+  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(row.number||'Documento')}</title><link rel="stylesheet" href="${esc(css)}"><style>
+    @page{size:letter;margin:.38in}
+    html,body{margin:0!important;padding:0!important;background:white!important;display:block!important;color:#172033;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .doc-page,.portal-pdf{box-sizing:border-box!important;width:100%!important;max-width:740px!important;min-height:0!important;height:auto!important;margin:20px auto!important;padding:16px!important;box-shadow:none!important;transform:none!important;zoom:1!important}
+    table{width:100%!important;table-layout:fixed!important}td,th{white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+    .doc-foot,.clean-doc-footer{position:static!important;margin-top:24px!important}.pdf-business img{max-width:125px;max-height:60px;object-fit:contain}
+    .print-controls{padding:16px;text-align:center}.print-controls button{padding:12px 20px;font-size:16px}
+    @media print{.print-controls{display:none!important}.doc-page,.portal-pdf{max-width:none!important;margin:0!important;padding:0!important}.pdf-head{display:flex!important}.pdf-meta{display:grid!important;grid-template-columns:1fr 180px!important}.pdf-totals{width:310px!important;margin-left:auto!important}.pdf-business{text-align:right!important}.pdf-business img{margin-left:auto!important}}
+    </style></head><body><div class="print-controls"><button onclick="window.print()">Imprimir / Guardar PDF</button></div>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},350));<\/script></body></html>`);
+  w.document.close();
+}
+
 function render(){
   const d=data,b=d.business||{},c=d.client||{},s=d.summary||{};
   if(d.sharedDocument){
     const {type,id}=d.sharedDocument;
     const row=(type==='invoice'?d.invoices:d.quotes)?.find(x=>x.id===id);
     if(!row) throw new Error('Documento no disponible.');
-    $('portalApp').innerHTML=`<div class="pdf-toolbar">${actionButtons(type,id)}</div>${documentHtml(type,row)}`;
+    $('portalApp').innerHTML=`<main class="panel"><h2>${type==='invoice'?'Factura':'Cotización'} ${esc(row.number||'')}</h2><p>${esc(c.name||'')} · ${esc(b.name||'')}</p><p>Pulse el botón para imprimir el documento o guardarlo como PDF.</p>${actionButtons(type,id)}</main>`;
     bindPdfButtons();return;
   }
   $('businessName').textContent=b.name||'Portal del Cliente';$('businessSlogan').textContent=b.slogan||'';$('clientName').textContent=c.name||'Cliente';
@@ -71,30 +91,6 @@ function documentHtml(type,docData){
   const tax=Number(docData.tax ?? Math.max(0,Number(docData.total||0)-subtotal));
   const rows=items.length?items.map(i=>`<tr><td>${esc(i.description||'Servicio')}</td><td>${Number(i.qty||1)}</td><td>${money(i.price)}</td><td>${money(Number(i.qty||1)*Number(i.price||0))}</td></tr>`).join(''):`<tr><td>${esc(docData.serviceTitle||docData.title||'Servicio')}</td><td>1</td><td>${money(subtotal||docData.total)}</td><td>${money(subtotal||docData.total)}</td></tr>`;
   return `<div id="portalPdfDocument" class="portal-pdf"><div class="pdf-head"><div><h1>${label}</h1><div class="pdf-number"># ${esc(docData.number||'')}</div></div><div class="pdf-business">${b.logo?`<img src="${esc(b.logo)}" alt="Logo">`:''}<b>${esc(b.name||'')}</b><span>${esc(b.address||'')}</span><span>${esc(b.phone||'')} ${b.email?'· '+esc(b.email):''}</span></div></div><div class="pdf-meta"><div><small>Cliente</small><b>${esc(c.name||'')}</b><span>${esc(c.address||c.city||'')}</span><span>${esc(c.phone||'')} ${c.email?'· '+esc(c.email):''}</span></div><div><small>Fecha</small><b>${esc(docData.date||'—')}</b><small>${isInv?'Vence':'Válida hasta'}</small><b>${esc((isInv?docData.dueDate:docData.validUntil)||'—')}</b><small>Estado</small><b>${esc(docData.status||'—')}</b></div></div><table class="pdf-table"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="pdf-totals"><div><span>Subtotal</span><b>${money(subtotal)}</b></div><div><span>IVU / Impuesto</span><b>${money(tax)}</b></div><div class="grand"><span>Total</span><b>${money(docData.total)}</b></div>${isInv?`<div><span>Pagado</span><b>${money(docData.paid)}</b></div><div class="grand"><span>Balance</span><b>${money(docData.balance)}</b></div>`:''}</div>${docData.notes?`<section><h4>Notas</h4><p>${esc(docData.notes)}</p></section>`:''}${docData.terms?`<section><h4>Términos</h4><p>${esc(docData.terms)}</p></section>`:''}<footer>${esc(b.name||'')} · Documento disponible en el Portal del Cliente</footer></div>`;
-}
-async function openDocumentPdf(key,download){
-  const [type,id]=String(key||'').split(':');
-  const list=type==='invoice'?(data.invoices||[]):(data.quotes||[]);
-  const docData=list.find(x=>String(x.id)===String(id));
-  if(!docData){alert('Documento no disponible. Actualice el portal desde el sistema administrativo.');return;}
-  const html=documentHtml(type,docData);
-  if(!download){
-    const w=window.open('','_blank');
-    if(!w){alert('El navegador bloqueó la ventana del PDF. Permita ventanas emergentes para este portal.');return;}
-    w.document.write(`<html><head><title>${esc(docData.number||'Documento')}</title><link rel="stylesheet" href="portal.css?v=78"></head><body class="pdf-view">${html}<div class="pdf-toolbar"><button onclick="window.print()">Imprimir / Guardar PDF</button></div></body></html>`);w.document.close();return;
-  }
-  const holder=document.createElement('div');holder.className='pdf-render-host';holder.innerHTML=html;document.body.appendChild(holder);
-  try{
-    const node=holder.querySelector('#portalPdfDocument');
-    const canvas=await window.html2canvas(node,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
-    const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'pt',format:'letter',orientation:'portrait'});
-    const width=pdf.internal.pageSize.getWidth()-48;const height=canvas.height*width/canvas.width;
-    const img=canvas.toDataURL('image/png');
-    if(height<=pdf.internal.pageSize.getHeight()-48) pdf.addImage(img,'PNG',24,24,width,height);
-    else {let y=24,remaining=height;while(remaining>0){pdf.addImage(img,'PNG',24,y,width,height);remaining-=pdf.internal.pageSize.getHeight()-48;if(remaining>0){pdf.addPage();y=24-(height-remaining);}}}
-    pdf.save(`${type==='invoice'?'Factura':'Cotizacion'}-${docData.number||'documento'}.pdf`);
-  }catch(e){console.error(e);alert('No se pudo descargar el PDF. Use “Ver PDF” y luego Imprimir / Guardar PDF.');}
-  finally{holder.remove();}
 }
 async function openPortal(token){$('loginMsg').textContent='Verificando acceso…';try{const snap=await getDoc(doc(db,'clientPortals',token));if(!snap.exists()||snap.data().enabled===false)throw new Error('Código inválido o portal desactivado.');data=snap.data();if(!data.sharedDocument)localStorage.setItem('nexusPortalAccess',token);$('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');render();}catch(e){$('loginMsg').textContent=e.message||'No se pudo abrir el portal.';}}
 $('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)openPortal(token)};

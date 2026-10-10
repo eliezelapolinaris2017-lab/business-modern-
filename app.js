@@ -2278,53 +2278,37 @@ function documentWhatsappPhone(value){
 }
 async function sendPreviewWhatsapp(printAlso=false){
   const selected=currentWhatsappDocument();
-  if(!selected){alert('Abra una factura o cotización con Ver antes de compartir el PDF.');return;}
-  const html=state.previewHtml,{type,row}=selected;
+  if(!selected){alert('Abra una factura o cotización con el botón Ver antes de enviarla.');return;}
+  const {type,row}=selected,c=clientBy(row.clientId);
+  const phone=documentWhatsappPhone(row.clientPhone||row.phone||c.whatsapp||c.phone);
+  if(!phone){alert('El cliente no tiene un teléfono válido. Edite el cliente e incluya el código de país si corresponde.');return;}
+  const html=state.previewHtml;
   const printTab=printAlso?window.open('','_blank'):null;
-  if(printAlso&&!printTab){alert('Permita ventanas emergentes para imprimir y compartir el PDF.');return;}
-  if(printTab) printTab.document.body.textContent='Preparando impresión y PDF…';
+  if(printAlso&&!printTab){alert('Permita ventanas emergentes para imprimir y abrir WhatsApp.');return;}
+  const tab=window.open('','_blank');
+  if(!tab){if(printTab)printTab.close();alert('Permita ventanas emergentes para abrir WhatsApp e intente nuevamente.');return;}
+  tab.opener=null;
+  tab.document.body.textContent='Preparando documento para WhatsApp…';
   const buttons=[$('whatsappPreview'),$('printWhatsappPreview')];
   buttons.forEach(b=>{if(b)b.disabled=true;});
   try{
-    const pdf=await generatePreviewPdf(html);
-    const name=((type==='invoice'?'Factura-':'Cotizacion-')+(row.number||row.id)).replace(/[^a-zA-Z0-9_-]/g,'_')+'.pdf';
-    const file=new File([pdf.output('blob')],name,{type:'application/pdf'});
-    const dialog=document.createElement('dialog');
-    dialog.style.cssText='max-width:440px;width:calc(100% - 40px);border:0;border-radius:16px;padding:24px;';
-    const phone=row.clientPhone||row.phone||clientBy(row.clientId).phone||'';
-    dialog.innerHTML=`<h3>PDF listo: ${esc(row.number||'Documento')}</h3><p>Cliente: ${esc(row.clientName||'')} ${esc(phone)}</p><p>Seleccione WhatsApp y el cliente para enviar el archivo PDF.</p><div class="actions"><button type="button" data-share>Compartir PDF</button><button type="button" data-whatsapp>Descargar PDF y abrir WhatsApp</button><button type="button" data-save>Descargar PDF</button><button type="button" data-close>Cerrar</button></div><p data-status role="status"></p>`;
-    document.body.appendChild(dialog);dialog.showModal();
-    let printed=false;
-    const print=()=>{if(printTab&&!printed){printed=true;$('printPreview').onclick({printWindow:printTab,html});}};
-    const cleanup=()=>{if(printTab&&!printed)printTab.close();dialog.remove();};
-    dialog.onclose=cleanup;
-    dialog.querySelector('[data-close]').onclick=()=>dialog.close();
-    dialog.querySelector('[data-save]').onclick=()=>{pdf.save(name);print();dialog.querySelector('[data-status]').textContent='PDF descargado. Adjunte este archivo en el chat del cliente en WhatsApp.';};
-    const desktopWhatsapp=dialog.querySelector('[data-whatsapp]');
-    desktopWhatsapp.onclick=()=>{
-      const normalized=documentWhatsappPhone(phone);
-      if(!normalized){dialog.querySelector('[data-status]').textContent='Registre un teléfono válido en el cliente para abrir su chat. Puede descargar el PDF y adjuntarlo manualmente.';return;}
-      const chat=window.open('https://wa.me/'+normalized,'_blank');
-      if(chat)chat.opener=null;
-      pdf.save(name);print();
-      dialog.querySelector('[data-status]').textContent=chat
-        ? 'PDF descargado: '+name+'. En WhatsApp pulse + → Documento y elija este archivo en Descargas, o arrástrelo al chat. Luego pulse Enviar.'
-        : 'PDF descargado: '+name+'. Permita ventanas emergentes y vuelva a pulsar este botón para abrir el chat.';
-    };
-    const mac=/Macintosh|MacIntel/.test(navigator.userAgent||navigator.platform||'') && !/iPhone|iPad/.test(navigator.userAgent) && !(navigator.maxTouchPoints>1);
-    const share=dialog.querySelector('[data-share]');
-    if(mac||!navigator.share||!navigator.canShare?.({files:[file]})){
-      share.hidden=true;
-      dialog.querySelector('[data-status]').textContent='Pulse Descargar PDF y abrir WhatsApp. Adjunte el archivo desde Descargas o arrástrelo al chat del cliente.';
-    }else share.onclick=async()=>{
-      share.disabled=true;
-      try{
-        await navigator.share({files:[file],title:(type==='invoice'?'Factura ':'Cotización ')+(row.number||'')});
-        print();dialog.close();
-      }catch(error){if(error.name!=='AbortError')dialog.querySelector('[data-status]').textContent='No se pudo compartir. Descargue el PDF y adjúntelo en WhatsApp.';}
-      finally{share.disabled=false;}
-    };
-  }catch(error){if(printTab)printTab.close();console.error('PDF para WhatsApp',error);alert('No se pudo generar el PDF. Intente nuevamente.');}
+    const token=crypto.randomUUID(),p=profile();
+    const docData=type==='invoice'?portalInvoiceData(row):portalQuoteData(row);
+    await setDoc(doc(db,'clientPortals',token),{
+      ownerId:uid(),token,enabled:true,updatedAt:new Date().toISOString(),sharedDocument:{type,id:row.id},printHtml:html,
+      business:{name:p.businessName||'Nexus Business',phone:p.phone||'',email:p.email||'',address:p.address||'',logo:p.logoPdf||p.logoDashboard||''},
+      client:{name:row.clientName||c.name||'',phone:c.phone||'',address:c.address||''},
+      invoices:type==='invoice'?[docData]:[],quotes:type==='quote'?[docData]:[],summary:{},services:[],assets:[],maintenance:[]
+    });
+    const link=portalBaseUrl()+'?access='+encodeURIComponent(token);
+    const label=type==='invoice'?'factura':'cotización';
+    const message=`Hola ${row.clientName||c.name||''}, le compartimos su ${label} ${row.number||''} de ${p.businessName||'nuestro negocio'}. Puede verla y descargar el PDF aquí: ${link}`;
+    tab.location.replace('https://wa.me/'+phone+'?text='+encodeURIComponent(message));
+    if(printAlso){
+      if(state.previewHtml===html) $('printPreview').onclick({printWindow:printTab,html});
+      else {printTab.close();alert('WhatsApp está listo. La vista cambió durante el envío; vuelva a abrir el documento para imprimir.');}
+    }
+  }catch(error){tab.close();if(printTab)printTab.close();console.error('WhatsApp documento',error);alert('No se pudo preparar el documento. Verifique su conexión y vuelva a intentar.');}
   finally{buttons.forEach(b=>{if(b)b.disabled=false;});}
 }
 
