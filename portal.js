@@ -17,6 +17,13 @@ function bindPdfButtons(){
 }
 function render(){
   const d=data,b=d.business||{},c=d.client||{},s=d.summary||{};
+  if(d.sharedDocument){
+    const {type,id}=d.sharedDocument;
+    const row=(type==='invoice'?d.invoices:d.quotes)?.find(x=>x.id===id);
+    if(!row) throw new Error('Documento no disponible.');
+    $('portalApp').innerHTML=`<div class="pdf-toolbar">${actionButtons(type,id)}</div>${documentHtml(type,row)}`;
+    bindPdfButtons();return;
+  }
   $('businessName').textContent=b.name||'Portal del Cliente';$('businessSlogan').textContent=b.slogan||'';$('clientName').textContent=c.name||'Cliente';
   $('lastUpdate').textContent='Información actualizada: '+new Date(d.updatedAt).toLocaleString('es-PR');
   $('businessContact').innerHTML=[b.phone,b.email,b.address].filter(Boolean).map(esc).join('<br>');
@@ -89,7 +96,7 @@ async function openDocumentPdf(key,download){
   }catch(e){console.error(e);alert('No se pudo descargar el PDF. Use “Ver PDF” y luego Imprimir / Guardar PDF.');}
   finally{holder.remove();}
 }
-async function openPortal(token){$('loginMsg').textContent='Verificando acceso…';try{const snap=await getDoc(doc(db,'clientPortals',token));if(!snap.exists()||snap.data().enabled===false)throw new Error('Código inválido o portal desactivado.');data=snap.data();localStorage.setItem('nexusPortalAccess',token);$('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');render();}catch(e){$('loginMsg').textContent=e.message||'No se pudo abrir el portal.';}}
+async function openPortal(token){$('loginMsg').textContent='Verificando acceso…';try{const snap=await getDoc(doc(db,'clientPortals',token));if(!snap.exists()||snap.data().enabled===false)throw new Error('Código inválido o portal desactivado.');data=snap.data();if(!data.sharedDocument)localStorage.setItem('nexusPortalAccess',token);$('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');render();}catch(e){$('loginMsg').textContent=e.message||'No se pudo abrir el portal.';}}
 $('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)openPortal(token)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;renderTab()});
 $('exitBtn').onclick=()=>{localStorage.removeItem('nexusPortalAccess');location.href='./'};
