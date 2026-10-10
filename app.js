@@ -2278,38 +2278,62 @@ function documentWhatsappPhone(value){
 }
 async function sendPreviewWhatsapp(printAlso=false){
   const selected=currentWhatsappDocument();
-  if(!selected){alert('Abra una factura o cotización con el botón Ver antes de enviarla.');return;}
-  const {type,row}=selected,c=clientBy(row.clientId);
-  const phone=documentWhatsappPhone(row.clientPhone||row.phone||c.whatsapp||c.phone);
-  if(!phone){alert('El cliente no tiene un teléfono válido. Edite el cliente e incluya el código de país si corresponde.');return;}
-  const html=state.previewHtml;
+  if(!selected){alert('Abra una factura o cotización con Ver antes de compartir el PDF.');return;}
+  const html=state.previewHtml,{type,row}=selected;
   const printTab=printAlso?window.open('','_blank'):null;
-  if(printAlso&&!printTab){alert('Permita ventanas emergentes para imprimir y abrir WhatsApp.');return;}
-  const tab=window.open('','_blank');
-  if(!tab){if(printTab)printTab.close();alert('Permita ventanas emergentes para abrir WhatsApp e intente nuevamente.');return;}
-  tab.opener=null;
-  tab.document.body.textContent='Preparando documento para WhatsApp…';
+  if(printAlso&&!printTab){alert('Permita ventanas emergentes para imprimir y compartir el PDF.');return;}
+  if(printTab) printTab.document.body.textContent='Preparando impresión y PDF…';
   const buttons=[$('whatsappPreview'),$('printWhatsappPreview')];
   buttons.forEach(b=>{if(b)b.disabled=true;});
   try{
-    const token=crypto.randomUUID(),p=profile();
-    const docData=type==='invoice'?portalInvoiceData(row):portalQuoteData(row);
-    await setDoc(doc(db,'clientPortals',token),{
-      ownerId:uid(),token,enabled:true,updatedAt:new Date().toISOString(),sharedDocument:{type,id:row.id},
-      business:{name:p.businessName||'Nexus Business',phone:p.phone||'',email:p.email||'',address:p.address||'',logo:p.logoPdf||p.logoDashboard||''},
-      client:{name:row.clientName||c.name||'',phone:c.phone||'',address:c.address||''},
-      invoices:type==='invoice'?[docData]:[],quotes:type==='quote'?[docData]:[],summary:{},services:[],assets:[],maintenance:[]
-    });
-    const link=portalBaseUrl()+'?access='+encodeURIComponent(token);
-    const label=type==='invoice'?'factura':'cotización';
-    const message=`Hola ${row.clientName||c.name||''}, le compartimos su ${label} ${row.number||''} de ${p.businessName||'nuestro negocio'}. Puede verla y descargar el PDF aquí: ${link}`;
-    tab.location.replace('https://wa.me/'+phone+'?text='+encodeURIComponent(message));
-    if(printAlso){
-      if(state.previewHtml===html) $('printPreview').onclick({printWindow:printTab});
-      else {printTab.close();alert('WhatsApp está listo. La vista cambió durante el envío; vuelva a abrir el documento para imprimir.');}
-    }
-  }catch(error){tab.close();if(printTab)printTab.close();console.error('WhatsApp documento',error);alert('No se pudo preparar el documento. Verifique su conexión y vuelva a intentar.');}
+    const pdf=await generatePreviewPdf(html);
+    const name=((type==='invoice'?'Factura-':'Cotizacion-')+(row.number||row.id)).replace(/[^a-zA-Z0-9_-]/g,'_')+'.pdf';
+    const file=new File([pdf.output('blob')],name,{type:'application/pdf'});
+    const dialog=document.createElement('dialog');
+    dialog.style.cssText='max-width:440px;width:calc(100% - 40px);border:0;border-radius:16px;padding:24px;';
+    const phone=row.clientPhone||row.phone||clientBy(row.clientId).phone||'';
+    dialog.innerHTML=`<h3>PDF listo: ${esc(row.number||'Documento')}</h3><p>Cliente: ${esc(row.clientName||'')} ${esc(phone)}</p><p>Seleccione WhatsApp y el cliente para enviar el archivo PDF.</p><div class="actions"><button type="button" data-share>Compartir PDF</button><button type="button" data-save>Descargar PDF</button><button type="button" data-close>Cerrar</button></div><p data-status role="status"></p>`;
+    document.body.appendChild(dialog);dialog.showModal();
+    let printed=false;
+    const print=()=>{if(printTab&&!printed){printed=true;$('printPreview').onclick({printWindow:printTab,html});}};
+    const cleanup=()=>{if(printTab&&!printed)printTab.close();dialog.remove();};
+    dialog.onclose=cleanup;
+    dialog.querySelector('[data-close]').onclick=()=>dialog.close();
+    dialog.querySelector('[data-save]').onclick=()=>{pdf.save(name);print();dialog.querySelector('[data-status]').textContent='PDF descargado. Adjunte este archivo en el chat del cliente en WhatsApp.';};
+    const share=dialog.querySelector('[data-share]');
+    if(!navigator.share||!navigator.canShare?.({files:[file]})){
+      share.hidden=true;
+      dialog.querySelector('[data-status]').textContent='Este navegador requiere descargar el PDF y adjuntarlo en WhatsApp.';
+    }else share.onclick=async()=>{
+      share.disabled=true;
+      try{
+        await navigator.share({files:[file],title:(type==='invoice'?'Factura ':'Cotización ')+(row.number||'')});
+        print();dialog.close();
+      }catch(error){if(error.name!=='AbortError')dialog.querySelector('[data-status]').textContent='No se pudo compartir. Descargue el PDF y adjúntelo en WhatsApp.';}
+      finally{share.disabled=false;}
+    };
+  }catch(error){if(printTab)printTab.close();console.error('PDF para WhatsApp',error);alert('No se pudo generar el PDF. Intente nuevamente.');}
   finally{buttons.forEach(b=>{if(b)b.disabled=false;});}
+}
+
+async function generatePreviewPdf(html){
+  if(!window.html2canvas||!window.jspdf?.jsPDF)throw new Error('Motor PDF no disponible');
+  const host=document.createElement('div');
+  host.style.cssText='position:fixed;left:-12000px;top:0;width:816px;background:#fff;z-index:-1;pointer-events:none;';
+  host.innerHTML=html;document.body.appendChild(host);
+  try{
+    const page=host.querySelector('.doc-page')||host.firstElementChild||host;
+    Object.assign(page.style,{boxSizing:'border-box',width:'816px',maxWidth:'816px',margin:'0',boxShadow:'none',border:'0',background:'#fff'});
+    await document.fonts?.ready;
+    await Promise.all(Array.from(page.querySelectorAll('img')).map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;})));
+    const canvas=await window.html2canvas(page,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth:816,scrollX:0,scrollY:0});
+    const pdf=new window.jspdf.jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true});
+    const width=pdf.internal.pageSize.getWidth(),height=pdf.internal.pageSize.getHeight(),margin=24;
+    const scale=Math.min((width-margin*2)/canvas.width,(height-margin*2)/canvas.height);
+    const drawW=canvas.width*scale,drawH=canvas.height*scale;
+    pdf.addImage(canvas.toDataURL('image/jpeg',0.96),'JPEG',(width-drawW)/2,margin,drawW,drawH,undefined,'FAST');
+    return pdf;
+  }finally{host.remove();}
 }
 
 function previewInvoice(id){
@@ -2542,10 +2566,10 @@ function bindForms(){
   if($('reportPdfBtn')) $('reportPdfBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());setTimeout(downloadCurrentPreview,250);};
   if($('reportExportBtn')) $('reportExportBtn').onclick=()=>exportReport(currentReportType());
   if($('reportSearch')) $('reportSearch').oninput=filterReportCenter;
-  $('printPreview').onclick=(event)=>{const html=state.previewHtml||$('reportPreview').innerHTML;const w=event?.printWindow||open('','_blank');if(!w){alert('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e intenta nuevamente.');return;}w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><link rel="stylesheet" href="styles.css?v=98"><style>@page{size:letter;margin:.38in;}html,body{margin:0!important;padding:0!important;background:#fff!important;width:100%!important;}body{display:block!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}.doc-page{box-sizing:border-box!important;width:100%!important;max-width:none!important;min-height:calc(11in - .76in)!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;transform:none!important;zoom:1!important;display:flex!important;flex-direction:column!important;overflow:visible!important;}.doc-body{flex:1 1 auto!important;padding:0 0 .08in 0!important;}.doc-foot,.clean-doc-footer{position:static!important;margin-top:auto!important;text-align:center!important;}.doc-table,.clean-items{width:100%!important;table-layout:fixed!important;}.clean-items td,.clean-items th{overflow-wrap:anywhere!important;word-break:normal!important;}@media print{html,body{width:100%!important;height:auto!important}.doc-page{page-break-after:auto!important;break-after:auto!important}}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},500));<\/script></body></html>`);w.document.close();};
+  $('printPreview').onclick=(event)=>{const html=event?.html||state.previewHtml||$('reportPreview').innerHTML;const w=event?.printWindow||open('','_blank');if(!w){alert('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e intenta nuevamente.');return;}w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><link rel="stylesheet" href="styles.css?v=98"><style>@page{size:letter;margin:.38in;}html,body{margin:0!important;padding:0!important;background:#fff!important;width:100%!important;}body{display:block!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}.doc-page{box-sizing:border-box!important;width:100%!important;max-width:none!important;min-height:calc(11in - .76in)!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;transform:none!important;zoom:1!important;display:flex!important;flex-direction:column!important;overflow:visible!important;}.doc-body{flex:1 1 auto!important;padding:0 0 .08in 0!important;}.doc-foot,.clean-doc-footer{position:static!important;margin-top:auto!important;text-align:center!important;}.doc-table,.clean-items{width:100%!important;table-layout:fixed!important;}.clean-items td,.clean-items th{overflow-wrap:anywhere!important;word-break:normal!important;}@media print{html,body{width:100%!important;height:auto!important}.doc-page{page-break-after:auto!important;break-after:auto!important}}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},500));<\/script></body></html>`);w.document.close();};
   $('whatsappPreview').onclick=()=>sendPreviewWhatsapp();
   $('printWhatsappPreview').onclick=()=>sendPreviewWhatsapp(true);
-  $('downloadPreview').onclick=async()=>{const btn=$('downloadPreview');const original=btn?.textContent||'Descargar PDF';try{if(!window.html2canvas)throw new Error('html2canvas no está disponible');if(!window.jspdf?.jsPDF)throw new Error('jsPDF no está disponible');if(btn){btn.disabled=true;btn.textContent='Generando PDF...';}const host=document.createElement('div');host.style.cssText='position:fixed;left:-12000px;top:0;width:816px;background:#fff;z-index:-1;pointer-events:none;';host.innerHTML=state.previewHtml||$('reportPreview').innerHTML;document.body.appendChild(host);const page=host.querySelector('.doc-page')||host.firstElementChild||host;page.style.boxSizing='border-box';page.style.width='816px';page.style.maxWidth='816px';page.style.margin='0';page.style.boxShadow='none';page.style.border='0';page.style.background='#fff';await new Promise(r=>setTimeout(r,120));const canvas=await window.html2canvas(page,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false,windowWidth:816,scrollX:0,scrollY:0});host.remove();const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'pt',format:'letter',orientation:'portrait',compress:true});const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight(),margin=24,usableW=pageW-margin*2,usableH=pageH-margin*2;const imgW=canvas.width,imgH=canvas.height;const scale=Math.min(usableW/imgW,usableH/imgH);const drawW=imgW*scale,drawH=imgH*scale;const x=(pageW-drawW)/2,y=margin;const img=canvas.toDataURL('image/jpeg',0.96);pdf.addImage(img,'JPEG',x,y,drawW,drawH,undefined,'FAST');pdf.save('nexus-documento.pdf');}catch(err){console.error('PDF export error',err);alert('No se pudo generar el PDF. Recarga Nexus e inténtalo otra vez.');}finally{if(btn){btn.disabled=false;btn.textContent=original;}}};
+  $('downloadPreview').onclick=async()=>{const btn=$('downloadPreview');btn.disabled=true;try{const pdf=await generatePreviewPdf(state.previewHtml||$('reportPreview').innerHTML);pdf.save('nexus-documento.pdf');}catch(error){console.error(error);alert('No se pudo generar el PDF. Intente nuevamente.');}finally{btn.disabled=false;}};
   if($('sideUpgrade')) $('sideUpgrade').onclick=()=>{if(canUpgradePlan())show('plans');};$('mobileMenu').onclick=()=>document.querySelector('.sidebar').classList.toggle('open');$('logoutBtn').onclick=()=>signOut(auth);if($('globalSearch')) $('globalSearch').oninput=renderGlobalSearch;
 }
 
