@@ -2292,7 +2292,7 @@ async function sendPreviewWhatsapp(printAlso=false){
     const dialog=document.createElement('dialog');
     dialog.style.cssText='max-width:440px;width:calc(100% - 40px);border:0;border-radius:16px;padding:24px;';
     const phone=row.clientPhone||row.phone||clientBy(row.clientId).phone||'';
-    dialog.innerHTML=`<h3>PDF listo: ${esc(row.number||'Documento')}</h3><p>Cliente: ${esc(row.clientName||'')} ${esc(phone)}</p><p>Seleccione WhatsApp y el cliente para enviar el archivo PDF.</p><div class="actions"><button type="button" data-share>Compartir PDF</button><button type="button" data-save>Descargar PDF</button><button type="button" data-close>Cerrar</button></div><p data-status role="status"></p>`;
+    dialog.innerHTML=`<h3>PDF listo: ${esc(row.number||'Documento')}</h3><p>Cliente: ${esc(row.clientName||'')} ${esc(phone)}</p><p>Seleccione WhatsApp y el cliente para enviar el archivo PDF.</p><div class="actions"><button type="button" data-share>Compartir PDF</button><button type="button" data-whatsapp>Descargar PDF y abrir WhatsApp</button><button type="button" data-save>Descargar PDF</button><button type="button" data-close>Cerrar</button></div><p data-status role="status"></p>`;
     document.body.appendChild(dialog);dialog.showModal();
     let printed=false;
     const print=()=>{if(printTab&&!printed){printed=true;$('printPreview').onclick({printWindow:printTab,html});}};
@@ -2300,10 +2300,22 @@ async function sendPreviewWhatsapp(printAlso=false){
     dialog.onclose=cleanup;
     dialog.querySelector('[data-close]').onclick=()=>dialog.close();
     dialog.querySelector('[data-save]').onclick=()=>{pdf.save(name);print();dialog.querySelector('[data-status]').textContent='PDF descargado. Adjunte este archivo en el chat del cliente en WhatsApp.';};
+    const desktopWhatsapp=dialog.querySelector('[data-whatsapp]');
+    desktopWhatsapp.onclick=()=>{
+      const normalized=documentWhatsappPhone(phone);
+      if(!normalized){dialog.querySelector('[data-status]').textContent='Registre un teléfono válido en el cliente para abrir su chat. Puede descargar el PDF y adjuntarlo manualmente.';return;}
+      const chat=window.open('https://wa.me/'+normalized,'_blank');
+      if(chat)chat.opener=null;
+      pdf.save(name);print();
+      dialog.querySelector('[data-status]').textContent=chat
+        ? 'PDF descargado: '+name+'. En WhatsApp pulse + → Documento y elija este archivo en Descargas, o arrástrelo al chat. Luego pulse Enviar.'
+        : 'PDF descargado: '+name+'. Permita ventanas emergentes y vuelva a pulsar este botón para abrir el chat.';
+    };
+    const mac=/Macintosh|MacIntel/.test(navigator.userAgent||navigator.platform||'') && !/iPhone|iPad/.test(navigator.userAgent) && !(navigator.maxTouchPoints>1);
     const share=dialog.querySelector('[data-share]');
-    if(!navigator.share||!navigator.canShare?.({files:[file]})){
+    if(mac||!navigator.share||!navigator.canShare?.({files:[file]})){
       share.hidden=true;
-      dialog.querySelector('[data-status]').textContent='Este navegador requiere descargar el PDF y adjuntarlo en WhatsApp.';
+      dialog.querySelector('[data-status]').textContent='Pulse Descargar PDF y abrir WhatsApp. Adjunte el archivo desde Descargas o arrástrelo al chat del cliente.';
     }else share.onclick=async()=>{
       share.disabled=true;
       try{
