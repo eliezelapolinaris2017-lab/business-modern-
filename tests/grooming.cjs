@@ -1,0 +1,16 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const src=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'utf8');
+const block=(a,b)=>src.slice(src.indexOf(a),src.indexOf(b,src.indexOf(a)));
+let current={industry:'grooming',businessName:'Happy Paws'};const alerts=[];
+const ctx={profile:()=>current,TITLES:{assets:'Activos'},alert:x=>alerts.push(x),clientBy:()=>({name:'Ana'}),assetBy:()=>({name:'Toby'}),isQuoteFollowup:()=>false};vm.createContext(ctx);
+vm.runInContext(block('function isGrooming(){','function serviceOptions(){')+block('function followupMessage(f){','function followupWhatsappUrl(f){'),ctx);
+assert.equal(ctx.industryTitle('assets'),'Mascotas');
+assert.ok(ctx.defaultServiceOptions('grooming').includes('Corte de uñas'));
+assert.equal(ctx.validateGroomingPet('c1',{id:'p1',clientId:'c1',category:'Mascota'}),true);
+assert.equal(ctx.validateGroomingPet('c2',{id:'p1',clientId:'c1',category:'Mascota'}),false);
+assert.equal(ctx.validateGroomingPet('c1',{id:'hvac',clientId:'c1',category:'Equipo'}),false);
+const msg=ctx.followupMessage({clientId:'c1',assetId:'p1',dueDate:'2026-11-12'});
+assert.match(msg,/Happy Paws/);assert.match(msg,/Toby/);assert.match(msg,/2026-11-12/);assert.doesNotMatch(msg,/Oasis|aire acondicionado/);
+current={industry:'hvac'};assert.equal(ctx.industryTitle('assets'),'Activos');assert.equal(ctx.validateGroomingPet('c1',{}),true);
+assert.ok(ctx.defaultServiceOptions('hvac').includes('Diagnóstico HVAC'));
+console.log('PASS: grooming catalog, pet-owner validation, grooming followup branding, HVAC isolation.');

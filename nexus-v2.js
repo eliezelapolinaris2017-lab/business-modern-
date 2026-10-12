@@ -45,7 +45,10 @@
     });
   }
   function setupModules(){
-    Object.entries(META).forEach(([id,m])=>{
+    Object.entries(META).forEach(([id,base])=>{
+      const grooming=document.body.dataset.industry==='grooming';
+      const custom={assets:['🐾','OPERACIÓN','Mascotas','Dueños, perfiles, precauciones, historial y próximas visitas.'],services:['🐾','OPERACIÓN','Citas de Grooming','Baños, cortes y servicios vinculados a cada mascota.'],team:['♙','OPERACIÓN','Groomers','Personal y asignaciones de grooming.']};
+      const m=grooming&&custom[id]?custom[id]:base;
       const view=document.getElementById(id);
       const card=view?.querySelector(':scope > .card');
       if(!view||!card)return;
@@ -57,6 +60,10 @@
         hero.innerHTML='<div class="school-module-icon">'+m[0]+'</div><div class="school-module-copy"><small>'+m[1]+'</small><h2>'+m[2]+'</h2><p>'+m[3]+'</p></div><div class="school-module-actions"></div>';
         view.insertBefore(hero,card);
       }
+      const title=hero.querySelector('h2'),copy=hero.querySelector('p'),icon=hero.querySelector('.school-module-icon');
+      if(title.textContent!==m[2])title.textContent=m[2];
+      if(copy.textContent!==m[3])copy.textContent=m[3];
+      if(icon.textContent!==m[0])icon.textContent=m[0];
       card.classList.add('school-module-card');
       view.dataset.theme = id;
       hero.dataset.theme = id;
