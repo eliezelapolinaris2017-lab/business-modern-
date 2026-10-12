@@ -141,9 +141,9 @@ function canUpgradePlan(){return !isTopPlan();}
 function colPath(c){return collection(db,'users',uid(),c);}
 function docPath(c,id){return doc(db,'users',uid(),c,id);}
 function profRef(){return doc(db,'users',uid());}
-function limit(c){return plan().limits[c] ?? Infinity;}
+function limit(c){if(isGrooming()&&c==='assets'&&currentPlanId()==='free')return 10;return plan().limits[c] ?? Infinity;}
 function unlimited(v){return v === Infinity;}
-function lockedModule(v){return !plan().modules.includes(v);}
+function lockedModule(v){if(isGrooming()&&v==='assets')return false;return !plan().modules.includes(v);}
 function canCreate(c){const l=limit(c); return unlimited(l) || (state[c]||[]).length < l;}
 function sum(a,k){return (a||[]).reduce((t,x)=>t+Number(x[k]||0),0);}
 function teamBy(id){return state.team.find(x=>x.id===id)||{};}
@@ -2553,7 +2553,7 @@ function bindForms(){
   if($('quoteForm')) $('quoteForm').onsubmit=async e=>{e.preventDefault();const c=clientBy($('qClient')?.value||'');if(!c.id)return alert('Selecciona cliente.');const a=assetBy($('qAsset')?.value||'');if(!validateGroomingPet(c.id,a))return;const t=teamBy($('qTeam')?.value||'');const items=getQuoteItems();const subtotal=serviceItemsTotal(items);const ivu=subtotal*taxRate();const payload={clientId:c.id,clientName:c.name,assetId:a.id||'',assetName:a.id?assetName(a):'',teamId:t.id||'',teamName:t.name||'',date:$('qDate').value,validUntil:$('qValid').value,status:$('qStatus').value,priority:$('qPriority').value,serviceType:$('qServiceType').value,title:$('qTitle').value,items,subtotal,ivu,taxPercent:taxPercent(),total:subtotal+ivu,notes:$('qNotes').value,terms:$('qTerms').value,updatedAt:serverTimestamp()};if(state.editingQuoteId){await updateDoc(docPath('quotes',state.editingQuoteId),payload);resetQuoteEditMode();}else{await add('quotes',{number:quoteNumber(),...payload});}e.target.reset();setQuoteItems([{description:'',qty:1,price:''}]);};
   if($('cancelQuoteEdit')) $('cancelQuoteEdit').onclick=()=>{resetQuoteEditMode();$('quoteForm')?.reset();setQuoteItems([{description:'',qty:1,price:''}]);};
   $('teamForm').onsubmit=e=>{e.preventDefault();const v=assetBy($('tAssignedVehicle')?.value||'');add('team',{name:$('tName').value,phone:$('tPhone').value,email:$('tEmail').value,personalId:$('tPersonalId')?.value||'',ssn:formatSSNInput($('tSsn')?.value||''),driverLicense:$('tDriverLicense')?.value||'',assignedVehicleId:v.id||'',assignedVehicleName:v.id?assetName(v):'',role:$('tRole').value,status:$('tStatus')?.value||'Activo',salary:Number($('tSalary').value||0),rate:Number($('tRate').value||0),retention:Number($('tRetention').value||0),startDate:$('tStart').value});e.target.reset();};
-  $('assetForm').onsubmit=e=>{e.preventDefault();const c=clientBy($('aClient')?.value||'');if(isGrooming()&&!c.id)return alert('Selecciona el dueño de la mascota.');add('assets',{clientId:c.id||'',clientName:c.name||'',industry:profile().industry||'hvac',name:$('aName').value,category:$('aCategory')?.value||'Mascota',brand:$('aBrand')?.value||'',model:$('aModel')?.value||'',serial:$('aSerial')?.value||'',location:$('aLocation')?.value||'',status:$('aStatus')?.value||'Activo',value:Number($('aValue')?.value||0),date:$('aDate').value,purchaseDate:$('aPurchaseDate')?.value||'',expirationDate:$('aExpiration')?.value||'',warrantyExpirationDate:$('aWarrantyExpiration')?.value||'',nextMaintenanceDate:$('aNextMaintenance')?.value||'',warranty:$('aWarranty')?.value||'',notes:$('aNotes').value,...(isGrooming()?groomingAssetData():{})});e.target.reset();};
+  $('assetForm').onsubmit=e=>{e.preventDefault();const c=clientBy($('aClient')?.value||'');if(isGrooming()&&!c.id)return alert('Selecciona el dueño de la mascota.');if(isGrooming()&&!$('aName').value.trim())return alert('Escribe el nombre de la mascota.');add('assets',{clientId:c.id||'',clientName:c.name||'',industry:profile().industry||'hvac',name:$('aName').value,category:$('aCategory')?.value||'Mascota',brand:$('aBrand')?.value||'',model:$('aModel')?.value||'',serial:$('aSerial')?.value||'',location:$('aLocation')?.value||'',status:$('aStatus')?.value||'Activo',value:Number($('aValue')?.value||0),date:$('aDate').value,purchaseDate:$('aPurchaseDate')?.value||'',expirationDate:$('aExpiration')?.value||'',warrantyExpirationDate:$('aWarrantyExpiration')?.value||'',nextMaintenanceDate:$('aNextMaintenance')?.value||'',warranty:$('aWarranty')?.value||'',notes:$('aNotes').value,...(isGrooming()?groomingAssetData():{})});e.target.reset();};
   $('supplierForm').onsubmit=e=>{e.preventDefault();add('suppliers',{name:$('supName').value,phone:$('supPhone').value,whatsapp:$('supWhatsapp')?.value||'',email:$('supEmail').value,contact:$('supContact')?.value||'',category:$('supCategory')?.value||'',creditLimit:Number($('supCredit')?.value||0),openingBalance:Number($('supOpening').value||0),fields:industry().supplierFields.map((_,n)=>$('supF'+n)?.value||'')});e.target.reset();};
   $('supplierPaymentForm').onclick=e=>{if(e.target?.id==='reconcileSupplierPayments')reconcileGeneralSupplierPayments();};
   $('supplierPaymentForm').onchange=e=>{if(e.target?.id==='spSupplier')syncSupplierPurchaseOptions();};
@@ -2707,7 +2707,7 @@ async function ensureQuoteFollowup(quote){
 
 function followupGroup(row){
   const type=String(row.type||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-  if(type.includes('mantenimiento')) return 'maintenance';
+  if(type.includes('mantenimiento') || (isGrooming()&&type.includes('grooming'))) return 'maintenance';
   if(type.includes('cotizacion') || (!type && row.sourceType==='quote')) return 'quotes';
   return 'other';
 }
@@ -2721,7 +2721,7 @@ function renderFollowupGroups(){
   const selected=selectedFollowupGroup();
   const archive=selectedFollowupArchive();
   const completedCount=(state.followups||[]).filter(row=>followupGroup(row)===selected && followupStatus(row)==='Completado').length;
-  const groups=[['maintenance','Mantenimientos'],['quotes','Cotizaciones'],['other','Otros seguimientos']];
+  const groups=[['maintenance',isGrooming()?'Citas de Grooming':'Mantenimientos'],['quotes','Cotizaciones'],['other','Otros seguimientos']];
   box.innerHTML=groups.map(([key,label])=>`<button type="button" role="tab" aria-selected="${selected===key}" class="${selected===key?'primary':''}" data-followup-group="${key}">${label} (${(state.followups||[]).filter(row=>followupGroup(row)===key && followupInSelectedArchive(row)).length})</button>`).join('');
   box.insertAdjacentHTML('beforeend',`<label style="margin-left:auto">Ver <select id="followupArchive" aria-label="Menú de seguimientos"><option value="active" ${archive==='active'?'selected':''}>Seguimientos activos</option><option value="completed" ${archive==='completed'?'selected':''}>Completados (${completedCount})</option></select></label>`);
   $('followupArchive').onchange=()=>{
@@ -2743,8 +2743,8 @@ function renderFollowupForm(){
   if(!$('followupForm')) return;
   const selectedClient=$('fClient')?.value||'';
   const group=selectedFollowupGroup();
-  const types=isGrooming()?['Grooming','Cotización','Cobro','Otro']:group==='maintenance'?['Mantenimiento']:group==='quotes'?['Cotización']:['Instalación','Servicio','Garantía','Cobro','Otro'];
-  const title=isGrooming()?'Próxima cita de grooming':group==='maintenance'?'Mantenimiento preventivo 6 meses':group==='quotes'?'Seguimiento de cotización':'Seguimiento';
+  const types=isGrooming()?(group==='quotes'?['Cotización']:group==='maintenance'?['Grooming']:['Cobro','Otro']):group==='maintenance'?['Mantenimiento']:group==='quotes'?['Cotización']:['Instalación','Servicio','Garantía','Cobro','Otro'];
+  const title=isGrooming()?(group==='quotes'?'Seguimiento de cotización':group==='maintenance'?'Próxima cita de grooming':'Seguimiento'):group==='maintenance'?'Mantenimiento preventivo 6 meses':group==='quotes'?'Seguimiento de cotización':'Seguimiento';
   const clientsAlphabetical=[...(state.clients||[])]
     .filter(c=>c&&c.id)
     .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{sensitivity:'base',numeric:true}));
@@ -2756,7 +2756,7 @@ function renderFollowupsTable(){
     const c=clientBy(f.clientId||''); const st=followupStatus(f); const phone=c.whatsapp||c.phone||'';
     return `<tr><td><b>${esc(f.dueDate||'')}</b><br><span class="tag">${esc(f.priority||'Normal')}</span></td><td>${esc(f.clientName||c.name||'')}<br><span class="muted">${esc(phone)}</span></td><td>${esc(f.assetName||'')}</td><td><b>${esc(f.title||f.type||'Seguimiento')}</b><br><span class="muted">${esc(f.type||'')}</span></td><td>${statusChip(st)}</td><td>${esc(f.note||'')}</td><td><div class="actions">${phone?`<button data-whatsapp-followup="${f.id}" type="button">WhatsApp</button>`:''}${st!=='Completado'?`<button data-complete-followup="${f.id}" type="button">Completar</button>`:''}${action('followups',f.id)}</div></td></tr>`;
   });
-  box.innerHTML=table(['Fecha','Cliente','Activo','Seguimiento','Estado','Notas','Acción'],rows);
+  box.innerHTML=table(['Fecha','Cliente',isGrooming()?'Mascota':'Activo','Seguimiento','Estado','Notas','Acción'],rows);
   document.querySelectorAll('[data-whatsapp-followup]').forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.whatsappFollowup); if(f) sendFollowupWhatsapp(f.id);});
   document.querySelectorAll('[data-complete-followup]').forEach(b=>b.onclick=()=>completeFollowup(b.dataset.completeFollowup));
 }
@@ -3118,8 +3118,8 @@ function v66RenderFollowups(){
   renderFollowupGroups();
   const base=followupGroupRows();
   const rows=v66ApplyModuleFilter(base,'followups').sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
-  box.innerHTML=v66Toolbar('followups','Buscar seguimientos','Cliente, asunto, activo, estado, fecha...',base,{dates:true,status:true})+
-    table(['Fecha','Cliente','Activo','Seguimiento','Estado','Notas','Acción'],rows.map(f=>{const c=clientBy(f.clientId||''); const st=followupStatus(f); const phone=c.whatsapp||c.phone||'';return `<tr><td><b>${esc(f.dueDate||'')}</b><br><span class="tag">${esc(f.priority||'Normal')}</span></td><td>${esc(f.clientName||c.name||'')}<br><span class="muted">${esc(phone)}</span></td><td>${esc(f.assetName||'')}</td><td><b>${esc(f.title||f.type||'Seguimiento')}</b><br><span class="muted">${esc(f.type||'')}</span></td><td>${statusChip(st)}</td><td>${esc(f.note||'')}</td><td><div class="actions">${phone?`<button data-whatsapp-followup="${f.id}" type="button">WhatsApp</button>`:''}${st!=='Completado'?`<button data-complete-followup="${f.id}" type="button">Completar</button>`:''}${action('followups',f.id)}</div></td></tr>`;}));
+  box.innerHTML=v66Toolbar('followups','Buscar seguimientos',isGrooming()?'Cliente, mascota, asunto, estado, fecha...':'Cliente, asunto, activo, estado, fecha...',base,{dates:true,status:true})+
+    table(['Fecha','Cliente',isGrooming()?'Mascota':'Activo','Seguimiento','Estado','Notas','Acción'],rows.map(f=>{const c=clientBy(f.clientId||''); const st=followupStatus(f); const phone=c.whatsapp||c.phone||'';return `<tr><td><b>${esc(f.dueDate||'')}</b><br><span class="tag">${esc(f.priority||'Normal')}</span></td><td>${esc(f.clientName||c.name||'')}<br><span class="muted">${esc(phone)}</span></td><td>${esc(f.assetName||'')}</td><td><b>${esc(f.title||f.type||'Seguimiento')}</b><br><span class="muted">${esc(f.type||'')}</span></td><td>${statusChip(st)}</td><td>${esc(f.note||'')}</td><td><div class="actions">${phone?`<button data-whatsapp-followup="${f.id}" type="button">WhatsApp</button>`:''}${st!=='Completado'?`<button data-complete-followup="${f.id}" type="button">Completar</button>`:''}${action('followups',f.id)}</div></td></tr>`;}));
   v66BindToolbar('followups');
 }
 function v66BindDynamicActions(){
