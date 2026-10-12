@@ -47,7 +47,7 @@
   function setupModules(){
     Object.entries(META).forEach(([id,base])=>{
       const grooming=document.body.dataset.industry==='grooming';
-      const custom={assets:['🐾','OPERACIÓN','Mascotas','Dueños, perfiles, precauciones, historial y próximas visitas.'],services:['🐾','OPERACIÓN','Citas de Grooming','Baños, cortes y servicios vinculados a cada mascota.'],team:['♙','OPERACIÓN','Groomers','Personal y asignaciones de grooming.']};
+      const custom={followups:['↻','VENTAS','Seguimiento','Próximas citas de grooming, cotizaciones y contacto con dueños.'],assets:['🐾','OPERACIÓN','Mascotas','Dueños, perfiles, precauciones, historial y próximas visitas.'],services:['🐾','OPERACIÓN','Citas de Grooming','Baños, cortes y servicios vinculados a cada mascota.'],team:['♙','OPERACIÓN','Groomers','Personal y asignaciones de grooming.']};
       const m=grooming&&custom[id]?custom[id]:base;
       const view=document.getElementById(id);
       const card=view?.querySelector(':scope > .card');

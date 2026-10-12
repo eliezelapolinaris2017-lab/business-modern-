@@ -2043,3 +2043,6 @@ body.v2-ready #appShell .main:has(#suppliers.view.active){
   #appShell #reports .report-workspace-toggle{min-height:54px;padding:12px 13px}
   #appShell #reports .report-toggle-copy small{display:none}
 }
+
+/* Grooming: calm background without unrelated equipment imagery. */
+body[data-industry="grooming"] #appShell .view{background-image:linear-gradient(135deg,#edf8f6,#f4f7fc)!important;}

@@ -14,3 +14,8 @@ assert.match(msg,/Happy Paws/);assert.match(msg,/Toby/);assert.match(msg,/2026-1
 current={industry:'hvac'};assert.equal(ctx.industryTitle('assets'),'Activos');assert.equal(ctx.validateGroomingPet('c1',{}),true);
 assert.ok(ctx.defaultServiceOptions('hvac').includes('Diagnóstico HVAC'));
 console.log('PASS: grooming catalog, pet-owner validation, grooming followup branding, HVAC isolation.');
+vm.runInContext(block('function followupGroup(row){','function selectedFollowupGroup(){')+block('function limit(c){','function sum('),ctx);
+ctx.currentPlanId=()=> 'free';ctx.plan=()=>({limits:{assets:0},modules:['services']});ctx.state={assets:[]};
+current={industry:'grooming'};assert.equal(ctx.followupGroup({type:'Grooming'}),'maintenance');assert.equal(ctx.followupGroup({type:'Cotización'}),'quotes');assert.equal(ctx.limit('assets'),10);assert.equal(ctx.lockedModule('assets'),false);
+current={industry:'hvac'};assert.equal(ctx.limit('assets'),0);assert.equal(ctx.lockedModule('assets'),true);assert.equal(ctx.followupGroup({type:'Mantenimiento'}),'maintenance');
+console.log('PASS: grooming appointments appear in default tab; Free pets enabled with quota; HVAC plan unchanged.');
