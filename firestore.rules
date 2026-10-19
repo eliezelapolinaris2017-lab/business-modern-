@@ -8,6 +8,32 @@ service cloud.firestore {
     function pendingRequestKeys() { return ['pendingPlan','pendingPlanName','pendingPaymentUrl','pendingPlanStatus','pendingPlanRequestedAt']; }
     function normalCollections() { return ['clients','services','quotes','followups','contracts','team','assets','suppliers','supplierPayments','payroll','payrollRetentions','purchases','invoices','payments','cashflow']; }
 
+    function validDecision(userId, quoteId, decision) {
+      let portal = get(/databases/$(database)/documents/clientPortals/$(decision.portalToken)).data;
+      let quote = get(/databases/$(database)/documents/users/$(userId)/quotes/$(quoteId)).data;
+      return portal.enabled == true && portal.ownerId == userId
+        && quoteId in portal.quoteRevisions
+        && portal.quoteRevisions[quoteId] == quote.get('updatedAt', null)
+        && portal.quoteExpires[quoteId] >= request.time
+        && !(quote.get('status', '') in ['Aprobada','Rechazada','Convertida','Cancelada','Vencida'])
+        && quote.get('convertedInvoiceId', '') == '' && quote.get('convertedServiceId', '') == ''
+        && decision.keys().hasOnly(['status','name','signature','reason','at','portalToken'])
+        && decision.status in ['Aprobada','Rechazada']
+        && decision.name is string && decision.name.size() > 0 && decision.name.size() <= 120
+        && decision.reason is string && decision.reason.size() <= 1000
+        && decision.signature is string && decision.signature.size() <= 200000
+        && ((decision.status == 'Rechazada' && decision.signature == '') || (decision.signature.matches('data:image/png;base64,.*') && decision.signature.size() > 100))
+        && decision.at == request.time;
+    }
+    match /users/{userId}/quotes/{quoteId} {
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','clientDecision','updatedAt'])
+        && validDecision(userId, quoteId, request.resource.data.clientDecision)
+        && request.resource.data.status == request.resource.data.clientDecision.status
+        && request.resource.data.updatedAt == request.time
+        && !exists(/databases/$(database)/documents/clientPortals/$(request.resource.data.clientDecision.portalToken)/responses/$(quoteId))
+        && getAfter(/databases/$(database)/documents/clientPortals/$(request.resource.data.clientDecision.portalToken)/responses/$(quoteId)).data == request.resource.data.clientDecision;
+    }
+
     match /users/{userId} {
       allow create: if owner(userId);
       allow read: if owner(userId) || admin();
@@ -41,6 +67,13 @@ service cloud.firestore {
       allow read: if true;
       allow create: if signed() && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if signed() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /clientPortals/{portalId}/responses/{quoteId} {
+      allow get: if true;
+      allow create: if request.resource.data.portalToken == portalId
+        && validDecision(get(/databases/$(database)/documents/clientPortals/$(portalId)).data.ownerId, quoteId, request.resource.data)
+        && getAfter(/databases/$(database)/documents/users/$(get(/databases/$(database)/documents/clientPortals/$(portalId)).data.ownerId)/quotes/$(quoteId)).data.clientDecision == request.resource.data;
     }
 
     match /{path=**}/planRequests/{requestId} {

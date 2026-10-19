@@ -1,17 +1,18 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getFirestore,doc,getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore,doc,getDoc,writeBatch,serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 const db=getFirestore(initializeApp(firebaseConfig));
 const $=id=>document.getElementById(id);
-let data=null,active='overview';
+let data=null,active='overview',accessToken='';
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v||0));
 const chip=s=>`<span class="chip">${esc(s||'—')}</span>`;
 function card(title,value,detail=''){return `<article class="metric"><small>${esc(title)}</small><strong>${esc(value)}</strong><span>${esc(detail)}</span></article>`}
 function empty(msg){return `<div class="empty">${esc(msg)}</div>`}
 function table(headers,rows){return `<div class="table-wrap"><table><thead><tr>${headers.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`}
-function actionButtons(type,id){return `<div class="portal-doc-actions"><button type="button" data-print-document="${type}:${esc(id)}">Imprimir / Guardar PDF</button></div>`}
+function actionButtons(type,id){return `<div class="portal-doc-actions"><button type="button" data-print-document="${type}:${esc(id)}">Imprimir / Guardar PDF</button>${type==='quote'?decisionButton(id):''}</div>`}
 function bindPdfButtons(){
+  bindDecisionButtons();
   document.querySelectorAll('[data-print-document]').forEach(b=>b.onclick=()=>printPortalDocument(b.dataset.printDocument));
 }
 function printPortalDocument(key){
@@ -19,7 +20,7 @@ function printPortalDocument(key){
   const row=(type==='invoice'?data.invoices:data.quotes)?.find(x=>String(x.id)===id);
   if(!row){alert('Documento no disponible.');return;}
   const original=data.sharedDocument&&data.printHtml;
-  const html=original||documentHtml(type,row);
+  const html=(original||documentHtml(type,row))+(type==='quote'?decisionReceipt(row.clientDecision):'');
   const css=new URL(original?'./styles.css':'./portal.css',import.meta.url).href;
   const w=window.open('','_blank');
   if(!w){alert('Permita ventanas emergentes para imprimir el documento.');return;}
@@ -44,6 +45,7 @@ function render(){
     document.body.classList.add('shared-portal');
     const label=type==='invoice'?'Factura':'Cotización';
     $('portalApp').innerHTML=`<header class="client-brand"><div class="client-brand-inner">${b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name||'Logo')}">`:''}<div><strong>${esc(b.name||'Portal del cliente')}</strong><span>Atención al cliente · Documentos</span></div><span class="client-badge">Portal del cliente</span></div></header><main class="client-document-shell"><section class="client-document-hero"><span class="client-eyebrow">SU DOCUMENTO ESTÁ LISTO</span><h1>Hola, ${esc(c.name||'bienvenido')}.</h1><p>Su ${label.toLowerCase()} está disponible. Ábrala para imprimirla o guardarla como PDF.</p><div class="client-document-details"><div><span>Documento</span><strong>${esc(row.number||label)}</strong></div><div><span>Total</span><strong>${money(row.total)}</strong></div><div><span>Estado</span><strong>${esc(row.status||'Emitida')}</strong></div></div></section><section class="client-preview-card"><div class="client-preview-title"><div><span class="client-eyebrow">VISTA PREVIA</span><h2>${label} ${esc(row.number||'')}</h2></div><span class="client-paper-label">PDF</span></div><button type="button" class="client-thumbnail-button" aria-label="Abrir ${label.toLowerCase()} ${esc(row.number||'')}"><span class="client-thumbnail-stage"><iframe title="Vista pequeña de ${label.toLowerCase()}" tabindex="-1" sandbox="allow-same-origin"></iframe></span><span class="client-thumbnail-caption">Abrir ${label.toLowerCase()} ↗</span></button><p class="client-preview-help">Al abrir el documento, encontrará «Imprimir / Guardar PDF» en la parte inferior.</p><button type="button" class="client-open-document">Abrir ${label.toLowerCase()}</button></section><footer class="client-document-footer">${esc(b.name||'')}<br>${esc([b.phone,b.email].filter(Boolean).join(' · '))}</footer></main>`;
+    if(type==='quote'){const area=document.createElement('section');area.className='client-preview-card';area.innerHTML=decisionButton(id);document.querySelector('.client-preview-card').after(area);bindDecisionButtons();}
     const open=()=>printPortalDocument(type+':'+id);
     document.querySelector('.client-thumbnail-button').onclick=open;
     document.querySelector('.client-open-document').onclick=open;
@@ -110,7 +112,7 @@ function documentHtml(type,docData){
   const rows=items.length?items.map(i=>`<tr><td>${esc(i.description||'Servicio')}</td><td>${Number(i.qty||1)}</td><td>${money(i.price)}</td><td>${money(Number(i.qty||1)*Number(i.price||0))}</td></tr>`).join(''):`<tr><td>${esc(docData.serviceTitle||docData.title||'Servicio')}</td><td>1</td><td>${money(subtotal||docData.total)}</td><td>${money(subtotal||docData.total)}</td></tr>`;
   return `<div id="portalPdfDocument" class="portal-pdf"><div class="pdf-head"><div><h1>${label}</h1><div class="pdf-number"># ${esc(docData.number||'')}</div></div><div class="pdf-business">${b.logo?`<img src="${esc(b.logo)}" alt="Logo">`:''}<b>${esc(b.name||'')}</b><span>${esc(b.address||'')}</span><span>${esc(b.phone||'')} ${b.email?'· '+esc(b.email):''}</span></div></div><div class="pdf-meta"><div><small>Cliente</small><b>${esc(c.name||'')}</b><span>${esc(c.address||c.city||'')}</span><span>${esc(c.phone||'')} ${c.email?'· '+esc(c.email):''}</span></div><div><small>Fecha</small><b>${esc(docData.date||'—')}</b><small>${isInv?'Vence':'Válida hasta'}</small><b>${esc((isInv?docData.dueDate:docData.validUntil)||'—')}</b><small>Estado</small><b>${esc(docData.status||'—')}</b></div></div><table class="pdf-table"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="pdf-totals"><div><span>Subtotal</span><b>${money(subtotal)}</b></div><div><span>IVU / Impuesto</span><b>${money(tax)}</b></div><div class="grand"><span>Total</span><b>${money(docData.total)}</b></div>${isInv?`<div><span>Pagado</span><b>${money(docData.paid)}</b></div><div class="grand"><span>Balance</span><b>${money(docData.balance)}</b></div>`:''}</div>${docData.notes?`<section><h4>Notas</h4><p>${esc(docData.notes)}</p></section>`:''}${docData.terms?`<section><h4>Términos</h4><p>${esc(docData.terms)}</p></section>`:''}<footer>${esc(b.name||'')} · Documento disponible en el Portal del Cliente</footer></div>`;
 }
-async function openPortal(token){$('loginMsg').textContent='Verificando acceso…';try{const snap=await getDoc(doc(db,'clientPortals',token));if(!snap.exists()||snap.data().enabled===false)throw new Error('Código inválido o portal desactivado.');data=snap.data();if(!data.sharedDocument)localStorage.setItem('nexusPortalAccess',token);$('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');render();}catch(e){$('loginMsg').textContent=e.message||'No se pudo abrir el portal.';}}
+async function openPortal(token){$('loginMsg').textContent='Verificando acceso…';try{const snap=await getDoc(doc(db,'clientPortals',token));if(!snap.exists()||snap.data().enabled===false)throw new Error('Código inválido o portal desactivado.');data=snap.data();accessToken=token;await Promise.all((data.quotes||[]).map(async q=>{const response=await getDoc(doc(db,'clientPortals',token,'responses',q.id));if(response.exists()){q.clientDecision=response.data();q.status=q.clientDecision.status;}}));if(!data.sharedDocument)localStorage.setItem('nexusPortalAccess',token);$('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');render();}catch(e){$('loginMsg').textContent=e.message||'No se pudo abrir el portal.';}}
 $('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)openPortal(token)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;renderTab()});
 $('exitBtn').onclick=()=>{localStorage.removeItem('nexusPortalAccess');location.href='./'};
@@ -146,4 +148,45 @@ if(installBtn){
 }
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.warn('PWA portal:',e)));
+}
+
+function decisionReceipt(d){
+  if(!d)return '';
+  return `<section style="break-inside:avoid;padding:20px;border-top:1px solid #ccc"><h3>${esc(d.status)}</h3><p>${esc(d.name)} · ${esc(d.at?.toDate?.().toLocaleString('es-PR')||'')}</p>${d.signature?`<img alt="Firma del cliente" src="${esc(d.signature)}" style="width:420px;max-width:100%">`:''}<p>${esc(d.reason||'')}</p></section>`;
+}
+function decisionButton(id){
+  const q=data.quotes?.find(x=>String(x.id)===String(id));if(!q)return '';
+  if(q.clientDecision)return decisionReceipt(q.clientDecision);
+  if(['Aprobada','Rechazada','Convertida','Vencida','Cancelada'].includes(q.status))return '<p>Esta cotización ya no admite respuestas.</p>';
+  return `<button type="button" data-respond-quote="${esc(id)}">Firmar / Responder cotización</button>`;
+}
+function bindDecisionButtons(){document.querySelectorAll('[data-respond-quote]').forEach(b=>b.onclick=()=>openDecision(b.dataset.respondQuote));}
+function openDecision(id){
+  const q=data.quotes.find(x=>String(x.id)===id);if(!q)return;
+  const modal=document.createElement('dialog');modal.className='quote-decision';
+  modal.innerHTML=`<form><h2>Responder cotización ${esc(q.number)}</h2><p>Total: <b>${money(q.total)}</b>. Revise el documento y sus términos antes de responder.</p><label>Nombre completo<input name="signer" required maxlength="120" autocomplete="name"></label><label>Firma con el dedo o el ratón<canvas width="900" height="280" aria-label="Área para dibujar su firma"></canvas></label><button type="button" data-clear>Borrar firma</button><label><input type="checkbox" name="consent"> He leído la cotización y sus términos. Al aceptar, autorizo registrar mi firma electrónica.</label><label>Motivo del rechazo (opcional)<textarea name="reason" maxlength="1000"></textarea></label><p role="status" data-message></p><div class="decision-actions"><button type="button" data-close>Cancelar</button><button type="submit" value="reject" formnovalidate>Rechazar cotización</button><button type="submit" value="accept">Aceptar cotización</button></div></form>`;
+  document.body.append(modal);modal.showModal();
+  const canvas=modal.querySelector('canvas'),ctx=canvas.getContext('2d');let drawing=false,marks=0,busy=false;
+  ctx.lineWidth=3;ctx.lineCap='round';ctx.strokeStyle='#172033';
+  const point=e=>{const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)*canvas.width/r.width,(e.clientY-r.top)*canvas.height/r.height]};
+  canvas.onpointerdown=e=>{drawing=true;canvas.setPointerCapture(e.pointerId);ctx.beginPath();ctx.moveTo(...point(e));};
+  canvas.onpointermove=e=>{if(!drawing)return;ctx.lineTo(...point(e));ctx.stroke();marks++;};
+  canvas.onpointerup=canvas.onpointercancel=()=>drawing=false;
+  modal.querySelector('[data-clear]').onclick=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);marks=0;};
+  const close=()=>{if(!busy){modal.close();modal.remove();}};modal.querySelector('[data-close]').onclick=close;
+  modal.addEventListener('cancel',e=>{e.preventDefault();close();});
+  modal.querySelector('form').onsubmit=async e=>{
+    e.preventDefault();if(busy)return;const f=e.target,accept=e.submitter?.value==='accept',msg=modal.querySelector('[data-message]');
+    const name=f.elements.signer.value.trim();if(!name){msg.textContent='Escriba su nombre completo.';return;}
+    if(accept&&(!f.elements.consent.checked||marks<3)){msg.textContent='Dibuje su firma y confirme que acepta los términos.';return;}
+    busy=true;modal.querySelectorAll('button').forEach(b=>b.disabled=true);msg.textContent='Guardando respuesta…';
+    try{
+      const response={status:accept?'Aprobada':'Rechazada',name,signature:accept?canvas.toDataURL('image/png'):'',reason:accept?'':f.elements.reason.value.trim(),at:serverTimestamp(),portalToken:accessToken};
+      const batch=writeBatch(db);
+      batch.set(doc(db,'clientPortals',accessToken,'responses',id),response);
+      batch.update(doc(db,'users',data.ownerId,'quotes',id),{status:response.status,clientDecision:response,updatedAt:serverTimestamp()});
+      await batch.commit();q.clientDecision={...response,at:{toDate:()=>new Date()}};q.status=response.status;
+      busy=false;close();render();
+    }catch(error){busy=false;modal.querySelectorAll('button').forEach(b=>b.disabled=false);msg.textContent='No se pudo registrar. La cotización pudo cambiar o ya fue respondida. Recargue el portal y vuelva a intentar.';console.error(error);}
+  };
 }
