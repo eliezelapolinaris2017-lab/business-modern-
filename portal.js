@@ -186,8 +186,16 @@ function decisionReceipt(d){
 function decisionButton(id){
   const q=data.quotes?.find(x=>String(x.id)===String(id));if(!q)return '';
   if(q.clientDecision)return decisionReceipt(q.clientDecision);
+  const closedMessages={
+    Aprobada:'Esta cotización ya fue aprobada.',
+    Rechazada:'Esta cotización fue rechazada.',
+    Convertida:'Esta cotización ya fue convertida a servicio o factura y no admite una nueva aceptación.',
+    Vencida:'Esta cotización está vencida. Solicite una cotización actualizada para aceptar y firmar.',
+    Cancelada:'Esta cotización fue cancelada.'
+  };
+  if(closedMessages[q.status])return '<p>'+closedMessages[q.status]+'</p>';
+  if(q.validUntil&&q.validUntil<new Date().toLocaleDateString('en-CA',{timeZone:'America/Puerto_Rico'}))return '<p>Esta cotización está vencida. Solicite una cotización actualizada para aceptar y firmar.</p>';
   if(q.responseUnavailable)return '<p>Puede consultar e imprimir su cotización. La firma y la respuesta en línea no están disponibles por el momento.</p>';
-  if(['Aprobada','Rechazada','Convertida','Vencida','Cancelada'].includes(q.status))return '<p>Esta cotización ya no admite respuestas.</p>';
   return `<button type="button" data-respond-quote="${esc(id)}">Firmar / Responder cotización</button>`;
 }
 function bindDecisionButtons(){document.querySelectorAll('[data-respond-quote]').forEach(b=>b.onclick=()=>openDecision(b.dataset.respondQuote));}
