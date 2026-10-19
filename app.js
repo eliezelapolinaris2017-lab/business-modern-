@@ -2314,7 +2314,7 @@ async function sendPreviewWhatsapp(printAlso=false){
       ownerId:uid(),token,enabled:true,updatedAt:new Date().toISOString(),sharedDocument:{type,id:row.id},printHtml:html,
       business:{name:p.businessName||'Nexus Business',phone:p.phone||'',email:p.email||'',address:p.address||'',logo:p.logoPdf||p.logoDashboard||''},
       client:{name:row.clientName||c.name||'',phone:c.phone||'',address:c.address||''},
-      invoices:type==='invoice'?[docData]:[],quotes:type==='quote'?[docData]:[],summary:{},services:[],assets:[],maintenance:[]
+      quoteExpires:type==='quote'?{[row.id]:quotePortalExpiry(row)}:{},quoteRevisions:type==='quote'?{[row.id]:row.updatedAt||null}:{},invoices:type==='invoice'?[docData]:[],quotes:type==='quote'?[docData]:[],summary:{},services:[],assets:[],maintenance:[]
     });
     const link=portalBaseUrl()+'?access='+encodeURIComponent(token);
     const label=type==='invoice'?'factura':'cotización';
@@ -3023,7 +3023,7 @@ function v66RenderQuotes(){
   const box=$('quotesTable'); if(!box) return;
   const rows=v66ApplyModuleFilter(state.quotes,'quotes');
   box.innerHTML=v66Toolbar('quotes','Buscar cotizaciones','Número COT, cliente, servicio, estado, fecha, monto...',state.quotes,{dates:true,status:true})+
-    table(['Fecha','Número','Cliente','Cotización','Estado','Total','Acciones'],rows.map(q=>{const totals=quoteTotals(q), st=quoteStatus(q);return `<tr><td>${esc(q.date||'')}<br><span class="muted">Válida: ${esc(q.validUntil||'')}</span></td><td><b>${esc(q.number||'')}</b></td><td>${esc(q.clientName||'')}<br><span class="muted">${esc(q.assetName||'')}</span></td><td><b>${esc(q.title||q.serviceType||'Cotización')}</b><br><span class="muted">${esc(q.serviceType||'')}</span></td><td>${statusChip(st)}</td><td><b>${money(totals.total)}</b></td><td><div class="actions"><button data-preview-quote="${q.id}" type="button">Ver</button>${st==='Aprobada'||st==='Enviada'?`<button data-quote-invoice="${q.id}" type="button">Convertir a factura</button>`:''}${action('quotes',q.id)}</div></td></tr>`;}));
+    table(['Fecha','Número','Cliente','Cotización','Estado','Total','Acciones'],rows.map(q=>{const totals=quoteTotals(q), st=quoteStatus(q);return `<tr><td>${esc(q.date||'')}<br><span class="muted">Válida: ${esc(q.validUntil||'')}</span></td><td><b>${esc(q.number||'')}</b></td><td>${esc(q.clientName||'')}<br><span class="muted">${esc(q.assetName||'')}</span></td><td><b>${esc(q.title||q.serviceType||'Cotización')}</b><br><span class="muted">${esc(q.serviceType||'')}</span></td><td>${statusChip(st)}${q.clientDecision?`<br><small>${esc(q.clientDecision.name)} · ${esc(q.clientDecision.at?.toDate?.().toLocaleString('es-PR')||'Respuesta del cliente')}</small><button type="button" data-decision-quote="${esc(q.id)}">Ver respuesta / firma</button>`:''}</td><td><b>${money(totals.total)}</b></td><td><div class="actions"><button data-preview-quote="${q.id}" type="button">Ver</button>${st==='Aprobada'||st==='Enviada'?`<button data-quote-invoice="${q.id}" type="button">Convertir a factura</button>`:''}${action('quotes',q.id)}</div></td></tr>`;}));
   v66BindToolbar('quotes');
 }
 function v66RenderBilling(){
@@ -3290,7 +3290,7 @@ function portalInvoiceData(inv){
 
 function portalQuoteData(q){
   const totals=quoteTotals(q);
-  return {id:q.id,number:q.number||'',date:q.date||'',validUntil:q.validUntil||'',title:q.title||q.serviceType||'',status:quoteStatus(q),total:Number(totals.total||0),items:(q.items||[]).map(i=>({description:i.description||i.desc||'',qty:Number(i.qty||1),price:Number(i.price||0)})),notes:q.notes||'',terms:q.terms||''};
+  return {revision:q.updatedAt||null,clientDecision:q.clientDecision||null,id:q.id,number:q.number||'',date:q.date||'',validUntil:q.validUntil||'',title:q.title||q.serviceType||'',status:quoteStatus(q),total:Number(totals.total||0),items:(q.items||[]).map(i=>({description:i.description||i.desc||'',qty:Number(i.qty||1),price:Number(i.price||0)})),notes:q.notes||'',terms:q.terms||''};
 }
 function portalServiceData(s){
   return {id:s.id,date:s.date||'',title:serviceTitle(s),status:s.status||'Pendiente',assetName:s.assetName||'',amount:Number(serviceAmount(s)||0),notes:s.notes||s.note||'',fields:Array.isArray(s.fields)?s.fields:[]};
@@ -3311,6 +3311,8 @@ async function syncClientPortal(clientId,{openAfter=true,copyLink=true,notify=tr
     ownerId:uid(), token, enabled:true, updatedAt:new Date().toISOString(),
     business:{name:p.businessName||'Nexus Business',slogan:p.slogan||'',phone:p.phone||'',whatsapp:p.whatsapp||'',email:p.email||'',web:p.web||'',address:p.address||'',logo:p.logoDashboard||p.logoPdf||'',calendarLabel:configuredCalendarLabel(),calendarUrl:configuredCalendarUrl()},
     client:{id:c.id,name:c.name||'',email:c.email||'',phone:c.phone||'',city:c.city||'',address:c.address||''},
+    quoteExpires:Object.fromEntries(state.quotes.filter(x=>x.clientId===c.id).map(x=>[x.id,quotePortalExpiry(x)])),
+    quoteRevisions:Object.fromEntries(state.quotes.filter(x=>x.clientId===c.id).map(x=>[x.id,x.updatedAt||null])),
     summary:clientSummary(c),
     quotes:state.quotes.filter(x=>x.clientId===c.id).map(portalQuoteData).sort((a,b)=>String(b.date).localeCompare(String(a.date))),
     invoices:state.invoices.filter(x=>x.clientId===c.id).map(portalInvoiceData).sort((a,b)=>String(b.date).localeCompare(String(a.date))),
@@ -3435,6 +3437,16 @@ function openServiceClosure(id){
     }catch(err){alert('No se pudo cerrar el servicio: '+err.message);btn.disabled=false;}
   };
 }
+
+// Customer decisions are stored on the original quote and synchronized by its existing listener.
+document.addEventListener('click',e=>{
+  const button=e.target.closest('[data-decision-quote]');if(!button)return;
+  const q=state.quotes.find(x=>x.id===button.dataset.decisionQuote),d=q?.clientDecision;if(!d)return;
+  const w=window.open('','_blank');if(!w)return;
+  w.document.write(`<html lang="es"><meta charset="utf-8"><title>Respuesta de cotización</title><body style="font:16px Arial;padding:32px"><h1>${esc(q.number)}</h1><p>${esc(d.status)} · ${esc(d.name)}</p><p>${esc(d.at?.toDate?.().toLocaleString('es-PR')||'')}</p>${d.signature?`<img alt="Firma del cliente" style="max-width:100%;width:560px" src="${esc(d.signature)}">`:''}<p>${esc(d.reason||'')}</p><button onclick="window.print()">Imprimir / Guardar PDF</button></body></html>`);w.document.close();
+});
+
+function quotePortalExpiry(q){return q.validUntil?new Date(q.validUntil+'T23:59:59-04:00'):new Date('2100-01-01T00:00:00Z');}
 
 async function startServiceWork(id){
   try{await runTransaction(db,async tx=>{
