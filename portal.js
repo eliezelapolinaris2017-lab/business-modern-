@@ -112,7 +112,36 @@ function documentHtml(type,docData){
   const rows=items.length?items.map(i=>`<tr><td>${esc(i.description||'Servicio')}</td><td>${Number(i.qty||1)}</td><td>${money(i.price)}</td><td>${money(Number(i.qty||1)*Number(i.price||0))}</td></tr>`).join(''):`<tr><td>${esc(docData.serviceTitle||docData.title||'Servicio')}</td><td>1</td><td>${money(subtotal||docData.total)}</td><td>${money(subtotal||docData.total)}</td></tr>`;
   return `<div id="portalPdfDocument" class="portal-pdf"><div class="pdf-head"><div><h1>${label}</h1><div class="pdf-number"># ${esc(docData.number||'')}</div></div><div class="pdf-business">${b.logo?`<img src="${esc(b.logo)}" alt="Logo">`:''}<b>${esc(b.name||'')}</b><span>${esc(b.address||'')}</span><span>${esc(b.phone||'')} ${b.email?'· '+esc(b.email):''}</span></div></div><div class="pdf-meta"><div><small>Cliente</small><b>${esc(c.name||'')}</b><span>${esc(c.address||c.city||'')}</span><span>${esc(c.phone||'')} ${c.email?'· '+esc(c.email):''}</span></div><div><small>Fecha</small><b>${esc(docData.date||'—')}</b><small>${isInv?'Vence':'Válida hasta'}</small><b>${esc((isInv?docData.dueDate:docData.validUntil)||'—')}</b><small>Estado</small><b>${esc(docData.status||'—')}</b></div></div><table class="pdf-table"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="pdf-totals"><div><span>Subtotal</span><b>${money(subtotal)}</b></div><div><span>IVU / Impuesto</span><b>${money(tax)}</b></div><div class="grand"><span>Total</span><b>${money(docData.total)}</b></div>${isInv?`<div><span>Pagado</span><b>${money(docData.paid)}</b></div><div class="grand"><span>Balance</span><b>${money(docData.balance)}</b></div>`:''}</div>${docData.notes?`<section><h4>Notas</h4><p>${esc(docData.notes)}</p></section>`:''}${docData.terms?`<section><h4>Términos</h4><p>${esc(docData.terms)}</p></section>`:''}<footer>${esc(b.name||'')} · Documento disponible en el Portal del Cliente</footer></div>`;
 }
-async function openPortal(token){$('loginMsg').textContent='Verificando acceso…';try{const snap=await getDoc(doc(db,'clientPortals',token));if(!snap.exists()||snap.data().enabled===false)throw new Error('Código inválido o portal desactivado.');data=snap.data();accessToken=token;await Promise.all((data.quotes||[]).map(async q=>{const response=await getDoc(doc(db,'clientPortals',token,'responses',q.id));if(response.exists()){q.clientDecision=response.data();q.status=q.clientDecision.status;}}));if(!data.sharedDocument)localStorage.setItem('nexusPortalAccess',token);$('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');render();}catch(e){$('loginMsg').textContent=e.message||'No se pudo abrir el portal.';}}
+async function loadQuoteResponses(portal,token){
+  await Promise.all((portal.quotes||[]).map(async q=>{
+    try{
+      const response=await getDoc(doc(db,'clientPortals',token,'responses',q.id));
+      if(response.exists()){q.clientDecision=response.data();q.status=q.clientDecision.status;}
+      q.responseUnavailable=false;
+    }catch(error){
+      q.responseUnavailable=true;
+      console.warn('Respuesta de cotización no disponible:',error.code||'unknown');
+    }
+  }));
+  if(data===portal&&accessToken===token)render();
+}
+async function openPortal(token){
+  $('loginMsg').textContent='Verificando acceso…';
+  try{
+    const snap=await getDoc(doc(db,'clientPortals',token));
+    if(!snap.exists()||snap.data().enabled===false)throw new Error('Código inválido o portal desactivado.');
+    data=snap.data();accessToken=token;
+    (data.quotes||[]).forEach(q=>q.responseUnavailable=true);
+    if(!data.sharedDocument)localStorage.setItem('nexusPortalAccess',token);
+    $('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');
+    render();
+    void loadQuoteResponses(data,token);
+  }catch(e){
+    $('loginMsg').textContent=e.code==='permission-denied'
+      ?'No se pudo verificar el acceso al documento. Comuníquese con el negocio.'
+      :(e.message||'No se pudo abrir el portal.');
+  }
+}
 $('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)openPortal(token)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;renderTab()});
 $('exitBtn').onclick=()=>{localStorage.removeItem('nexusPortalAccess');location.href='./'};
@@ -157,6 +186,7 @@ function decisionReceipt(d){
 function decisionButton(id){
   const q=data.quotes?.find(x=>String(x.id)===String(id));if(!q)return '';
   if(q.clientDecision)return decisionReceipt(q.clientDecision);
+  if(q.responseUnavailable)return '<p>Puede consultar e imprimir su cotización. La firma y la respuesta en línea no están disponibles por el momento.</p>';
   if(['Aprobada','Rechazada','Convertida','Vencida','Cancelada'].includes(q.status))return '<p>Esta cotización ya no admite respuestas.</p>';
   return `<button type="button" data-respond-quote="${esc(id)}">Firmar / Responder cotización</button>`;
 }
