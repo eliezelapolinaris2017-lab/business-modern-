@@ -195,6 +195,7 @@ function decisionButton(id){
   };
   if(closedMessages[q.status])return '<p>'+closedMessages[q.status]+'</p>';
   if(q.validUntil&&q.validUntil<new Date().toLocaleDateString('en-CA',{timeZone:'America/Puerto_Rico'}))return '<p>Esta cotización está vencida. Solicite una cotización actualizada para aceptar y firmar.</p>';
+  if(!data.quoteRevisions||!Object.prototype.hasOwnProperty.call(data.quoteRevisions,String(id))||!data.quoteExpires?.[id])return '<p>Este enlace permite consultar el documento, pero necesita actualizarse para firmar. Solicite al negocio que vuelva a enviar la cotización desde Nexus.</p>';
   if(q.responseUnavailable)return '<p>Puede consultar e imprimir su cotización. La firma y la respuesta en línea no están disponibles por el momento.</p>';
   return `<button type="button" data-respond-quote="${esc(id)}">Firmar / Responder cotización</button>`;
 }
@@ -225,6 +226,6 @@ function openDecision(id){
       batch.update(doc(db,'users',data.ownerId,'quotes',id),{status:response.status,clientDecision:response,updatedAt:serverTimestamp()});
       await batch.commit();q.clientDecision={...response,at:{toDate:()=>new Date()}};q.status=response.status;
       busy=false;close();render();
-    }catch(error){busy=false;modal.querySelectorAll('button').forEach(b=>b.disabled=false);msg.textContent='No se pudo registrar. La cotización pudo cambiar o ya fue respondida. Recargue el portal y vuelva a intentar.';console.error(error);}
+    }catch(error){busy=false;modal.querySelectorAll('button').forEach(b=>b.disabled=false);msg.textContent=error.code==='permission-denied'?'Firebase no autorizó guardar la respuesta. Solicite al negocio que actualice y reenvíe la cotización; si continúa, debe revisar las reglas publicadas.':error.code==='unavailable'?'No hay conexión con Firebase. Compruebe internet y vuelva a intentar.':'No se pudo guardar la respuesta ('+(error.code||'error')+'). Mantenga esta ventana abierta y vuelva a intentar.';console.error(error);}
   };
 }
