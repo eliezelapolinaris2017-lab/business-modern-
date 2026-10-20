@@ -2309,6 +2309,14 @@ async function sendPreviewWhatsapp(printAlso=false){
   buttons.forEach(b=>{if(b)b.disabled=true;});
   try{
     const token=crypto.randomUUID(),p=profile();
+    if(type==='quote'){
+      const latest=await getDoc(docPath('quotes',row.id));
+      if(!latest.exists())throw new Error('La cotización ya no existe.');
+      const current=latest.data();
+      if((current.updatedAt?.toMillis?.()??null)!==(row.updatedAt?.toMillis?.()??null)){
+        throw new Error('La cotización cambió. Abra nuevamente su vista previa antes de enviarla.');
+      }
+    }
     const docData=type==='invoice'?portalInvoiceData(row):portalQuoteData(row);
     await setDoc(doc(db,'clientPortals',token),{
       ownerId:uid(),token,enabled:true,updatedAt:new Date().toISOString(),sharedDocument:{type,id:row.id},printHtml:html,
@@ -2324,7 +2332,7 @@ async function sendPreviewWhatsapp(printAlso=false){
       if(state.previewHtml===html) $('printPreview').onclick({printWindow:printTab,html});
       else {printTab.close();alert('WhatsApp está listo. La vista cambió durante el envío; vuelva a abrir el documento para imprimir.');}
     }
-  }catch(error){tab.close();if(printTab)printTab.close();console.error('WhatsApp documento',error);alert('No se pudo preparar el documento. Verifique su conexión y vuelva a intentar.');}
+  }catch(error){tab.close();if(printTab)printTab.close();console.error('WhatsApp documento',error);alert('No se pudo preparar el documento. '+(error.message||'Verifique su conexión y vuelva a intentar.'));}
   finally{buttons.forEach(b=>{if(b)b.disabled=false;});}
 }
 
