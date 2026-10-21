@@ -3,7 +3,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v64';
+const APP_VERSION = 'v116';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
@@ -93,6 +93,13 @@ function showUpdateToast(){
 function applyWaitingUpdate(){ if(updateWaiting) updateWaiting.postMessage({ type:'SKIP_WAITING' }); else location.reload(); }
 
 function switchTab(id){
+  if (!document.getElementById(id)?.classList.contains('mobile-view')) return;
+  const titles = {mDashboard:'Tu operación en la calle',mServices:'Trabajos pendientes',mInvoice:'Nueva factura',mClients:'Clientes',mFollowups:'Seguimientos',mHistory:'Historial',mSync:'Aplicación y sincronización',mMore:'Más herramientas'};
+  document.querySelector('.mobile-top p').textContent = titles[id] || 'Nexus Mobile';
+  document.querySelectorAll('.mobile-tabs button').forEach(b => {
+    const selected = b.dataset.tab === id || (b.dataset.tab === 'mMore' && ['mFollowups','mHistory','mSync'].includes(id));
+    b.setAttribute('aria-current', selected ? 'page' : 'false');
+  });
   document.querySelectorAll('.mobile-view').forEach(v => v.classList.toggle('active', v.id === id));
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
   window.scrollTo({ top:0, behavior:'smooth' });
@@ -219,7 +226,7 @@ async function loadProfile(){
   state.profile = snap.exists() ? snap.data() : { businessName:'Nexus Business', tax:'11.5' };
   $('mobileBusiness').textContent = state.profile.businessName || 'Nexus Business';
 }
-function renderAll(){ renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); }
+function renderAll(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); }
 function renderSelects(){
   const opts = state.clients.map(c => `<option value="${esc(c.id)}">${esc(c.name || 'Cliente')}</option>`).join('');
   ['mInvClient', 'mFollowClient'].forEach(id => { const el = $(id); if(el){ const prev = el.value; el.innerHTML = `<option value="">Seleccionar cliente</option>${opts}`; if(prev) el.value = prev; } });
@@ -832,3 +839,18 @@ async function shareCurrentDoc(){
     try{ downloadPdfFile(await buildInvoicePdfFile(preview, filename), filename); }catch(e){ console.error(e); }
   }
 }
+
+// Read the shared service records without altering their workflow or billing state.
+function renderServices(){
+  const query = ($('mServiceSearch')?.value || '').trim().toLowerCase();
+  const rows = [...state.services].filter(s => {
+    const status = s.status || s.fields?.[3] || '';
+    const c = clientBy(s.clientId);
+    return !['Completado','Completada','Cancelado','Cancelada'].includes(status) && `${s.title || s.serviceType || ''} ${s.clientName || c.name || ''} ${s.date || ''}`.toLowerCase().includes(query);
+  }).sort((a,b)=>String(a.date || '9999').localeCompare(String(b.date || '9999')));
+  $('mServiceList').innerHTML = rows.length ? rows.map(s=>{
+    const c=clientBy(s.clientId), address=c.address || c.city || '', phone=String(c.phone || '').replace(/[^+0-9]/g,'');
+    return `<article class="row-card"><div class="top"><div><h4>${esc(s.title || s.serviceType || 'Servicio')}</h4><p>${esc(s.clientName || c.name || 'Cliente')}</p></div>${statusBadge(s.status || s.fields?.[3] || 'Programado')}</div><p>${esc(s.date || 'Sin fecha')} ${esc(s.time || '')}</p><p>${esc(address)}</p><div class="actions">${phone?`<a href="tel:${esc(phone)}">Llamar</a>`:''}${phoneLink(c)?`<a href="${phoneLink(c)}" target="_blank" rel="noopener">WhatsApp</a>`:''}${address?`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}" target="_blank" rel="noopener">Ver ruta</a>`:''}<button data-new-invoice-client="${esc(s.clientId || '')}" type="button">Facturar cliente</button></div></article>`;
+  }).join('') : '<div class="empty">No hay trabajos pendientes para esta búsqueda.</div>';
+}
+$('mServiceSearch')?.addEventListener('input', renderServices);
