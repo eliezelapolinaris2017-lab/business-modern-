@@ -11,6 +11,11 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/nexus-desktop-180.png?v=93" />
   <script>
     (()=>{
+      // Installed desktop shortcuts must still open the phone workspace on phones.
+      if (Math.min(screen.width, screen.height) <= 600 && matchMedia('(pointer: coarse)').matches) {
+        location.replace(new URL('mobile.html', location.href));
+        return;
+      }
       const desktop=new URLSearchParams(location.search).get('desktop')==='1';
       if(!desktop)return;
       document.documentElement.classList.add('nexus-desktop-pwa');
