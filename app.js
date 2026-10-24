@@ -1,3 +1,4 @@
+import { buildClientPortalPayload } from './client-portal-data.js?v=117';
 import {createEmployeeCommand} from './employee-admin.js?v=2';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { firebaseConfig } from "./firebase-config.js";
@@ -2308,7 +2309,7 @@ async function sendPreviewWhatsapp(printAlso=false){
   const buttons=[$('whatsappPreview'),$('printWhatsappPreview')];
   buttons.forEach(b=>{if(b)b.disabled=true;});
   try{
-    const token=crypto.randomUUID(),p=profile();
+    const p=profile();
     if(type==='quote'){
       const latest=await getDoc(docPath('quotes',row.id));
       if(!latest.exists())throw new Error('La cotización ya no existe.');
@@ -2317,16 +2318,13 @@ async function sendPreviewWhatsapp(printAlso=false){
         throw new Error('La cotización cambió. Abra nuevamente su vista previa antes de enviarla.');
       }
     }
-    const docData=type==='invoice'?portalInvoiceData(row):portalQuoteData(row);
-    await setDoc(doc(db,'clientPortals',token),{
-      ownerId:uid(),token,enabled:true,updatedAt:new Date().toISOString(),sharedDocument:{type,id:row.id},printHtml:html,
-      business:{name:p.businessName||'Nexus Business',phone:p.phone||'',email:p.email||'',address:p.address||'',logo:p.logoPdf||p.logoDashboard||''},
-      client:{name:row.clientName||c.name||'',phone:c.phone||'',address:c.address||''},
-      quoteExpires:type==='quote'?{[row.id]:quotePortalExpiry(row)}:{},quoteRevisions:type==='quote'?{[row.id]:row.updatedAt||null}:{},invoices:type==='invoice'?[docData]:[],quotes:type==='quote'?[docData]:[],summary:{},services:[],assets:[],maintenance:[]
-    });
-    const link=portalBaseUrl()+'?access='+encodeURIComponent(token);
+    if(!c.id)throw new Error('Vincule el documento a un cliente antes de compartir su historial.');
+    const portalLink=await syncClientPortal(c.id,{openAfter:false,copyLink:false,notify:false});
+    const portalToken=new URL(portalLink).searchParams.get('access');
+    await updateDoc(doc(db,'clientPortals',portalToken),{sharedDocument:{type,id:row.id},printHtml:html});
+    const link=portalLink+'&document='+encodeURIComponent(type+':'+row.id);
     const label=type==='invoice'?'factura':'cotización';
-    const message=`Hola ${row.clientName||c.name||''}, le compartimos su ${label} ${row.number||''} de ${p.businessName||'nuestro negocio'}. Puede verla y descargar el PDF aquí: ${link}`;
+    const message=`Hola ${row.clientName||c.name||''}, le compartimos su ${label} ${row.number||''} de ${p.businessName||'nuestro negocio'}. Puede consultar el PDF, su historial y próximos servicios aquí: ${link}`;
     tab.location.replace('https://wa.me/'+phone+'?text='+encodeURIComponent(message));
     if(printAlso){
       if(state.previewHtml===html) $('printPreview').onclick({printWindow:printTab,html});
@@ -2841,17 +2839,23 @@ add=async function(c,data){
 
 function authUI(){$('authIndustry').innerHTML=Object.entries(INDUSTRIES).map(([id,x])=>`<option value="${id}">${T(x.name)}</option>`).join('');$('showLogin').onclick=()=>{mode='login';document.querySelectorAll('.register-only').forEach(x=>x.classList.add('hidden'));$('authSubmit').textContent=T('Entrar');$('showLogin').classList.add('active');$('showRegister').classList.remove('active');};$('showRegister').onclick=()=>{mode='register';document.querySelectorAll('.register-only').forEach(x=>x.classList.remove('hidden'));$('authSubmit').textContent=T('Crear cuenta');$('showRegister').classList.add('active');$('showLogin').classList.remove('active');};$('authForm').onsubmit=async e=>{e.preventDefault();$('authMsg').textContent=T('Procesando...');try{if(mode==='register'){const cred=await createUserWithEmailAndPassword(auth,$('authEmail').value,$('authPassword').value);await setDoc(doc(db,'users',cred.user.uid),{...defaultProfile(),businessName:$('authBusiness').value||'Mi Negocio',industry:$('authIndustry').value,email:$('authEmail').value});}else await signInWithEmailAndPassword(auth,$('authEmail').value,$('authPassword').value);$('authMsg').textContent='';}catch(err){$('authMsg').textContent=err.message;}};}
 let portalSyncTimer=null;
+const portalLoadedCollections=new Set();
+const portalRequiredCollections=['clients','services','quotes','followups','invoices','payments','assets','contracts'];
 function scheduleEnabledPortalSync(){
   clearTimeout(portalSyncTimer);
+  if(!portalRequiredCollections.every(c=>portalLoadedCollections.has(c)))return;
+  const syncOwner=uid();
   portalSyncTimer=setTimeout(async()=>{
+    if(uid()!==syncOwner)return;
     const enabled=(state.clients||[]).filter(c=>c.portalEnabled&&c.portalToken);
     for(const c of enabled){
+      if(uid()!==syncOwner)return;
       try{await syncClientPortal(c.id,{openAfter:false,copyLink:false,notify:false});}
       catch(e){console.warn('No se pudo sincronizar portal de '+(c.name||c.id),e);}
     }
   },1200);
 }
-async function load(){const loadingOwner=uid();unsub.forEach(x=>x());unsub=[];const snap=await getDoc(profRef());if(uid()!==loadingOwner)return;if(!snap.exists())await setDoc(profRef(),defaultProfile());unsub.push(onSnapshot(profRef(),s=>{if(uid()!==loadingOwner)return;state.profile=s.data()||defaultProfile();render();employeeCommand.schedule();}));COLS.forEach(c=>unsub.push(onSnapshot(colPath(c),s=>{if(uid()!==loadingOwner)return;const rows=s.docs.map(d=>({id:d.id,...d.data()}));state[c]=HISTORY_MODULES.has(c)?sortedHistory(rows):rows;$('syncStatus').textContent=T('Sincronizado');render();if(['clients','services','quotes','followups','invoices','payments','assets'].includes(c))scheduleEnabledPortalSync();if(['team','services','clients','assets'].includes(c))employeeCommand.schedule();},e=>{$('syncStatus').textContent=T('Firebase bloqueado');console.error(e);})));}
+async function load(){portalLoadedCollections.clear();const loadingOwner=uid();unsub.forEach(x=>x());unsub=[];const snap=await getDoc(profRef());if(uid()!==loadingOwner)return;if(!snap.exists())await setDoc(profRef(),defaultProfile());unsub.push(onSnapshot(profRef(),s=>{if(uid()!==loadingOwner)return;state.profile=s.data()||defaultProfile();render();scheduleEnabledPortalSync();employeeCommand.schedule();}));COLS.forEach(c=>unsub.push(onSnapshot(colPath(c),s=>{if(uid()!==loadingOwner)return;const rows=s.docs.map(d=>({id:d.id,...d.data()}));state[c]=HISTORY_MODULES.has(c)?sortedHistory(rows):rows;$('syncStatus').textContent=T('Sincronizado');render();portalLoadedCollections.add(c);if(portalRequiredCollections.includes(c))scheduleEnabledPortalSync();if(['team','services','clients','assets'].includes(c))employeeCommand.schedule();},e=>{$('syncStatus').textContent=T('Firebase bloqueado');console.error(e);})));}
 let previousAccountId='';
 authUI();bindForms();onAuthStateChanged(auth,u=>{if((u?.uid||'')!==previousAccountId){employeeCommand.reset();COLS.forEach(c=>state[c]=[]);state.profile=null;previousAccountId=u?.uid||'';}if(u){$('authScreen').classList.add('hidden');$('appShell').classList.remove('hidden');load();}else{employeeCommand.reset();unsub.forEach(stop=>stop());unsub=[];$('authScreen').classList.remove('hidden');$('appShell').classList.add('hidden');}});
 
@@ -3301,7 +3305,7 @@ function portalQuoteData(q){
   return {revision:q.updatedAt||null,clientDecision:q.clientDecision||null,id:q.id,number:q.number||'',date:q.date||'',validUntil:q.validUntil||'',title:q.title||q.serviceType||'',status:quoteStatus(q),total:Number(totals.total||0),items:(q.items||[]).map(i=>({description:i.description||i.desc||'',qty:Number(i.qty||1),price:Number(i.price||0)})),notes:q.notes||'',terms:q.terms||''};
 }
 function portalServiceData(s){
-  return {id:s.id,date:s.date||'',title:serviceTitle(s),status:s.status||'Pendiente',assetName:s.assetName||'',amount:Number(serviceAmount(s)||0),notes:s.notes||s.note||'',fields:Array.isArray(s.fields)?s.fields:[]};
+  return {id:s.id,date:s.date||'',title:serviceTitle(s),status:s.status||'Pendiente',assetName:s.assetName||'',amount:Number(serviceAmount(s)||0),scheduledTime:s.scheduledTime||'',location:s.workAddress||'',completedAt:s.completion?.date||'',report:s.completion?.report||''};
 }
 function portalAssetData(a){
   return {id:a.id,name:assetName(a),brand:a.brand||'',model:a.model||'',serial:a.serial||'',location:a.location||'',status:assetStatus(a),purchaseDate:a.purchaseDate||'',warrantyExpiration:a.warrantyExpirationDate||a.warrantyExpiration||a.expirationDate||'',nextMaintenance:a.nextMaintenanceDate||a.nextMaintenance||'',notes:a.notes||a.note||''};
@@ -3312,23 +3316,15 @@ function portalMaintenanceData(f){
 }
 
 async function syncClientPortal(clientId,{openAfter=true,copyLink=true,notify=true}={}){
+  if(!portalRequiredCollections.every(c=>portalLoadedCollections.has(c)))throw new Error('Espere a que termine la sincronización antes de abrir el portal.');
   const c=clientBy(clientId); if(!c.id){alert('Cliente no encontrado.');return;}
   const token=String(c.portalToken||'').trim()||newPortalToken();
   const p=profile();
-  const payload={
-    ownerId:uid(), token, enabled:true, updatedAt:new Date().toISOString(),
+  const payload=buildClientPortalPayload({state,client:c,ownerId:uid(),token,
     business:{name:p.businessName||'Nexus Business',slogan:p.slogan||'',phone:p.phone||'',whatsapp:p.whatsapp||'',email:p.email||'',web:p.web||'',address:p.address||'',logo:p.logoDashboard||p.logoPdf||'',calendarLabel:configuredCalendarLabel(),calendarUrl:configuredCalendarUrl()},
-    client:{id:c.id,name:c.name||'',email:c.email||'',phone:c.phone||'',city:c.city||'',address:c.address||''},
-    quoteExpires:Object.fromEntries(state.quotes.filter(x=>x.clientId===c.id).map(x=>[x.id,quotePortalExpiry(x)])),
-    quoteRevisions:Object.fromEntries(state.quotes.filter(x=>x.clientId===c.id).map(x=>[x.id,x.updatedAt||null])),
-    summary:clientSummary(c),
-    quotes:state.quotes.filter(x=>x.clientId===c.id).map(portalQuoteData).sort((a,b)=>String(b.date).localeCompare(String(a.date))),
-    invoices:state.invoices.filter(x=>x.clientId===c.id).map(portalInvoiceData).sort((a,b)=>String(b.date).localeCompare(String(a.date))),
-    services:state.services.filter(x=>x.clientId===c.id).map(portalServiceData).sort((a,b)=>String(b.date).localeCompare(String(a.date))),
-    assets:state.assets.filter(x=>x.clientId===c.id).map(portalAssetData),
-    maintenance:state.followups.filter(x=>x.clientId===c.id && String(x.type||'').toLowerCase().includes('mantenimiento') && followupStatus(x)!=='Cancelado').map(portalMaintenanceData).sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)))
-  };
-  await setDoc(doc(db,'clientPortals',token),payload,{merge:false});
+    serialize:{invoice:portalInvoiceData,quote:portalQuoteData,service:portalServiceData,asset:portalAssetData,maintenance:portalMaintenanceData,quoteExpiry:quotePortalExpiry}
+  });
+  await setDoc(doc(db,'clientPortals',token),payload,{mergeFields:Object.keys(payload)});
   if(c.portalToken!==token || !c.portalEnabled) await updateDoc(docPath('clients',c.id),{portalToken:token,portalEnabled:true,portalUpdatedAt:new Date().toISOString()});
   const link=portalBaseUrl()+'?access='+encodeURIComponent(token);
   const copied=copyLink?await copyPortalLink(link):false;

@@ -1,9 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getFirestore,doc,getDoc,writeBatch,serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore,doc,getDoc,onSnapshot,writeBatch,serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 const db=getFirestore(initializeApp(firebaseConfig));
 const $=id=>document.getElementById(id);
-let data=null,active='overview',accessToken='';
+let data=null,active='overview',accessToken='',stopPortal=null;
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v||0));
 const chip=s=>`<span class="chip">${esc(s||'—')}</span>`;
@@ -17,9 +17,9 @@ function bindPdfButtons(){
 }
 function printPortalDocument(key){
   const [type,id]=String(key||'').split(':');
-  const row=(type==='invoice'?data.invoices:data.quotes)?.find(x=>String(x.id)===id);
+  const row=({invoice:data.invoices,quote:data.quotes,contract:data.contracts,payment:data.payments}[type]||[]).find(x=>String(x.id)===id);
   if(!row){alert('Documento no disponible.');return;}
-  const original=data.sharedDocument&&data.printHtml;
+  const original=data.sharedDocument?.type===type&&String(data.sharedDocument.id)===id&&data.printHtml;
   const html=(original||documentHtml(type,row))+(type==='quote'?decisionReceipt(row.clientDecision):'');
   const css=new URL(original?'./styles.css':'./portal.css',import.meta.url).href;
   const w=window.open('','_blank');
@@ -38,7 +38,7 @@ function printPortalDocument(key){
 
 function render(){
   const d=data,b=d.business||{},c=d.client||{},s=d.summary||{};
-  if(d.sharedDocument){
+  if(d.sharedDocument&&!d.client?.id){
     const {type,id}=d.sharedDocument;
     const row=(type==='invoice'?d.invoices:d.quotes)?.find(x=>x.id===id);
     if(!row) throw new Error('Documento no disponible.');
@@ -64,26 +64,55 @@ function render(){
     if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
     return;
   }
+  document.body.classList.remove('shared-portal');
   $('businessName').textContent=b.name||'Portal del Cliente';$('businessSlogan').textContent=b.slogan||'';$('clientName').textContent=c.name||'Cliente';
   $('lastUpdate').textContent='Información actualizada: '+new Date(d.updatedAt).toLocaleString('es-PR');
   $('businessContact').innerHTML=[b.phone,b.email,b.address].filter(Boolean).map(esc).join('<br>');
   if(b.logo){$('businessLogo').src=b.logo;$('businessLogo').classList.remove('hidden');}
   $('bookBtn').classList.toggle('hidden',!b.calendarUrl);$('bookBtn').onclick=()=>window.open(b.calendarUrl,'_blank','noopener');
+  let phone=String(b.whatsapp||b.phone||'').replace(/\D/g,'');if(phone.length===10)phone='1'+phone;
+  $('requestBtn').classList.toggle('hidden',!/^\d{11,15}$/.test(phone));
+  $('requestBtn').onclick=()=>window.open('https://wa.me/'+phone+'?text='+encodeURIComponent('Saludos, soy '+(c.name||'cliente')+'. Deseo coordinar un servicio o mantenimiento.'),'_blank','noopener');
   $('portalFooter').textContent=`${b.name||''} · Portal privado del cliente`;
   $('summaryCards').innerHTML=card('Servicios',s.services||0,'Historial registrado')+card('Equipos',s.assets||0,'Activos registrados')+card('Facturas',s.invoices||0,'Documentos emitidos')+card('Balance',money(s.balance||0),'Pendiente de pago');
   renderTab();
 }
+function closedStatus(status){return /^(completad[oa]|cancelad[oa]|terminad[oa])$/i.test(status||'');}
+function portalToday(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Puerto_Rico',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function portalAgenda(){
+  const today=portalToday();
+  const maintenance=(data.maintenance||[]).map(x=>({...x,kind:'maintenance',recommended:true}));
+  const assets=(data.assets||[]).filter(a=>a.nextMaintenance&&!maintenance.some(m=>m.assetId===a.id&&m.dueDate===a.nextMaintenance)).map(a=>({id:'asset-'+a.id,kind:'maintenance',dueDate:a.nextMaintenance,title:'Mantenimiento recomendado',assetName:a.name,status:'Pendiente',recommended:true}));
+  const appointments=(data.services||[]).filter(s=>!closedStatus(s.status)&&s.status!=='Facturado'&&!s.completedAt&&s.date).map(s=>({id:'service-'+s.id,kind:'appointment',dueDate:s.date,title:s.title,assetName:s.assetName,status:s.status,time:s.scheduledTime||'',location:s.location||'',recommended:false}));
+  return [...maintenance,...assets,...appointments].map(x=>({...x,overdue:!!x.dueDate&&x.dueDate<today&&!closedStatus(x.status)})).sort((a,b)=>String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999')));
+}
+function agendaCard(x){return `<article class="agenda-card${x.overdue?' overdue':''}"><div><small>${x.kind==='appointment'?'Cita registrada':'Mantenimiento recomendado'}</small><h4>${esc(x.title)}</h4><p>${esc([x.assetName,x.location].filter(Boolean).join(' · '))}</p></div><div><b>${esc(x.dueDate||'Por coordinar')} ${esc(x.time||'')}</b><p>${chip(x.overdue?(x.recommended?'Pendiente de coordinar':'Fecha pasada · '+x.status):x.status)}</p></div></article>`;}
 function renderTab(){
   document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===active));
   const box=$('tabContent');
   if(active==='overview'){
-    const pending=(data.invoices||[]).filter(x=>x.balance>0);
-    const today=new Date().toISOString().slice(0,10);
-    const scheduled=(data.maintenance||[]).filter(x=>x.dueDate&&x.dueDate>=today&&!['Completado','Cancelado'].includes(x.status)).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
-    const assetDates=(data.assets||[]).filter(x=>x.nextMaintenance&&x.nextMaintenance>=today).map(x=>({dueDate:x.nextMaintenance,title:'Mantenimiento programado',assetName:x.name,status:'Programado'}));
-    const next=[...scheduled,...assetDates].sort((a,b)=>a.dueDate.localeCompare(b.dueDate))[0];
-    box.innerHTML=`<h3>Resumen de su cuenta</h3><div class="overview-grid"><div><h4>Facturas pendientes</h4>${pending.length?pending.slice(0,5).map(x=>`<div class="line"><span>${esc(x.number)} · ${esc(x.dueDate||'Sin vencimiento')}</span><b>${money(x.balance)}</b></div>`).join(''):empty('No tiene facturas pendientes.')}</div><div><h4>Próximo mantenimiento</h4>${next?`<div class="focus"><b>${esc(next.title||'Mantenimiento programado')}</b><span>${esc(next.assetName||'Equipo')} · ${esc(next.dueDate)}</span>${next.status?`<small>${esc(next.status)}</small>`:''}</div>`:empty('No hay mantenimiento programado.')}</div></div>`;
+    const pending=(data.invoices||[]).filter(x=>x.balance>0&&x.status!=='Cancelada');
+    const agenda=portalAgenda(),next=agenda.filter(x=>!closedStatus(x.status)).slice(0,3);
+    const selected=new URLSearchParams(location.search).get('document')||'';
+    const [kind,id]=selected.split(':');
+    const highlighted=({invoice:data.invoices,quote:data.quotes}[kind]||[]).find(x=>String(x.id)===id);
+    const recent=(data.services||[]).slice(0,3);
+    box.innerHTML=`${highlighted?`<div class="portal-featured"><span>Documento recibido por WhatsApp</span><h3>${kind==='invoice'?'Factura':'Cotización'} ${esc(highlighted.number)}</h3><p>${money(highlighted.total)} · ${esc(highlighted.status)}</p>${actionButtons(kind,id)}</div>`:''}<h3>Resumen de su cuenta</h3><div class="overview-grid"><div><h4>Próximas citas y mantenimientos</h4>${next.length?next.map(agendaCard).join(''):empty('No hay citas ni mantenimientos programados.')}<p><button type="button" data-open-tab="maintenance" class="secondary">Ver agenda completa</button></p></div><div><h4>Facturas pendientes</h4>${pending.length?pending.slice(0,5).map(x=>`<div class="line"><span>${esc(x.number)} · ${esc(x.dueDate||'Sin vencimiento')}</span><b>${money(x.balance)}</b></div>`).join(''):empty('No tiene facturas pendientes.')}<h4>Servicios recientes</h4>${recent.length?recent.map(x=>`<div class="line"><span>${esc(x.date)}<br><b>${esc(x.title)}</b></span>${chip(x.status)}</div>`).join(''):empty('No hay servicios registrados.')}</div></div>`;
+    box.querySelectorAll('[data-open-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.openTab;renderTab()});
+    bindPdfButtons();
     return;
+  }
+  if(active==='maintenance'){
+    const agenda=portalAgenda(),pending=agenda.filter(x=>!closedStatus(x.status)),past=agenda.filter(x=>closedStatus(x.status));
+    box.innerHTML=`<h3>Citas y mantenimientos</h3><p class="agenda-help">Las fechas recomendadas requieren coordinación. Una cita agendada muestra su fecha y hora registradas.</p><h4>Pendientes y próximos</h4><div class="agenda-list">${pending.length?pending.map(agendaCard).join(''):empty('No hay fechas pendientes.')}</div><h4>Completados y cancelados</h4><div class="agenda-list">${past.length?past.reverse().map(agendaCard).join(''):empty('No hay registros anteriores.')}</div>`;return;
+  }
+  if(active==='payments'){
+    const rows=(data.payments||[]).map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.invoiceNumber||'—')}</td><td>${esc(x.method||'—')}</td><td>${money(x.amount)}</td><td>${actionButtons('payment',x.id)}</td></tr>`);
+    box.innerHTML=`<h3>Historial de pagos</h3>${rows.length?table(['Fecha','Factura','Método','Pagado','Comprobante'],rows):empty('No hay pagos registrados.')}`;bindPdfButtons();return;
+  }
+  if(active==='contracts'){
+    const rows=(data.contracts||[]).map(x=>`<tr><td><b>${esc(x.number)}</b><br>${esc(x.title)}</td><td>${esc(x.date)}</td><td>${esc(x.startDate||'—')}</td><td>${esc(x.endDate||'—')}</td><td>${actionButtons('contract',x.id)}</td></tr>`);
+    box.innerHTML=`<h3>Contratos</h3>${rows.length?table(['Contrato','Fecha','Inicio','Terminación','Documento'],rows):empty('No hay contratos registrados.')}`;bindPdfButtons();return;
   }
   if(active==='invoices'){
     const rows=(data.invoices||[]).map(x=>`<tr><td><b>${esc(x.number)}</b><br><small>${esc(x.serviceTitle)}</small></td><td>${esc(x.date)}</td><td>${esc(x.dueDate||'—')}</td><td>${money(x.total)}</td><td>${money(x.paid)}</td><td><b>${money(x.balance)}</b></td><td>${chip(x.status)}</td><td>${actionButtons('invoice',x.id)}</td></tr>`);
@@ -96,7 +125,7 @@ function renderTab(){
     bindPdfButtons(); return;
   }
   if(active==='services'){
-    const rows=(data.services||[]).map(x=>`<tr><td>${esc(x.date)}</td><td><b>${esc(x.title)}</b><br><small>${esc(x.assetName)}</small></td><td>${chip(x.status)}</td><td>${money(x.amount)}</td></tr>`);
+    const rows=(data.services||[]).map(x=>`<tr><td>${esc(x.date)}</td><td><b>${esc(x.title)}</b><br><small>${esc(x.assetName)}</small>${x.location?`<p>${esc(x.location)}</p>`:''}${x.report?`<details><summary>Trabajo realizado</summary><p>${esc(x.report)}</p></details>`:''}</td><td>${chip(x.status)}</td><td>${money(x.amount)}</td></tr>`);
     box.innerHTML=`<h3>Historial de servicios</h3>${rows.length?table(['Fecha','Servicio','Estado','Monto'],rows):empty('No hay servicios registrados.')}`;return;
   }
   const rows=(data.assets||[]).map(x=>`<tr><td><b>${esc(x.name)}</b><br><small>${esc([x.brand,x.model].filter(Boolean).join(' · '))}</small></td><td>${esc(x.serial||'—')}</td><td>${esc(x.location||'—')}</td><td>${chip(x.status)}</td><td>${esc(x.warrantyExpiration||'—')}</td><td>${esc(x.nextMaintenance||'—')}</td></tr>`);
@@ -104,6 +133,10 @@ function renderTab(){
 }
 function documentHtml(type,docData){
   const b=data.business||{},c=data.client||{};
+  if(type==='contract'||type==='payment'){
+    const contract=type==='contract';
+    return `<article class="portal-pdf"><div class="pdf-head"><h1>${contract?'CONTRATO':'COMPROBANTE DE PAGO'}</h1><div class="pdf-business"><b>${esc(b.name)}</b><span>${esc(b.phone)}</span></div></div><p>Cliente: <b>${esc(c.name)}</b></p><p>Fecha: ${esc(docData.date)}</p>${contract?`<h2>${esc(docData.number)} · ${esc(docData.title)}</h2><p class="contract-body" style="white-space:pre-wrap">${esc(docData.body||'Solicite al negocio el documento completo.')}</p>`:`<p>Factura: ${esc(docData.invoiceNumber)}</p><p>Método: ${esc(docData.method)}</p><h2>Pagado: ${money(docData.amount)}</h2>`}</article>`;
+  }
   const isInv=type==='invoice';
   const label=isInv?'FACTURA':'COTIZACIÓN';
   const items=(docData.items||[]);
@@ -127,25 +160,29 @@ async function loadQuoteResponses(portal,token){
 }
 async function openPortal(token){
   $('loginMsg').textContent='Verificando acceso…';
-  try{
-    const snap=await getDoc(doc(db,'clientPortals',token));
-    if(!snap.exists()||snap.data().enabled===false)throw new Error('Código inválido o portal desactivado.');
-    data=snap.data();accessToken=token;
+  if(stopPortal)stopPortal();
+  accessToken=token;
+  stopPortal=onSnapshot(doc(db,'clientPortals',token),snap=>{
+    if(accessToken!==token)return;
+    if(!snap.exists()||snap.data().enabled===false){
+      data=null;$('portalApp').classList.add('hidden');$('portalLogin').classList.remove('hidden');
+      $('loginMsg').textContent='Código inválido o portal desactivado.';return;
+    }
+    data=snap.data();
     (data.quotes||[]).forEach(q=>q.responseUnavailable=true);
-    if(!data.sharedDocument)localStorage.setItem('nexusPortalAccess',token);
+    if(!data.sharedDocument||data.client?.id){try{localStorage.setItem('nexusPortalAccess',token);}catch(_){}}
     $('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');
-    render();
-    void loadQuoteResponses(data,token);
-  }catch(e){
-    $('loginMsg').textContent=e.code==='permission-denied'
-      ?'No se pudo verificar el acceso al documento. Comuníquese con el negocio.'
-      :(e.message||'No se pudo abrir el portal.');
-  }
+    render();void loadQuoteResponses(data,token);
+  },error=>{
+    if(data){$('lastUpdate').textContent='No se pudo actualizar. Verifique su conexión.';return;}
+    $('loginMsg').textContent='No se pudo verificar el acceso. Comuníquese con el negocio.';
+    console.warn('Portal:',error.code);
+  });
 }
 $('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)openPortal(token)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;renderTab()});
-$('exitBtn').onclick=()=>{localStorage.removeItem('nexusPortalAccess');location.href='./'};
-const params=new URLSearchParams(location.search);const initial=params.get('access')||localStorage.getItem('nexusPortalAccess')||'';if(initial){$('accessCode').value=initial;openPortal(initial)}
+$('exitBtn').onclick=()=>{if(stopPortal)stopPortal();localStorage.removeItem('nexusPortalAccess');location.href='./'};
+const params=new URLSearchParams(location.search);const initial=params.get('access')||params.get('token')||localStorage.getItem('nexusPortalAccess')||'';if(initial){$('accessCode').value=initial;openPortal(initial)}
 
 
 // PWA Portal del Cliente

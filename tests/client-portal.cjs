@@ -1,0 +1,24 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+(async()=>{
+const {buildClientPortalPayload:build}=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync('client-portal-data.js','utf8')).toString('base64'));
+const state={invoices:[{id:'i1',clientId:'a',number:'FAC-A',total:100,privateMemo:'secret'},{id:'i2',clientId:'b',number:'FAC-B',total:900}],payments:[{id:'p1',invoiceId:'i1',amount:30,method:'ATH',privateMemo:'secret'},{id:'p2',invoiceId:'i2',clientId:'a',amount:900}],quotes:[{id:'q1',clientId:'a',number:'COT-A',total:300,updatedAt:123},{id:'q2',clientId:'b'}],services:[{id:'s1',clientId:'a',date:'2026-11-01',scheduledTime:'9:00',title:'Visita',status:'Programado',instructions:'internal',completion:{report:'Limpieza realizada'}},{id:'s2',clientId:'b'}],assets:[{id:'e1',clientId:'a',name:'Mini split',nextMaintenanceDate:'2026-11-02'},{id:'e2',clientId:'b'}],followups:[{id:'f1',clientId:'a',type:'Mantenimiento',dueDate:'2026-11-02',assetId:'e1',status:'Programado'},{id:'f2',clientId:'a',type:'Cotización'},{id:'f3',clientId:'b',type:'Mantenimiento'},{id:'f4',clientId:'a',type:'Mantenimiento',status:'Cancelado'}],contracts:[{id:'ct1',clientId:'a',number:'CT-A',body:'Contrato original',privateMemo:'secret'},{id:'ct2',clientId:'b'}]};
+const payload=build({state,client:{id:'a',name:'Cliente A'},ownerId:'owner',token:'private',business:{name:'Oasis'}});
+for(const key of ['invoices','quotes','services','assets','payments','contracts'])assert.equal(payload[key].length,1,key);
+assert.equal(payload.summary.balance,70);assert.equal(payload.maintenance.length,2);assert.equal(payload.quoteRevisions.q1,123);assert.equal(payload.quoteExpires.q1.getUTCFullYear(),2100);assert.doesNotMatch(JSON.stringify(payload),/secret|internal|FAC-B/);assert.throws(()=>build({state,client:{},ownerId:'o',token:'t'}));
+const source=fs.readFileSync('portal.js','utf8'),nodes={};
+const node=id=>nodes[id]??={innerHTML:'',textContent:'',classList:{add(){},remove(){},toggle(){}},querySelectorAll:()=>[]};
+let printed='';const context={console,URL,URLSearchParams,Intl,Date,alert:msg=>{throw Error(msg)},document:{getElementById:node,querySelectorAll:()=>[],body:{classList:{add(){},remove(){}}}},location:{search:'?document=invoice:i1'},window:{open:()=>({document:{write:html=>printed=html,close(){}}})}};
+vm.createContext(context);
+const functions=source.slice(source.indexOf('const $='),source.indexOf('async function openPortal(')).replaceAll('import.meta.url',"'https://suite.example/portal.js'")+source.slice(source.indexOf('function decisionReceipt('));
+vm.runInContext(functions,context);context.fixture=payload;vm.runInContext('data=fixture;render()',context);assert.match(nodes.tabContent.innerHTML,/FAC-A/);
+vm.runInContext("active='maintenance';renderTab()",context);assert.match(nodes.tabContent.innerHTML,/9:00/);assert.match(nodes.tabContent.innerHTML,/Cancelado/);assert.equal(vm.runInContext('portalAgenda().length',context),3);
+vm.runInContext("data.sharedDocument={type:'invoice',id:'i1'};data.printHtml='<div>ORIGINAL-FAC-A</div>';printPortalDocument('invoice:i1')",context);assert.match(printed,/ORIGINAL-FAC-A/);
+vm.runInContext("printPortalDocument('quote:q1')",context);assert.match(printed,/COT-A/);assert.doesNotMatch(printed,/ORIGINAL-FAC-A/);
+vm.runInContext("active='payments';renderTab();printPortalDocument('payment:p1')",context);assert.match(nodes.tabContent.innerHTML,/ATH/);assert.match(printed,/COMPROBANTE DE PAGO/);
+vm.runInContext("active='contracts';renderTab();printPortalDocument('contract:ct1')",context);assert.match(printed,/Contrato original/);
+vm.runInContext("data.services[0].title='<script>bad</script>';active='services';renderTab()",context);assert.match(nodes.tabContent.innerHTML,/&lt;script&gt;/);
+const mobile=fs.readFileSync('mobile.js','utf8');const mctx={state,Number,Math};vm.createContext(mctx);
+for(const [begin,end] of [['function invoicePaid(', 'function statusBadge('],['function mobilePortalInvoice(', 'async function shareInvoice('],['function invoiceTotalsDoc(', 'function invoiceDocFooter(']])vm.runInContext(mobile.slice(mobile.indexOf(begin),mobile.indexOf(end)),mctx);
+mctx.today=()=> '2026-10-24';mctx.lineNet=x=>Number(x.qty||1)*Number(x.price||0);mctx.inv=state.invoices[0];assert.equal(vm.runInContext('mobilePortalInvoice(inv).balance',mctx),70);
+console.log('PASS: client isolation, payment linkage, sanitization, quote metadata, agenda deduplication, canceled history, original document selection, printing, escaped content, mobile serialization.');
+})().catch(error=>{console.error(error);process.exitCode=1});

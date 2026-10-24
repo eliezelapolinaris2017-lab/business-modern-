@@ -1,9 +1,10 @@
+import { buildClientPortalPayload } from './client-portal-data.js?v=117';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v116';
+const APP_VERSION = 'v117';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
@@ -22,8 +23,8 @@ const plusDays = n => { const d = new Date(); d.setDate(d.getDate() + Number(n |
 const plusMonths = (date, months = 6) => { const d = new Date((date || today()) + 'T12:00:00'); d.setMonth(d.getMonth() + Number(months || 6)); return d.toISOString().slice(0, 10); };
 
 let unsub = [];
-let state = { profile:null, clients:[], services:[], quotes:[], followups:[], invoices:[], payments:[], assets:[] };
-const COLS = ['clients', 'services', 'quotes', 'followups', 'invoices', 'payments', 'assets'];
+let state = { profile:null, clients:[], services:[], quotes:[], followups:[], invoices:[], payments:[], assets:[], contracts:[] };
+const COLS = ['clients', 'services', 'quotes', 'followups', 'invoices', 'payments', 'assets', 'contracts'];
 function uid(){ return auth.currentUser?.uid || ''; }
 function colRef(c){ return collection(db, 'users', uid(), c); }
 function docRef(c, id){ return doc(db, 'users', uid(), c, id); }
@@ -215,10 +216,12 @@ async function saveMobileFollowup(e){
 setupPwaInstall();
 onAuthStateChanged(auth, async user => {
   unsub.forEach(fn => fn()); unsub = [];
+  clearTimeout(mobilePortalTimer);mobilePortalLoaded.clear();
+  COLS.forEach(c=>state[c]=[]);
   if(!user){ $('mobileAuth').classList.remove('hidden'); $('mobileApp').classList.add('hidden'); return; }
   $('mobileAuth').classList.add('hidden'); $('mobileApp').classList.remove('hidden');
   await loadProfile(); ensureLines(); renderInvoiceLines();
-  COLS.forEach(c => unsub.push(onSnapshot(colRef(c), snap => { state[c] = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderAll(); setSync('Sincronizado'); }, () => setSync('Error sync'))));
+  COLS.forEach(c => unsub.push(onSnapshot(colRef(c), snap => { if(uid()!==user.uid)return;state[c] = snap.docs.map(d => ({ id:d.id, ...d.data() })); mobilePortalLoaded.add(c);scheduleMobilePortals();renderAll(); setSync('Sincronizado'); }, () => setSync('Error sync'))));
 });
 
 async function loadProfile(){
@@ -655,6 +658,36 @@ async function buildInvoicePdfFile(inv, filename){
   const blob = docp.output('blob');
   return new File([blob], filename || `Factura-${inv.number || 'Nexus'}.pdf`, { type:'application/pdf' });
 }
+let mobilePortalTimer=null;
+const mobilePortalLoaded=new Set();
+function scheduleMobilePortals(){
+  clearTimeout(mobilePortalTimer);
+  if(!COLS.every(c=>mobilePortalLoaded.has(c)))return;
+  const owner=uid();
+  mobilePortalTimer=setTimeout(async()=>{
+    for(const c of state.clients.filter(c=>c.portalEnabled&&c.portalToken)){
+      if(uid()!==owner)return;
+      try{await syncMobilePortal(c.id);}catch(e){console.warn('Portal pendiente de sincronizar:',e.code||e.message);}
+    }
+  },1200);
+}
+async function syncMobilePortal(clientId){
+  if(!COLS.every(c=>mobilePortalLoaded.has(c)))throw new Error('Espere a que termine la sincronización antes de compartir el historial.');
+  const c=clientBy(clientId);if(!c.id)throw new Error('La factura necesita un cliente vinculado.');
+  const owner=uid(),token=c.portalToken||crypto.randomUUID(),p=state.profile||{};
+  const calendarUrl=p.calendarProvider==='google'?(p.googleCalendarUrl||p.confirmafyCalendarUrl):(p.confirmafyCalendarUrl||p.googleCalendarUrl);
+  const payload=buildClientPortalPayload({state,client:c,ownerId:owner,token,business:{name:p.businessName||'Nexus Business',phone:p.phone||'',whatsapp:p.whatsapp||'',email:p.email||'',address:p.address||'',logo:p.logoDashboard||p.logoPdf||'',calendarUrl:calendarUrl||'https://confirmafy.com/oasis-services-pr'},serialize:{invoice:i=>({...mobilePortalInvoice(i)})}});
+  await setDoc(doc(db,'clientPortals',token),payload,{mergeFields:Object.keys(payload)});
+  if(c.portalToken!==token||!c.portalEnabled){
+    await updateDoc(doc(db,'users',owner,'clients',c.id),{portalToken:token,portalEnabled:true});
+    c.portalToken=token;c.portalEnabled=true;
+  }
+  const url=new URL('./portal/',location.href);url.search='?access='+encodeURIComponent(token);return url.href;
+}
+function mobilePortalInvoice(i){
+  const totals=invoiceTotalsDoc(i);
+  return {id:i.id,number:i.number||'',date:i.date||'',dueDate:i.dueDate||'',serviceTitle:i.serviceTitle||'',status:invoiceStatus(i),total:totals.total,subtotal:totals.subtotal,tax:totals.ivu,taxPercent:totals.taxPercent,discount:totals.discount||0,paid:invoicePaid(i),balance:invoiceStatus(i)==='Cancelada'?0:invoiceBalance(i),items:(i.items||[]).map(x=>({description:x.description||'',qty:Number(x.qty??1),price:Number(x.price||0),total:lineNet(x)})),notes:i.notes||'',terms:invoicePaymentTerms(i,i.terms||'Pago según acuerdo.')};
+}
 async function shareInvoice(id){
   const inv = state.invoices.find(i => i.id === id);
   if(!inv) return;
@@ -664,11 +697,12 @@ async function shareInvoice(id){
   try{
     if(btn){ btn.disabled = true; btn.textContent = 'Generando PDF…'; }
     await sleep(30);
+    const portalLink=await syncMobilePortal(inv.clientId);
     const file = await buildInvoicePdfFile(inv, filename);
     if(!file || file.size < 10000) throw new Error('PDF vacío o inválido.');
     if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
       if(btn) btn.textContent = 'Compartiendo…';
-      await navigator.share({ title:`Factura ${inv.number || ''}`, text:'Factura adjunta en PDF.', files:[file] });
+      await navigator.share({ title:`Factura ${inv.number || ''}`, text:'Factura adjunta en PDF. Consulte su historial y próximos servicios: '+portalLink+'&document='+encodeURIComponent('invoice:'+inv.id), files:[file] });
       return;
     }
     await openPdfFile(file, filename);
@@ -829,7 +863,7 @@ async function shareCurrentDoc(){
     const file = await buildInvoicePdfFile(preview, filename);
     if(!file || file.size < 10000) throw new Error('PDF vacío o inválido.');
     if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
-      await navigator.share({ title:'Factura', text:'Factura adjunta en PDF.', files:[file] });
+      await navigator.share({ title:'Factura', text:'Factura adjunta en PDF. Consulte su historial y próximos servicios: '+portalLink+'&document='+encodeURIComponent('invoice:'+inv.id), files:[file] });
       return;
     }
     await openPdfFile(file, filename);
