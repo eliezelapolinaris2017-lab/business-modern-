@@ -1,4 +1,4 @@
-const CACHE='nexus-business-mobile-v118';
+const CACHE='nexus-business-mobile-v119';
 const ASSETS=['./mobile.html','./mobile.css','./mobile-field.css','./mobile.js','./client-portal-data.js?v=117','./firebase-config.js','./manifest.webmanifest','./assets/logo.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS).catch(()=>{})));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('nexus-business-')&&k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
@@ -8,5 +8,5 @@ self.addEventListener('fetch',event=>{
   if(req.method!=='GET') return;
   const url=new URL(req.url);
   if(url.origin!==location.origin){event.respondWith(fetch(req).catch(()=>caches.match(req)));return;}
-  event.respondWith(fetch(req).then(res=>{const copy=res.clone();caches.open(CACHE).then(c=>c.put(req,copy)).catch(()=>{});return res;}).catch(()=>caches.match(req).then(res=>res||caches.match('./mobile.html'))));
+  event.respondWith(fetch(req).then(res=>{const copy=res.clone();caches.open(CACHE).then(c=>c.put(req,copy)).catch(()=>{});return res;}).catch(()=>caches.match(req).then(res=>res||(req.mode==='navigate'?caches.match(url.pathname.endsWith('/mobile.html')?'./mobile.html':'./index.html'):undefined))));
 });
