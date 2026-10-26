@@ -16,12 +16,12 @@
         const portal=new URL('./portal/',incoming);portal.search=incoming.search;portal.hash=incoming.hash;
         location.replace(portal);return;
       }
-      // Installed desktop shortcuts must still open the phone workspace on phones.
-      if (Math.min(screen.width, screen.height) <= 600 && matchMedia('(pointer: coarse)').matches) {
+      // An explicit Desktop link or installed Desktop shortcut takes priority.
+      const desktop=incoming.searchParams.get('desktop')==='1';
+      if (!desktop && Math.min(screen.width, screen.height) <= 600 && matchMedia('(pointer: coarse)').matches) {
         location.replace(new URL('mobile.html', location.href));
         return;
       }
-      const desktop=new URLSearchParams(location.search).get('desktop')==='1';
       if(!desktop)return;
       document.documentElement.classList.add('nexus-desktop-pwa');
       document.getElementById('desktopViewport')?.setAttribute('content','width=1200,initial-scale=0.78,minimum-scale=0.5,maximum-scale=2,user-scalable=yes');
