@@ -8,21 +8,46 @@ service cloud.firestore {
     function pendingRequestKeys() { return ['pendingPlan','pendingPlanName','pendingPaymentUrl','pendingPlanStatus','pendingPlanRequestedAt']; }
     function normalCollections() { return ['clients','services','quotes','followups','contracts','team','assets','suppliers','supplierPayments','payroll','payrollRetentions','purchases','invoices','payments','cashflow']; }
 
+    function portalAccess(portal) {
+      return portal.get('claimedBy', '') == '' || (signed() && (portal.get('claimedBy', '') == request.auth.uid || portal.ownerId == request.auth.uid));
+    }
+    function verifiedPortalIdentity(portal) {
+      return signed() && request.auth.token.get('email_verified', false) == true
+        && request.auth.token.get('phone_number', '') != ''
+        && portal.get('identityPhone', '') == request.auth.token.phone_number
+        && (portal.get('identityEmail', '') == '' || portal.identityEmail == request.auth.token.get('email', '').lower())
+        && portal.enabled == true && portal.client.id is string && portal.client.id.size() > 0
+        && portalAccess(portal);
+    }
+    match /clientAccounts/{accountId} {
+      allow get: if owner(accountId);
+      allow create: if owner(accountId)
+        && request.resource.data.keys().hasAll(['portalToken','ownerId','clientId','createdAt'])
+        && request.resource.data.keys().hasOnly(['portalToken','ownerId','clientId','createdAt'])
+        && request.resource.data.portalToken is string
+        && request.resource.data.createdAt == request.time
+        && verifiedPortalIdentity(get(/databases/$(database)/documents/clientPortals/$(request.resource.data.portalToken)).data)
+        && request.resource.data.ownerId == get(/databases/$(database)/documents/clientPortals/$(request.resource.data.portalToken)).data.ownerId
+        && request.resource.data.clientId == get(/databases/$(database)/documents/clientPortals/$(request.resource.data.portalToken)).data.client.id
+        && getAfter(/databases/$(database)/documents/clientPortals/$(request.resource.data.portalToken)).data.claimedBy == request.auth.uid;
+    }
+
     function validDecision(userId, quoteId, decision) {
       let portal = get(/databases/$(database)/documents/clientPortals/$(decision.portalToken)).data;
       let quote = get(/databases/$(database)/documents/users/$(userId)/quotes/$(quoteId)).data;
-      return portal.enabled == true && portal.ownerId == userId
+      return portalAccess(portal) && portal.enabled == true && portal.ownerId == userId
         && quoteId in portal.quoteRevisions
         && portal.quoteRevisions[quoteId] == quote.get('updatedAt', null)
         && portal.quoteExpires[quoteId] >= request.time
         && !(quote.get('status', '') in ['Aprobada','Rechazada','Convertida','Cancelada','Vencida'])
         && quote.get('convertedInvoiceId', '') == '' && quote.get('convertedServiceId', '') == ''
+        && decision.keys().hasAll(['status','name','signature','reason','at','portalToken'])
         && decision.keys().hasOnly(['status','name','signature','reason','at','portalToken'])
         && decision.status in ['Aprobada','Rechazada']
         && decision.name is string && decision.name.size() > 0 && decision.name.size() <= 120
         && decision.reason is string && decision.reason.size() <= 1000
         && decision.signature is string && decision.signature.size() <= 200000
-        && ((decision.status == 'Rechazada' && decision.signature == '') || (decision.signature.matches('data:image/png;base64,.*') && decision.signature.size() > 100))
+        && ((decision.status == 'Rechazada' && decision.signature == '') || (decision.status == 'Aprobada' && decision.signature.matches('data:image/png;base64,.*') && decision.signature.size() > 100))
         && decision.at == request.time;
     }
     match /users/{userId}/quotes/{quoteId} {
@@ -64,16 +89,23 @@ service cloud.firestore {
     }
 
     match /clientPortals/{portalId} {
-      allow read: if true;
+      allow get: if portalAccess(resource.data);
       allow create: if signed() && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if signed() && resource.data.ownerId == request.auth.uid;
+      allow update: if verifiedPortalIdentity(resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimedBy'])
+        && request.resource.data.claimedBy == request.auth.uid
+        && !exists(/databases/$(database)/documents/clientAccounts/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/clientAccounts/$(request.auth.uid)).data.portalToken == portalId;
     }
 
     match /clientPortals/{portalId}/responses/{quoteId} {
-      allow get: if true;
+      allow get: if portalAccess(get(/databases/$(database)/documents/clientPortals/$(portalId)).data);
       allow create: if request.resource.data.portalToken == portalId
         && validDecision(get(/databases/$(database)/documents/clientPortals/$(portalId)).data.ownerId, quoteId, request.resource.data)
-        && getAfter(/databases/$(database)/documents/users/$(get(/databases/$(database)/documents/clientPortals/$(portalId)).data.ownerId)/quotes/$(quoteId)).data.clientDecision == request.resource.data;
+        && getAfter(/databases/$(database)/documents/users/$(get(/databases/$(database)/documents/clientPortals/$(portalId)).data.ownerId)/quotes/$(quoteId)).data.clientDecision == request.resource.data
+        && getAfter(/databases/$(database)/documents/users/$(get(/databases/$(database)/documents/clientPortals/$(portalId)).data.ownerId)/quotes/$(quoteId)).data.status == request.resource.data.status
+        && getAfter(/databases/$(database)/documents/users/$(get(/databases/$(database)/documents/clientPortals/$(portalId)).data.ownerId)/quotes/$(quoteId)).data.updatedAt == request.time;
     }
 
     match /{path=**}/planRequests/{requestId} {
