@@ -51,3 +51,10 @@ dialog.portal-document-viewer[open]{display:grid;grid-template-rows:auto minmax(
 .portal-document-viewer iframe{width:100%;height:100%;min-height:0;border:0;background:#fff}
 .document-viewer-status{margin:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom));font-size:13px;color:#435967}.document-viewer-status:empty{display:none}
 @media(max-width:600px){.document-viewer-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-right:10px;padding-left:10px}.document-viewer-toolbar strong{grid-row:1;grid-column:1/-1;font-size:14px}.document-viewer-toolbar button{font-size:13px;padding:12px 8px}}
+
+.portal-payment-options{padding:20px;border:1px solid #bcdedc;border-radius:14px;background:#f0faf8;margin:16px 0 24px;white-space:normal}
+.portal-payment-options h4{margin:0 0 10px;color:#164b54}.portal-payment-options p{margin:8px 0;line-height:1.5}
+.portal-payment-buttons{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}.portal-payment-buttons a{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:12px 18px;border-radius:10px;background:#145b67;color:#fff;text-decoration:none;font-weight:700}
+.portal-payment-options .payment-help{font-size:13px;color:#526d71;max-width:640px}
+.portal-payment-options.compact{margin:12px 0 0;padding:14px;min-width:240px;max-width:340px}.portal-payment-options.compact h4{font-size:14px}
+@media(max-width:600px){.portal-payment-buttons a{width:100%}}

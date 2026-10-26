@@ -1,3 +1,4 @@
+import { portalPaymentActions } from './portal-payments.js?v=123';
 import { mountClientAccount } from './portal-account.js?v=119-onboarding';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getFirestore,doc,getDoc,onSnapshot,writeBatch,serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -110,7 +111,7 @@ function renderTab(){
     const [kind,id]=selected.split(':');
     const highlighted=({invoice:data.invoices,quote:data.quotes}[kind]||[]).find(x=>String(x.id)===id);
     const recent=(data.services||[]).slice(0,3);
-    box.innerHTML=`${highlighted?`<div class="portal-featured"><span>Documento recibido por WhatsApp</span><h3>${kind==='invoice'?'Factura':'Cotización'} ${esc(highlighted.number)}</h3><p>${money(highlighted.total)} · ${esc(highlighted.status)}</p>${actionButtons(kind,id)}</div>`:''}<h3>Resumen de su cuenta</h3><div class="overview-grid"><div><h4>Próximas citas y mantenimientos</h4>${next.length?next.map(agendaCard).join(''):empty('No hay citas ni mantenimientos programados.')}<p><button type="button" data-open-tab="maintenance" class="secondary">Ver agenda completa</button></p></div><div><h4>Facturas pendientes</h4>${pending.length?pending.slice(0,5).map(x=>`<div class="line"><span>${esc(x.number)} · ${esc(x.dueDate||'Sin vencimiento')}</span><b>${money(x.balance)}</b></div>`).join(''):empty('No tiene facturas pendientes.')}<h4>Servicios recientes</h4>${recent.length?recent.map(x=>`<div class="line"><span>${esc(x.date)}<br><b>${esc(x.title)}</b></span>${chip(x.status)}</div>`).join(''):empty('No hay servicios registrados.')}</div></div>`;
+    box.innerHTML=`${highlighted?`<div class="portal-featured"><span>Documento recibido por WhatsApp</span><h3>${kind==='invoice'?'Factura':'Cotización'} ${esc(highlighted.number)}</h3><p>${money(highlighted.total)} · ${esc(highlighted.status)}</p>${actionButtons(kind,id)}</div>`:''}<h3>Resumen de su cuenta</h3>${portalPaymentActions(data.business,{balance:data.summary?.balance})}<div class="overview-grid"><div><h4>Próximas citas y mantenimientos</h4>${next.length?next.map(agendaCard).join(''):empty('No hay citas ni mantenimientos programados.')}<p><button type="button" data-open-tab="maintenance" class="secondary">Ver agenda completa</button></p></div><div><h4>Facturas pendientes</h4>${pending.length?pending.slice(0,5).map(x=>`<div class="line"><span>${esc(x.number)} · ${esc(x.dueDate||'Sin vencimiento')}</span><b>${money(x.balance)}</b></div>`).join(''):empty('No tiene facturas pendientes.')}<h4>Servicios recientes</h4>${recent.length?recent.map(x=>`<div class="line"><span>${esc(x.date)}<br><b>${esc(x.title)}</b></span>${chip(x.status)}</div>`).join(''):empty('No hay servicios registrados.')}</div></div>`;
     box.querySelectorAll('[data-open-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.openTab;renderTab()});
     bindPdfButtons();
     return;
@@ -128,7 +129,7 @@ function renderTab(){
     box.innerHTML=`<h3>Contratos</h3>${rows.length?table(['Contrato','Fecha','Inicio','Terminación','Documento'],rows):empty('No hay contratos registrados.')}`;bindPdfButtons();return;
   }
   if(active==='invoices'){
-    const rows=(data.invoices||[]).map(x=>`<tr><td><b>${esc(x.number)}</b><br><small>${esc(x.serviceTitle)}</small></td><td>${esc(x.date)}</td><td>${esc(x.dueDate||'—')}</td><td>${money(x.total)}</td><td>${money(x.paid)}</td><td><b>${money(x.balance)}</b></td><td>${chip(x.status)}</td><td>${actionButtons('invoice',x.id)}</td></tr>`);
+    const rows=(data.invoices||[]).map(x=>`<tr><td><b>${esc(x.number)}</b><br><small>${esc(x.serviceTitle)}</small></td><td>${esc(x.date)}</td><td>${esc(x.dueDate||'—')}</td><td>${money(x.total)}</td><td>${money(x.paid)}</td><td><b>${money(x.balance)}</b></td><td>${chip(x.status)}</td><td>${actionButtons('invoice',x.id)}${portalPaymentActions(data.business,{balance:x.balance,invoiceNumber:x.number,status:x.status,compact:true})}</td></tr>`);
     box.innerHTML=`<h3>Facturas</h3>${rows.length?table(['Factura','Fecha','Vence','Total','Pagado','Balance','Estado','PDF'],rows):empty('No hay facturas disponibles.')}`;
     bindPdfButtons(); return;
   }
