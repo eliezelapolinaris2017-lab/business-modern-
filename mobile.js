@@ -1,4 +1,5 @@
-import { buildClientPortalPayload } from './client-portal-data.js?v=117';
+import { createPortalSyncScheduler } from './portal-sync.js?v=121';
+import { buildClientPortalPayload } from './client-portal-data.js?v=118';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -216,12 +217,12 @@ async function saveMobileFollowup(e){
 setupPwaInstall();
 onAuthStateChanged(auth, async user => {
   unsub.forEach(fn => fn()); unsub = [];
-  clearTimeout(mobilePortalTimer);mobilePortalLoaded.clear();
+  mobilePortalPublisher.reset();mobilePortalLoaded.clear();
   COLS.forEach(c=>state[c]=[]);
   if(!user){ $('mobileAuth').classList.remove('hidden'); $('mobileApp').classList.add('hidden'); return; }
   $('mobileAuth').classList.add('hidden'); $('mobileApp').classList.remove('hidden');
   await loadProfile(); ensureLines(); renderInvoiceLines();
-  COLS.forEach(c => unsub.push(onSnapshot(colRef(c), snap => { if(uid()!==user.uid)return;state[c] = snap.docs.map(d => ({ id:d.id, ...d.data() })); mobilePortalLoaded.add(c);scheduleMobilePortals();renderAll(); setSync('Sincronizado'); }, () => setSync('Error sync'))));
+  COLS.forEach(c => unsub.push(onSnapshot(colRef(c), snap => { if(uid()!==user.uid)return;state[c] = snap.docs.map(d => ({ id:d.id, ...d.data() })); mobilePortalLoaded.add(c);mobilePortalPublisher.observe(c,state[c]);mobilePortalPublisher.flush();renderAll(); setSync('Sincronizado'); }, () => setSync('Error sync'))));
 });
 
 async function loadProfile(){
@@ -658,19 +659,9 @@ async function buildInvoicePdfFile(inv, filename){
   const blob = docp.output('blob');
   return new File([blob], filename || `Factura-${inv.number || 'Nexus'}.pdf`, { type:'application/pdf' });
 }
-let mobilePortalTimer=null;
 const mobilePortalLoaded=new Set();
-function scheduleMobilePortals(){
-  clearTimeout(mobilePortalTimer);
-  if(!COLS.every(c=>mobilePortalLoaded.has(c)))return;
-  const owner=uid();
-  mobilePortalTimer=setTimeout(async()=>{
-    for(const c of state.clients.filter(c=>c.portalEnabled&&c.portalToken)){
-      if(uid()!==owner)return;
-      try{await syncMobilePortal(c.id);}catch(e){console.warn('Portal pendiente de sincronizar:',e.code||e.message);}
-    }
-  },1200);
-}
+const mobilePortalPublisher=createPortalSyncScheduler({getState:()=>state,getOwner:()=>uid(),isReady:()=>COLS.every(c=>mobilePortalLoaded.has(c)),syncClient:id=>syncMobilePortal(id),onError:(e,id)=>console.warn('Portal pendiente de sincronizar:',id,e.code||e.message)});
+function scheduleMobilePortals(){mobilePortalPublisher.markAll();}
 async function syncMobilePortal(clientId){
   if(!COLS.every(c=>mobilePortalLoaded.has(c)))throw new Error('Espere a que termine la sincronización antes de compartir el historial.');
   const c=clientBy(clientId);if(!c.id)throw new Error('La factura necesita un cliente vinculado.');

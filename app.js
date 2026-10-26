@@ -1,3 +1,4 @@
+import { createPortalSyncScheduler } from './portal-sync.js?v=121';
 import { buildClientPortalPayload } from './client-portal-data.js?v=118';
 import {createEmployeeCommand} from './employee-admin.js?v=2';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
@@ -2838,26 +2839,13 @@ add=async function(c,data){
 };
 
 function authUI(){$('authIndustry').innerHTML=Object.entries(INDUSTRIES).map(([id,x])=>`<option value="${id}">${T(x.name)}</option>`).join('');$('showLogin').onclick=()=>{mode='login';document.querySelectorAll('.register-only').forEach(x=>x.classList.add('hidden'));$('authSubmit').textContent=T('Entrar');$('showLogin').classList.add('active');$('showRegister').classList.remove('active');};$('showRegister').onclick=()=>{mode='register';document.querySelectorAll('.register-only').forEach(x=>x.classList.remove('hidden'));$('authSubmit').textContent=T('Crear cuenta');$('showRegister').classList.add('active');$('showLogin').classList.remove('active');};$('authForm').onsubmit=async e=>{e.preventDefault();$('authMsg').textContent=T('Procesando...');try{if(mode==='register'){const cred=await createUserWithEmailAndPassword(auth,$('authEmail').value,$('authPassword').value);await setDoc(doc(db,'users',cred.user.uid),{...defaultProfile(),businessName:$('authBusiness').value||'Mi Negocio',industry:$('authIndustry').value,email:$('authEmail').value});}else await signInWithEmailAndPassword(auth,$('authEmail').value,$('authPassword').value);$('authMsg').textContent='';}catch(err){$('authMsg').textContent=err.message;}};}
-let portalSyncTimer=null;
 const portalLoadedCollections=new Set();
 const portalRequiredCollections=['clients','services','quotes','followups','invoices','payments','assets','contracts'];
-function scheduleEnabledPortalSync(){
-  clearTimeout(portalSyncTimer);
-  if(!portalRequiredCollections.every(c=>portalLoadedCollections.has(c)))return;
-  const syncOwner=uid();
-  portalSyncTimer=setTimeout(async()=>{
-    if(uid()!==syncOwner)return;
-    const enabled=(state.clients||[]).filter(c=>c.portalEnabled&&c.portalToken);
-    for(const c of enabled){
-      if(uid()!==syncOwner)return;
-      try{await syncClientPortal(c.id,{openAfter:false,copyLink:false,notify:false});}
-      catch(e){console.warn('No se pudo sincronizar portal de '+(c.name||c.id),e);}
-    }
-  },1200);
-}
-async function load(){portalLoadedCollections.clear();const loadingOwner=uid();unsub.forEach(x=>x());unsub=[];const snap=await getDoc(profRef());if(uid()!==loadingOwner)return;if(!snap.exists())await setDoc(profRef(),defaultProfile());unsub.push(onSnapshot(profRef(),s=>{if(uid()!==loadingOwner)return;state.profile=s.data()||defaultProfile();render();scheduleEnabledPortalSync();employeeCommand.schedule();}));COLS.forEach(c=>unsub.push(onSnapshot(colPath(c),s=>{if(uid()!==loadingOwner)return;const rows=s.docs.map(d=>({id:d.id,...d.data()}));state[c]=HISTORY_MODULES.has(c)?sortedHistory(rows):rows;$('syncStatus').textContent=T('Sincronizado');render();portalLoadedCollections.add(c);if(portalRequiredCollections.includes(c))scheduleEnabledPortalSync();if(['team','services','clients','assets'].includes(c))employeeCommand.schedule();},e=>{$('syncStatus').textContent=T('Firebase bloqueado');console.error(e);})));}
+const portalPublisher=createPortalSyncScheduler({getState:()=>state,getOwner:()=>uid(),isReady:()=>portalRequiredCollections.every(c=>portalLoadedCollections.has(c)),syncClient:id=>syncClientPortal(id,{openAfter:false,copyLink:false,notify:false}),onError:(e,id)=>console.warn('Portal pendiente de sincronizar:',id,e.code||e.message)});
+function scheduleEnabledPortalSync(){portalPublisher.markAll();}
+async function load(){portalPublisher.reset();portalLoadedCollections.clear();const loadingOwner=uid();unsub.forEach(x=>x());unsub=[];const snap=await getDoc(profRef());if(uid()!==loadingOwner)return;if(!snap.exists())await setDoc(profRef(),defaultProfile());unsub.push(onSnapshot(profRef(),s=>{if(uid()!==loadingOwner)return;state.profile=s.data()||defaultProfile();scheduleEnabledPortalSync();render();employeeCommand.schedule();}));COLS.forEach(c=>unsub.push(onSnapshot(colPath(c),s=>{if(uid()!==loadingOwner)return;const rows=s.docs.map(d=>({id:d.id,...d.data()}));state[c]=HISTORY_MODULES.has(c)?sortedHistory(rows):rows;portalLoadedCollections.add(c);if(portalRequiredCollections.includes(c))portalPublisher.observe(c,state[c]);portalPublisher.flush();$('syncStatus').textContent=T('Sincronizado');render();if(['team','services','clients','assets'].includes(c))employeeCommand.schedule();},e=>{$('syncStatus').textContent=T('Firebase bloqueado');console.error(e);})));}
 let previousAccountId='';
-authUI();bindForms();onAuthStateChanged(auth,u=>{if((u?.uid||'')!==previousAccountId){employeeCommand.reset();COLS.forEach(c=>state[c]=[]);state.profile=null;previousAccountId=u?.uid||'';}if(u){$('authScreen').classList.add('hidden');$('appShell').classList.remove('hidden');load();}else{employeeCommand.reset();unsub.forEach(stop=>stop());unsub=[];$('authScreen').classList.remove('hidden');$('appShell').classList.add('hidden');}});
+authUI();bindForms();onAuthStateChanged(auth,u=>{if((u?.uid||'')!==previousAccountId){employeeCommand.reset();COLS.forEach(c=>state[c]=[]);state.profile=null;previousAccountId=u?.uid||'';}if(u){$('authScreen').classList.add('hidden');$('appShell').classList.remove('hidden');load();}else{portalPublisher.reset();portalLoadedCollections.clear();employeeCommand.reset();unsub.forEach(stop=>stop());unsub=[];$('authScreen').classList.remove('hidden');$('appShell').classList.add('hidden');}});
 
 /* V66 — Search Center por módulo
    Añade buscadores propios sin eliminar funciones existentes. */

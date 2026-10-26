@@ -1,5 +1,5 @@
-const CACHE='nexus-client-portal-v120';
-const CORE=['./','./manifest.webmanifest','../portal.css?v=120-oasis','../portal.js?v=119-onboarding','../portal-account.js?v=119-onboarding','../firebase-config.js','./icons/oasis-180.png','./icons/oasis-192.png','./icons/oasis-512.png','./icons/oasis-maskable-512.png'];
+const CACHE='nexus-client-portal-v122';
+const CORE=['./','./manifest.webmanifest','../portal.css?v=122-documents','../portal.js?v=122-documents','../portal-account.js?v=119-onboarding','../firebase-config.js','./icons/oasis-180.png','./icons/oasis-192.png','./icons/oasis-512.png','./icons/oasis-maskable-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE).catch(()=>{})));
   self.skipWaiting();

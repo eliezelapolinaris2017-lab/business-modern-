@@ -40,3 +40,14 @@ body.shared-portal{min-height:100vh;background:radial-gradient(ellipse at 12% 5%
 /* Official Oasis branding for the dedicated client app. */
 .login-card .brand-mark{width:130px;height:130px;border-radius:0}
 @media(max-width:520px){.login-card .brand-mark{width:110px;height:110px}}
+
+/* The document viewer stays in the PWA and preserves the selected client tab. */
+dialog.portal-document-viewer{position:fixed;inset:0;margin:0;padding:0;border:0;width:100vw;max-width:none;height:100vh;height:100dvh;max-height:none;background:#eef2f5;color:#172033;overflow:hidden}
+dialog.portal-document-viewer[open]{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+.portal-document-viewer::backdrop{background:#17203380}
+.document-viewer-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:white;border-bottom:1px solid #dce5eb}
+.document-viewer-toolbar strong{overflow-wrap:anywhere;min-width:0}.document-viewer-toolbar button{min-height:48px;background:#145b67}.document-viewer-toolbar [data-back-portal]{background:#e5eff2;color:#164451}
+.document-viewer-toolbar button:disabled{opacity:.5}
+.portal-document-viewer iframe{width:100%;height:100%;min-height:0;border:0;background:#fff}
+.document-viewer-status{margin:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom));font-size:13px;color:#435967}.document-viewer-status:empty{display:none}
+@media(max-width:600px){.document-viewer-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-right:10px;padding-left:10px}.document-viewer-toolbar strong{grid-row:1;grid-column:1/-1;font-size:14px}.document-viewer-toolbar button{font-size:13px;padding:12px 8px}}

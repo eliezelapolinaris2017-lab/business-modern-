@@ -1,5 +1,5 @@
-const CACHE='nexus-business-mobile-v119';
-const ASSETS=['./mobile.html','./mobile.css','./mobile-field.css','./mobile.js','./client-portal-data.js?v=117','./firebase-config.js','./manifest.webmanifest','./assets/logo.png'];
+const CACHE='nexus-business-mobile-v121';
+const ASSETS=['./mobile.html','./mobile.css','./mobile-field.css','./mobile.js?v=121-portals','./portal-sync.js?v=121','./client-portal-data.js?v=118','./firebase-config.js','./manifest.webmanifest','./assets/logo.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS).catch(()=>{})));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('nexus-business-')&&k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('message',event=>{if(event.data&&event.data.type==='SKIP_WAITING') self.skipWaiting();});

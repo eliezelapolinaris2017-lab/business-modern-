@@ -25,9 +25,20 @@ function printPortalDocument(key){
   const original=data.sharedDocument?.type===type&&String(data.sharedDocument.id)===id&&data.printHtml;
   const html=(original||documentHtml(type,row))+(type==='quote'?decisionReceipt(row.clientDecision):'');
   const css=new URL(original?'./styles.css':'./portal.css',import.meta.url).href;
-  const w=window.open('','_blank');
-  if(!w){alert('Permita ventanas emergentes para imprimir el documento.');return;}
-  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(row.number||'Documento')}</title><link rel="stylesheet" href="${esc(css)}"><style>
+  // Keep documents inside the installed app; Safari standalone has no browser Back button.
+  document.querySelector('.portal-document-viewer')?.remove();
+  const previousFocus=document.activeElement;
+  const viewer=document.createElement('dialog');viewer.className='portal-document-viewer';
+  viewer.setAttribute('aria-label','Documento '+(row.number||''));
+  viewer.innerHTML=`<div class="document-viewer-toolbar"><button type="button" data-back-portal>← Volver a Mi Oasis</button><strong>${esc(row.number||'Documento')}</strong><button type="button" data-print-current disabled>Imprimir / Guardar PDF</button></div><iframe title="Vista del documento" sandbox="allow-same-origin allow-modals"></iframe><p class="document-viewer-status" role="status">Preparando documento…</p>`;
+  document.body.append(viewer);
+  const frame=viewer.querySelector('iframe'),back=viewer.querySelector('[data-back-portal]'),print=viewer.querySelector('[data-print-current]'),status=viewer.querySelector('[role=status]');
+  const close=()=>{viewer.close();viewer.remove();previousFocus?.focus?.();};
+  back.onclick=close;viewer.addEventListener('cancel',e=>{e.preventDefault();close();});
+  viewer.showModal();back.focus();
+  frame.onload=()=>{print.disabled=false;status.textContent='';};
+  print.onclick=()=>{try{frame.contentWindow.focus();frame.contentWindow.print();}catch(_){status.textContent='No se pudo abrir la impresión. Puedes volver a Mi Oasis e intentar de nuevo.';}};
+  frame.srcdoc=`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(row.number||'Documento')}</title><link rel="stylesheet" href="${esc(css)}"><style>
     @page{size:letter;margin:.38in}
     html,body{margin:0!important;padding:0!important;background:white!important;display:block!important;color:#172033;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .doc-page,.portal-pdf{box-sizing:border-box!important;width:100%!important;max-width:740px!important;min-height:0!important;height:auto!important;margin:20px auto!important;padding:16px!important;box-shadow:none!important;transform:none!important;zoom:1!important}
@@ -35,8 +46,7 @@ function printPortalDocument(key){
     .doc-foot,.clean-doc-footer{position:static!important;margin-top:24px!important}.pdf-business img{max-width:125px;max-height:60px;object-fit:contain}
     .print-controls{position:sticky;bottom:0;padding:16px;text-align:center;background:rgba(255,255,255,.96);border-top:1px solid #dbe3ef;box-shadow:0 -8px 30px #0f172a12}.print-controls button{padding:14px 24px;font-size:16px;border:0;border-radius:12px;background:#172d50;color:white;cursor:pointer}
     @media print{.print-controls{display:none!important}.doc-page,.portal-pdf{max-width:none!important;margin:0!important;padding:0!important}.pdf-head{display:flex!important}.pdf-meta{display:grid!important;grid-template-columns:1fr 180px!important}.pdf-totals{width:310px!important;margin-left:auto!important}.pdf-business{text-align:right!important}.pdf-business img{margin-left:auto!important}}
-    </style></head><body>${html}<div class="print-controls"><button onclick="window.print()">Imprimir / Guardar PDF</button></div></body></html>`);
-  w.document.close();
+    </style></head><body>${html}</body></html>`;
 }
 
 function render(){
@@ -47,7 +57,7 @@ function render(){
     if(!row) throw new Error('Documento no disponible.');
     document.body.classList.add('shared-portal');
     const label=type==='invoice'?'Factura':'Cotización';
-    $('portalApp').innerHTML=`<header class="client-brand"><div class="client-brand-inner">${b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name||'Logo')}">`:''}<div><strong>${esc(b.name||'Portal del cliente')}</strong><span>Atención al cliente · Documentos</span></div><span class="client-badge">Portal del cliente</span></div></header><main class="client-document-shell"><section class="client-document-hero"><span class="client-eyebrow">SU DOCUMENTO ESTÁ LISTO</span><h1>Hola, ${esc(c.name||'bienvenido')}.</h1><p>Su ${label.toLowerCase()} está disponible. Ábrala para imprimirla o guardarla como PDF.</p><div class="client-document-details"><div><span>Documento</span><strong>${esc(row.number||label)}</strong></div><div><span>Total</span><strong>${money(row.total)}</strong></div><div><span>Estado</span><strong>${esc(row.status||'Emitida')}</strong></div></div></section><section class="client-preview-card"><div class="client-preview-title"><div><span class="client-eyebrow">VISTA PREVIA</span><h2>${label} ${esc(row.number||'')}</h2></div><span class="client-paper-label">PDF</span></div><button type="button" class="client-thumbnail-button" aria-label="Abrir ${label.toLowerCase()} ${esc(row.number||'')}"><span class="client-thumbnail-stage"><iframe title="Vista pequeña de ${label.toLowerCase()}" tabindex="-1" sandbox="allow-same-origin"></iframe></span><span class="client-thumbnail-caption">Abrir ${label.toLowerCase()} ↗</span></button><p class="client-preview-help">Al abrir el documento, encontrará «Imprimir / Guardar PDF» en la parte inferior.</p><button type="button" class="client-open-document">Abrir ${label.toLowerCase()}</button></section><footer class="client-document-footer">${esc(b.name||'')}<br>${esc([b.phone,b.email].filter(Boolean).join(' · '))}</footer></main>`;
+    $('portalApp').innerHTML=`<header class="client-brand"><div class="client-brand-inner">${b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name||'Logo')}">`:''}<div><strong>${esc(b.name||'Portal del cliente')}</strong><span>Atención al cliente · Documentos</span></div><span class="client-badge">Portal del cliente</span></div></header><main class="client-document-shell"><section class="client-document-hero"><span class="client-eyebrow">SU DOCUMENTO ESTÁ LISTO</span><h1>Hola, ${esc(c.name||'bienvenido')}.</h1><p>Su ${label.toLowerCase()} está disponible. Ábrala para imprimirla o guardarla como PDF.</p><div class="client-document-details"><div><span>Documento</span><strong>${esc(row.number||label)}</strong></div><div><span>Total</span><strong>${money(row.total)}</strong></div><div><span>Estado</span><strong>${esc(row.status||'Emitida')}</strong></div></div></section><section class="client-preview-card"><div class="client-preview-title"><div><span class="client-eyebrow">VISTA PREVIA</span><h2>${label} ${esc(row.number||'')}</h2></div><span class="client-paper-label">PDF</span></div><button type="button" class="client-thumbnail-button" aria-label="Abrir ${label.toLowerCase()} ${esc(row.number||'')}"><span class="client-thumbnail-stage"><iframe title="Vista pequeña de ${label.toLowerCase()}" tabindex="-1" sandbox="allow-same-origin"></iframe></span><span class="client-thumbnail-caption">Abrir ${label.toLowerCase()} ↗</span></button><p class="client-preview-help">Al abrir el documento, podrá imprimirlo, guardarlo o volver a Mi Oasis con los botones de arriba.</p><button type="button" class="client-open-document">Abrir ${label.toLowerCase()}</button></section><footer class="client-document-footer">${esc(b.name||'')}<br>${esc([b.phone,b.email].filter(Boolean).join(' · '))}</footer></main>`;
     if(type==='quote'){const area=document.createElement('section');area.className='client-preview-card';area.innerHTML=decisionButton(id);document.querySelector('.client-preview-card').after(area);bindDecisionButtons();}
     const open=()=>printPortalDocument(type+':'+id);
     document.querySelector('.client-thumbnail-button').onclick=open;
