@@ -1,4 +1,4 @@
-import { mountClientAccount } from './portal-account.js';
+import { mountClientAccount } from './portal-account.js?v=119-onboarding';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getFirestore,doc,getDoc,onSnapshot,writeBatch,serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
@@ -162,33 +162,43 @@ async function loadQuoteResponses(portal,token){
   if(data===portal&&accessToken===token)render();
 }
 async function openPortal(token){
-  $('loginMsg').textContent='Verificando acceso…';
   if(stopPortal)stopPortal();
-  data=null;
-  accessToken=token;
-  stopPortal=onSnapshot(doc(db,'clientPortals',token),snap=>{
-    if(accessToken!==token)return;
-    if(!snap.exists()||snap.data().enabled===false){
+  data=null;accessToken=token;
+  $('loginMsg').textContent='Abriendo tu información…';
+  return new Promise((resolve,reject)=>{
+    let settled=false,unsubscribe=()=>{};
+    const finish=error=>{if(settled)return;settled=true;clearTimeout(timer);error?reject(error):resolve();};
+    const fail=(message,error)=>{
+      if(accessToken!==token)return finish(error);
       data=null;$('portalApp').classList.add('hidden');$('portalLogin').classList.remove('hidden');
-      $('loginMsg').textContent='Código inválido o portal desactivado.';return;
-    }
-    data=snap.data();
-    (data.quotes||[]).forEach(q=>q.responseUnavailable=true);
-    if(!data.sharedDocument||data.client?.id){try{localStorage.setItem('nexusPortalAccess',token);}catch(_){}}
-    $('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');
-    render();void loadQuoteResponses(data,token);
-  },error=>{
-    if(data&&error.code!=='permission-denied'){$('lastUpdate').textContent='No se pudo actualizar. Verifique su conexión.';return;}
-    data=null;
-    $('portalApp').classList.add('hidden');$('portalLogin').classList.remove('hidden');
-    $('loginMsg').textContent='Entre con su email si ya vinculó este expediente. Si no, comuníquese con Oasis.';
-    console.warn('Portal:',error.code);
+      $('loginMsg').textContent=message;finish(error);
+    };
+    const timer=setTimeout(()=>{
+      unsubscribe();
+      fail('La conexión está tardando. Comprueba tu internet y vuelve a intentar.',Object.assign(new Error('La conexión está tardando. Vuelve a intentar.'),{code:'portal/timeout'}));
+    },12000);
+    unsubscribe=onSnapshot(doc(db,'clientPortals',token),snap=>{
+      if(accessToken!==token)return;
+      if(!snap.exists()||snap.data().enabled===false){
+        fail('Este acceso ya no está disponible. Solicita una invitación nueva al negocio.',new Error('Invitación no disponible.'));return;
+      }
+      data=snap.data();
+      (data.quotes||[]).forEach(q=>q.responseUnavailable=true);
+      if(!data.sharedDocument||data.client?.id){try{localStorage.setItem('nexusPortalAccess',token);}catch(_){}}
+      $('loginMsg').textContent='';
+      $('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');
+      render();finish();void loadQuoteResponses(data,token);
+    },error=>{
+      if(data&&error.code!=='permission-denied'){$('lastUpdate').textContent='No se pudo actualizar. Verifica tu conexión.';return;}
+      fail('Entra con tu correo para abrir tu información. Si el problema continúa, contacta al negocio.',error);
+    });
+    stopPortal=()=>{unsubscribe();finish(Object.assign(new Error('Acceso reemplazado.'),{code:'portal/canceled'}));};
   });
 }
-$('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)openPortal(token)};
+$('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)void openPortal(token).catch(()=>{});};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;renderTab()});
 $('exitBtn').onclick=async()=>{if(stopPortal)stopPortal();localStorage.removeItem('nexusPortalAccess');await window.portalSignOut?.();location.href='./'};
-const params=new URLSearchParams(location.search);const initial=params.get('access')||params.get('token')||localStorage.getItem('nexusPortalAccess')||'';if(initial){$('accessCode').value=initial;openPortal(initial)}
+const params=new URLSearchParams(location.search);let remembered='';try{remembered=localStorage.getItem('nexusPortalAccess')||'';}catch(_){}const initial=params.get('access')||params.get('token')||remembered;if(initial){$('accessCode').value=initial;if(params.has('document'))void openPortal(initial).catch(()=>{});}
 
 
 // PWA Portal del Cliente

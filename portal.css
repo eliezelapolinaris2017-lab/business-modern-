@@ -15,3 +15,24 @@ body.shared-portal{min-height:100vh;background:radial-gradient(ellipse at 12% 5%
 
 /* Cuenta completa y agenda del cliente */
 .portal-featured{border:1px solid #bdd4e5;background:#eef6fc;padding:22px;border-radius:16px;margin-bottom:24px}.portal-featured>span,.agenda-card small{color:#587087;font-size:12px}.portal-featured h3{margin:10px 0}.portal-featured .portal-doc-actions{flex-wrap:wrap}.agenda-help{color:#667085;line-height:1.6;max-width:700px}.agenda-list{display:grid;gap:12px}.agenda-card{display:flex;justify-content:space-between;gap:16px;border:1px solid #e0e7ee;background:#f8fafc;border-radius:12px;padding:18px;margin-bottom:10px}.agenda-card.overdue{border-left:4px solid #b26a1a}.agenda-card h4{margin:6px 0}.agenda-card p{margin:6px 0;font-size:14px;color:#53657b}.agenda-card>div:last-child{min-width:150px}.panel details p{white-space:pre-wrap;overflow-wrap:anywhere;max-width:500px}.panel td{white-space:normal;min-width:90px}.panel td:first-child{min-width:130px}.panel button:focus-visible,.tabs button:focus-visible{outline:3px solid #418bb5;outline-offset:3px}@media(max-width:600px){header{position:static}.panel{padding:18px}.agenda-card{flex-direction:column}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.metric{padding:16px}.metric strong{font-size:23px}.welcome{padding:22px}.header-actions{flex-wrap:wrap}.portal-featured{padding:18px}}
+
+/* Guided account activation: one task per screen. */
+.login-card{width:min(480px,100%);padding:32px;align-self:center}
+.account-wizard{text-align:left}.account-wizard [hidden],.legacy-access[hidden]{display:none!important}
+.wizard-eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:800;color:#467386;margin:24px 0 14px}
+.account-wizard h1{font-size:clamp(26px,4vw,32px);line-height:1.15;letter-spacing:-.035em;margin:14px 0}
+.wizard-description{font-size:16px;line-height:1.65;color:#586576;margin:0 0 24px}
+.wizard-progress{display:flex;gap:6px;margin:18px 0 9px}.wizard-progress span{height:5px;flex:1;border-radius:6px;background:#e9eef2}.wizard-progress .done{background:#187d89}
+.wizard-step{font-size:12px;font-weight:700;color:#607282;margin:0}
+.account-wizard label{display:block;font-size:14px;font-weight:650;color:#263d4a;margin:18px 0 0}
+.account-wizard input{display:block;margin:8px 0 0;padding:15px;font-size:16px;min-height:50px;border-radius:12px;background:#fcfdfe}
+.account-wizard input:focus{outline:3px solid #127c8530;border-color:#127c85}
+.account-wizard .wizard-primary{margin-top:22px;min-height:52px;background:#145b67;border-radius:12px}
+.account-wizard .wizard-link{margin-top:12px;background:transparent;color:#236778;font-size:14px;padding:10px 4px;text-decoration:underline;text-underline-offset:4px}
+.account-wizard button:disabled{opacity:.6;cursor:wait}
+.wizard-hint{font-size:12px;line-height:1.6;color:#6b7785;margin:10px 0}
+.wizard-destination{padding:16px;background:#edf7f7;color:#205461;border:1px solid #d3e9e9;border-radius:12px;overflow-wrap:anywhere;font-weight:650}
+.wizard-status{font-size:14px;line-height:1.6;color:#28606c;min-height:0;margin:16px 0 0}.wizard-status:empty{display:none}.wizard-status.is-error{color:#a33120;background:#fff3f0;padding:12px;border-radius:10px}
+.legacy-access{border-top:1px solid #e5ebef;text-align:left;margin-top:24px;padding-top:20px;color:#627183;font-size:13px}.legacy-access summary{cursor:pointer}.legacy-access p{line-height:1.6}.legacy-access button{background:#e7edf1;color:#334d5b}.legacy-access #loginMsg{font-size:13px;color:#435967;line-height:1.6}
+#phoneChallenge{margin-top:16px;max-width:100%;overflow-x:auto}
+@media(max-width:520px){.portal-login{padding:16px;align-items:start}.login-card{padding:26px 22px;margin:10px 0;border-radius:20px}.brand-mark{width:58px;height:58px}.account-wizard h1{font-size:28px}}

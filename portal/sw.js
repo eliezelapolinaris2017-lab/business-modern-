@@ -1,5 +1,5 @@
-const CACHE='nexus-client-portal-v118';
-const CORE=['./','./manifest.webmanifest','../portal.css?v=117','../portal.js?v=118-account','../portal-account.js','../firebase-config.js','../assets/logo.png'];
+const CACHE='nexus-client-portal-v119';
+const CORE=['./','./manifest.webmanifest','../portal.css?v=119-onboarding','../portal.js?v=119-onboarding','../portal-account.js?v=119-onboarding','../firebase-config.js','../assets/logo.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE).catch(()=>{})));
   self.skipWaiting();
