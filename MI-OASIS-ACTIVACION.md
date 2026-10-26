@@ -1,8 +1,8 @@
 # Mi Oasis: activación de cuentas
 
-Cambio preparado para el portal existente de Nexus. Conserva el negocio y logo configurados en cada expediente; no impone Oasis a otros negocios de la suite.
+Cambio para el portal existente de Nexus. Email/Password, Phone, dominio y regiones SMS y publicación de reglas confirmados por el usuario el 26 de octubre de 2026. Conserva el negocio y logo configurados en cada expediente; no impone Oasis a otros negocios de la suite.
 
-## Activación pendiente
+## Procedimiento de activación y validación
 
 1. En Firebase Authentication habilitar Email/Password y Phone. Configurar SMS, política de regiones para Puerto Rico/EE. UU., facturación y dominios autorizados del portal. Usar teléfonos de prueba durante la validación.
 2. Publicar firestore.rules en el proyecto Firebase existente. No basta con guardar este archivo en GitHub.
@@ -23,3 +23,5 @@ La configuración PWA conserva la marca genérica de Nexus hasta disponer del ic
 ## Verificación realizada
 
 Pruebas automatizadas de aislamiento de datos, historial, agenda, documentos y rutas; comprobación de sintaxis. Las pruebas de navegador y reglas requieren el entorno indicado arriba. Esta rama no activa SMS ni publica reglas de Firebase por sí sola.
+
+Las sesiones de clientes usan una aplicación Firebase con nombre propio para no cambiar la sesión administrativa de Nexus. El botón Mi cuenta permite activar el registro desde un expediente abierto por enlace.

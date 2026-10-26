@@ -2,7 +2,7 @@ import { mountClientAccount } from './portal-account.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getFirestore,doc,getDoc,onSnapshot,writeBatch,serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
-const firebaseApp=initializeApp(firebaseConfig);
+const firebaseApp=initializeApp(firebaseConfig,'mi-oasis-client');
 const db=getFirestore(firebaseApp);
 window.addEventListener('DOMContentLoaded',()=>mountClientAccount({app:firebaseApp,db,openPortal}));
 const $=id=>document.getElementById(id);
