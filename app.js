@@ -1,4 +1,4 @@
-import { buildClientPortalPayload } from './client-portal-data.js?v=117';
+import { buildClientPortalPayload } from './client-portal-data.js?v=118';
 import {createEmployeeCommand} from './employee-admin.js?v=2';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { firebaseConfig } from "./firebase-config.js";
@@ -3308,7 +3308,7 @@ function portalServiceData(s){
   return {id:s.id,date:s.date||'',title:serviceTitle(s),status:s.status||'Pendiente',assetName:s.assetName||'',amount:Number(serviceAmount(s)||0),scheduledTime:s.scheduledTime||'',location:s.workAddress||'',completedAt:s.completion?.date||'',report:s.completion?.report||''};
 }
 function portalAssetData(a){
-  return {id:a.id,name:assetName(a),brand:a.brand||'',model:a.model||'',serial:a.serial||'',location:a.location||'',status:assetStatus(a),purchaseDate:a.purchaseDate||'',warrantyExpiration:a.warrantyExpirationDate||a.warrantyExpiration||a.expirationDate||'',nextMaintenance:a.nextMaintenanceDate||a.nextMaintenance||'',notes:a.notes||a.note||''};
+  return {id:a.id,name:assetName(a),brand:a.brand||'',model:a.model||'',serial:a.serial||'',location:a.location||'',status:assetStatus(a),purchaseDate:a.purchaseDate||'',warranty:a.warranty||'',warrantyExpiration:a.warrantyExpirationDate||a.warrantyExpiration||a.expirationDate||'',nextMaintenance:a.nextMaintenanceDate||a.nextMaintenance||'',notes:a.notes||a.note||''};
 }
 function portalMaintenanceData(f){
   const a=state.assets.find(x=>x.id===f.assetId)||{};

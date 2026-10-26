@@ -1,3 +1,4 @@
+export function normalizePortalPhone(value){const digits=String(value||'').replace(/\D/g,'');return digits.length===10?'+1'+digits:digits.length===11&&digits[0]==='1'?'+'+digits:'';}
 // Publicar solamente campos del cliente seleccionado; nunca copiar registros internos completos.
 export function buildClientPortalPayload({state,client,ownerId,token,business,serialize={}}){
   if(!client?.id||!ownerId||!token)throw new Error('Cliente y acceso requeridos.');
@@ -13,7 +14,8 @@ export function buildClientPortalPayload({state,client,ownerId,token,business,se
   const asset=serialize.asset||(a=>({id:a.id,name:a.name||a.fields?.[0]||'Equipo',brand:a.brand||'',model:a.model||'',serial:a.serial||'',location:a.location||'',status:a.status||'',warrantyExpiration:a.warrantyExpirationDate||a.warrantyExpiration||a.expirationDate||'',nextMaintenance:a.nextMaintenanceDate||a.nextMaintenance||''}));
   const maintenance=serialize.maintenance||(f=>({id:f.id,dueDate:f.dueDate||'',title:f.title||f.type||'Mantenimiento',type:f.type||'',status:f.status||'Programado',assetId:f.assetId||'',assetName:f.assetName||(state.assets||[]).find(a=>a.id===f.assetId)?.name||''}));
   const mappedInvoices=newest(invoices.map(invoice));
-  return {schemaVersion:117,ownerId,token,enabled:true,updatedAt:new Date().toISOString(),business,
+  return {schemaVersion:118,ownerId,token,enabled:true,updatedAt:new Date().toISOString(),business,
+    identityPhone:normalizePortalPhone(client.phone),identityEmail:String(client.email||'').trim().toLowerCase(),
     client:{id:client.id,name:client.name||'',email:client.email||'',phone:client.phone||'',city:client.city||'',address:client.address||''},
     quoteExpires:Object.fromEntries(own('quotes').map(q=>[q.id,serialize.quoteExpiry?serialize.quoteExpiry(q):q.validUntil?new Date(q.validUntil+'T23:59:59-04:00'):new Date('2100-01-01T00:00:00Z')])),
     quoteRevisions:Object.fromEntries(own('quotes').map(q=>[q.id,q.updatedAt||null])),

@@ -1,7 +1,10 @@
+import { mountClientAccount } from './portal-account.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getFirestore,doc,getDoc,onSnapshot,writeBatch,serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
-const db=getFirestore(initializeApp(firebaseConfig));
+const firebaseApp=initializeApp(firebaseConfig);
+const db=getFirestore(firebaseApp);
+window.addEventListener('DOMContentLoaded',()=>mountClientAccount({app:firebaseApp,db,openPortal}));
 const $=id=>document.getElementById(id);
 let data=null,active='overview',accessToken='',stopPortal=null;
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -161,6 +164,7 @@ async function loadQuoteResponses(portal,token){
 async function openPortal(token){
   $('loginMsg').textContent='Verificando acceso…';
   if(stopPortal)stopPortal();
+  data=null;
   accessToken=token;
   stopPortal=onSnapshot(doc(db,'clientPortals',token),snap=>{
     if(accessToken!==token)return;
@@ -174,14 +178,16 @@ async function openPortal(token){
     $('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');
     render();void loadQuoteResponses(data,token);
   },error=>{
-    if(data){$('lastUpdate').textContent='No se pudo actualizar. Verifique su conexión.';return;}
-    $('loginMsg').textContent='No se pudo verificar el acceso. Comuníquese con el negocio.';
+    if(data&&error.code!=='permission-denied'){$('lastUpdate').textContent='No se pudo actualizar. Verifique su conexión.';return;}
+    data=null;
+    $('portalApp').classList.add('hidden');$('portalLogin').classList.remove('hidden');
+    $('loginMsg').textContent='Entre con su email si ya vinculó este expediente. Si no, comuníquese con Oasis.';
     console.warn('Portal:',error.code);
   });
 }
 $('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)openPortal(token)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;renderTab()});
-$('exitBtn').onclick=()=>{if(stopPortal)stopPortal();localStorage.removeItem('nexusPortalAccess');location.href='./'};
+$('exitBtn').onclick=async()=>{if(stopPortal)stopPortal();localStorage.removeItem('nexusPortalAccess');await window.portalSignOut?.();location.href='./'};
 const params=new URLSearchParams(location.search);const initial=params.get('access')||params.get('token')||localStorage.getItem('nexusPortalAccess')||'';if(initial){$('accessCode').value=initial;openPortal(initial)}
 
 
