@@ -13,6 +13,9 @@
   <link rel="apple-touch-icon" href="assets/logo.png" />
   <link rel="stylesheet" href="mobile.css?v=116" />
   <link rel="stylesheet" href="mobile-field.css?v=116" />
+<script>
+(()=>{const incoming=new URL(location.href);if(incoming.searchParams.has('access')||incoming.searchParams.has('token')){const portal=new URL('./portal/',incoming);portal.search=incoming.search;portal.hash=incoming.hash;location.replace(portal);}})();
+</script>
 </head>
 <body>
   <section id="mobileAuth" class="mobile-auth">
@@ -217,7 +220,7 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="mobile.js?v=117"></script>
+  <script type="module" src="mobile.js?v=118"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=116').catch(()=>{}));

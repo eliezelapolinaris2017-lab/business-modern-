@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v117';
+const APP_VERSION = 'v118';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
@@ -863,7 +863,7 @@ async function shareCurrentDoc(){
     const file = await buildInvoicePdfFile(preview, filename);
     if(!file || file.size < 10000) throw new Error('PDF vacío o inválido.');
     if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
-      await navigator.share({ title:'Factura', text:'Factura adjunta en PDF. Consulte su historial y próximos servicios: '+portalLink+'&document='+encodeURIComponent('invoice:'+inv.id), files:[file] });
+      await navigator.share({ title:'Factura', text:'Vista previa de factura adjunta en PDF.', files:[file] });
       return;
     }
     await openPdfFile(file, filename);
