@@ -1,12 +1,12 @@
 {
-  "name": "Nexus Portal del Cliente",
-  "short_name": "Portal Cliente",
-  "description": "Portal privado para consultar facturas, cotizaciones, servicios, equipos y balance.",
+  "name": "Mi Oasis",
+  "short_name": "Mi Oasis",
+  "description": "Tus equipos, servicios, facturas, garantías y próximos mantenimientos de Oasis.",
   "start_url": "/portal/",
   "scope": "/portal/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "theme_color": "#145b67",
   "orientation": "any",
   "categories": [
     "business",
@@ -14,16 +14,22 @@
   ],
   "icons": [
     {
-      "src": "https://suite.nexustoolspr.com/assets/logo.png?v=3",
+      "src": "./icons/oasis-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://suite.nexustoolspr.com/assets/logo.png?v=3",
+      "src": "./icons/oasis-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/oasis-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "id": "/portal/"
