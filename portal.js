@@ -81,7 +81,8 @@ function render(){
   document.body.classList.remove('shared-portal');
   $('businessName').textContent=b.name||'Portal del Cliente';$('businessSlogan').textContent=b.slogan||'';$('clientName').textContent=c.name||'Cliente';
   $('lastUpdate').textContent='Información actualizada: '+new Date(d.updatedAt).toLocaleString('es-PR');
-  $('businessContact').innerHTML=[b.phone,b.email,b.address].filter(Boolean).map(esc).join('<br>');
+  const contact=[['Teléfono',c.phone],['Correo electrónico',c.email],['Dirección',c.address],['Municipio',c.city]].filter(([,value])=>String(value||'').trim());
+  $('clientContact').innerHTML='<strong>Mis datos</strong><br>'+ (contact.length?contact.map(([label,value])=>esc(label)+': '+esc(value)).join('<br>'):'No hay información de contacto registrada.');
   if(b.logo){$('businessLogo').src=b.logo;$('businessLogo').classList.remove('hidden');}
   $('bookBtn').classList.toggle('hidden',!b.calendarUrl);$('bookBtn').onclick=()=>window.open(b.calendarUrl,'_blank','noopener');
   let phone=String(b.whatsapp||b.phone||'').replace(/\D/g,'');if(phone.length===10)phone='1'+phone;
