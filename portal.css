@@ -58,3 +58,46 @@ dialog.portal-document-viewer[open]{display:grid;grid-template-rows:auto minmax(
 .portal-payment-options .payment-help{font-size:13px;color:#526d71;max-width:640px}
 .portal-payment-options.compact{margin:12px 0 0;padding:14px;min-width:240px;max-width:340px}.portal-payment-options.compact h4{font-size:14px}
 @media(max-width:600px){.portal-payment-buttons a{width:100%}}
+
+/* Readable client account on phones, including Safari's desktop viewport. */
+@media screen and (max-width:800px), screen and (hover:none) and (pointer:coarse) and (max-width:1100px){
+  #portalApp{font-size:18px;line-height:1.55;overflow-wrap:anywhere}
+  #portalApp header{position:static;display:flex;flex-direction:column;align-items:stretch;padding:18px 16px;gap:18px}
+  #portalApp .brand{min-width:0;gap:12px}
+  #portalApp .brand img{flex-shrink:0}
+  #portalApp .brand h1{font-size:22px;line-height:1.3}
+  #portalApp .header-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:10px}
+  #portalApp button{font-size:17px;line-height:1.35;min-height:48px;white-space:normal;padding:13px 12px}
+  #portalApp main{width:calc(100% - 24px);margin:16px auto}
+  #portalApp .welcome{display:flex;flex-direction:column;padding:22px 18px;gap:16px}
+  #portalApp .welcome>div{min-width:0;width:100%}
+  #portalApp .welcome h2{font-size:30px;line-height:1.2}
+  #portalApp .welcome p{font-size:16px}
+  #portalApp .contact{text-align:left;font-size:18px;line-height:1.65;border-top:1px solid #ffffff30;padding-top:16px}
+  #portalApp .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  #portalApp .metric{padding:16px 14px;min-width:0}
+  #portalApp .metric small{font-size:16px}
+  #portalApp .metric span{font-size:16px;line-height:1.4}
+  #portalApp .metric strong{font-size:28px}
+  #portalApp .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;gap:8px;margin:20px 0 14px}
+  #portalApp .tabs button{min-width:0}
+  #portalApp .panel{padding:16px;min-width:0;min-height:0}
+  #portalApp .panel h3{font-size:24px;line-height:1.3;overflow-wrap:anywhere}
+  #portalApp .panel h4{font-size:19px;line-height:1.4}
+  #portalApp .overview-grid{grid-template-columns:minmax(0,1fr);gap:14px}
+  #portalApp .overview-grid>div{padding:16px;min-width:0}
+  #portalApp .empty{padding:18px 14px;text-align:left}
+  #portalApp .portal-featured{padding:18px 16px}
+  #portalApp .portal-featured>span,#portalApp .agenda-card small{font-size:16px}
+  #portalApp .portal-doc-actions{flex-direction:column;gap:10px}
+  #portalApp .portal-doc-actions button{width:100%;font-size:17px;white-space:normal}
+  #portalApp .agenda-card{flex-direction:column;min-width:0}
+  #portalApp .agenda-card p{font-size:17px}
+  #portalApp .line{flex-wrap:wrap;gap:8px}
+  #portalApp .table-wrap{max-width:100%;overflow:auto}
+  #portalApp th{font-size:15px}
+  #portalApp td{font-size:17px}
+  #portalApp .chip{font-size:15px}
+  #portalApp footer{font-size:16px;padding:24px 18px}
+}
+@media screen and (max-width:360px){#portalApp .cards{grid-template-columns:minmax(0,1fr)}}
