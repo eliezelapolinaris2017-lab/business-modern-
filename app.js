@@ -4,7 +4,7 @@ import {createEmployeeCommand} from './employee-admin.js?v=2';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp, runTransaction, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -214,18 +214,19 @@ function payrollPaid(tid){return state.payroll.filter(p=>p.teamId===tid).reduce(
 function teamBalance(tid){return Math.max(0,teamCommission(tid)-teamRetention(tid)-payrollPaid(tid));}
 function supplierPaid(sid){return state.supplierPayments.filter(p=>p.supplierId===sid).reduce((a,p)=>a+Number(p.amount||0),0);}
 function supplierPurchasesTotal(sid){return state.purchases.filter(p=>p.supplierId===sid).reduce((a,p)=>a+Number(p.total||0),0);}
-function paymentAllocations(p){return Array.isArray(p?.allocations)?p.allocations:[];}
+function supplierMoney(value){return Math.round((Number(value||0)+Number.EPSILON)*100)/100;}
+function paymentAllocations(p){return !p?.purchaseId && Array.isArray(p?.allocations)?p.allocations:[];}
 function purchasePaid(pid){
   return state.supplierPayments.reduce((total,p)=>{
     const direct=p.purchaseId===pid?Number(p.amount||0):0;
     const allocated=paymentAllocations(p).filter(a=>a.purchaseId===pid).reduce((sum,a)=>sum+Number(a.amount||0),0);
-    return total+direct+allocated;
+    return supplierMoney(total+direct+allocated);
   },0);
 }
-function purchaseBalance(p){return Math.max(0,Number(p.total||0)-purchasePaid(p.id));}
+function purchaseBalance(p){return Math.max(0,supplierMoney(Number(p.total||0)-purchasePaid(p.id)));}
 function supplierPurchaseSort(a,b){return String(a.date||a.dueDate||'').localeCompare(String(b.date||b.dueDate||'')) || String(a.createdAt?.seconds||0).localeCompare(String(b.createdAt?.seconds||0));}
 function allocationsForGeneralPayment(supplierId,amount,{excludePaymentId=''}={}){
-  let remaining=Math.max(0,Number(amount||0));
+  let remaining=Math.max(0,supplierMoney(amount));
   if(!supplierId||remaining<=0)return [];
   const directPaid={};
   const allocatedPaid={};
@@ -238,20 +239,53 @@ function allocationsForGeneralPayment(supplierId,amount,{excludePaymentId=''}={}
   [...state.purchases].filter(p=>p.supplierId===supplierId && String(p.status||'')!=='Cancelada').sort(supplierPurchaseSort).forEach(p=>{
     if(remaining<=0)return;
     const already=(directPaid[p.id]||0)+(allocatedPaid[p.id]||0);
-    const balance=Math.max(0,Number(p.total||0)-already);
+    const balance=Math.max(0,supplierMoney(Number(p.total||0)-already));
     if(balance<=0)return;
     const applied=Math.min(balance,remaining);
     allocations.push({purchaseId:p.id,purchaseNumber:p.number||p.reference||p.concept||'',amount:applied});
     allocatedPaid[p.id]=(allocatedPaid[p.id]||0)+applied;
-    remaining-=applied;
+    remaining=supplierMoney(remaining-applied);
   });
   return allocations;
+}
+function supplierPaymentData(data,{excludePaymentId=''}={}){
+  const supplier=supplierBy(data.supplierId);
+  if(!supplier.id)throw new Error('Selecciona suplidor.');
+  const amount=supplierMoney(data.amount);
+  if(!Number.isFinite(amount)||amount<=0)throw new Error('Escribe un monto válido.');
+  const purchase=data.purchaseId?state.purchases.find(p=>p.id===data.purchaseId):null;
+  if(data.purchaseId&&!purchase)throw new Error('La compra seleccionada ya no existe.');
+  if(purchase&&(purchase.supplierId!==supplier.id||purchase.status==='Cancelada'))throw new Error('Selecciona una compra activa del mismo suplidor.');
+  return {...data,supplierId:supplier.id,supplierName:supplier.name,amount,purchaseId:purchase?.id||'',purchaseNumber:purchase?.number||purchase?.reference||'',allocations:purchase?[]:allocationsForGeneralPayment(supplier.id,amount,{excludePaymentId})};
+}
+let supplierPaymentSaving=false;
+async function saveSupplierPaymentForm(event){
+  event.preventDefault();
+  if(supplierPaymentSaving)return;
+  const form=event.currentTarget||event.target;
+  try{
+    const data=supplierPaymentData({supplierId:$('spSupplier').value,purchaseId:$('spPurchase')?.value||'',amount:$('spAmount').value,date:$('spDate').value,method:$('spMethod').value,note:$('spNote').value});
+    if(!canCreate('supplierPayments')||!canCreate('cashflow'))throw new Error('Límite del plan alcanzado. El pago no se ha guardado.');
+    supplierPaymentSaving=true;
+    const paymentRef=doc(colPath('supplierPayments')),cashRef=doc(colPath('cashflow'));
+    const batch=writeBatch(db),stamp=serverTimestamp();
+    const payment={...data,cashflowId:cashRef.id,createdAt:stamp,updatedAt:stamp};
+    batch.set(paymentRef,payment);
+    batch.set(cashRef,{supplierPaymentId:paymentRef.id,date:data.date,type:'Gasto',concept:`Pago suplidor ${data.supplierName}${data.purchaseId?' · '+data.purchaseNumber:''}`,amount:data.amount,createdAt:stamp,updatedAt:stamp});
+    await batch.commit();
+    if(!state.supplierPayments.some(p=>p.id===paymentRef.id))state.supplierPayments.push({...payment,id:paymentRef.id});
+    form.reset();
+    render();
+    const applied=data.purchaseId?data.amount:data.allocations.reduce((sum,a)=>supplierMoney(sum+a.amount),0);
+    alert(`Pago registrado. ${money(applied)} aplicado a compras.${!data.purchaseId&&data.amount>applied?' '+money(supplierMoney(data.amount-applied))+' sin aplicar a compras.':''}`);
+  }catch(error){alert('No se pudo registrar el pago: '+(error.message||error));}
+  finally{supplierPaymentSaving=false;}
 }
 function syncSupplierPurchaseOptions(){
   const supplierId=$('spSupplier')?.value||'';
   const selectEl=$('spPurchase');if(!selectEl)return;
   const current=selectEl.value;
-  const rows=state.purchases.filter(p=>purchaseBalance(p)>0 && (!supplierId||p.supplierId===supplierId));
+  const rows=state.purchases.filter(p=>purchaseBalance(p)>0 && p.status!=='Cancelada' && (!supplierId||p.supplierId===supplierId));
   selectEl.innerHTML='<option value="">Pago general · aplicar automáticamente a compras antiguas</option>'+rows.map(p=>`<option value="${esc(p.id)}">${esc(p.number||p.reference||p.concept||'Compra')} · ${esc(p.supplierName||'')} · ${money(purchaseBalance(p))}</option>`).join('');
   if(rows.some(p=>p.id===current))selectEl.value=current;
 }
@@ -276,7 +310,7 @@ async function reconcileGeneralSupplierPayments(){
         if(bal<=0)continue;
         const applied=Math.min(bal,remaining);
         allocations.push({purchaseId:p.id,purchaseNumber:p.number||p.reference||p.concept||'',amount:applied});
-        remainingByPurchase[p.id]=bal-applied; remaining-=applied; appliedTotal+=applied;
+        remainingByPurchase[p.id]=bal-applied; remaining=supplierMoney(remaining-applied); appliedTotal+=applied;
       }
       const before=JSON.stringify(paymentAllocations(pay));
       const after=JSON.stringify(allocations);
@@ -2223,8 +2257,14 @@ async function editRecord(c,id){
       if(data.supplierId){const s=supplierBy(data.supplierId); data.supplierName=s.name||data.supplierName||'';}
       if(data.purchaseId){const p=state.purchases.find(x=>x.id===data.purchaseId)||{}; data.purchaseNumber=p.number||p.reference||'';}
       if(data.invoiceId){const inv=state.invoices.find(x=>x.id===data.invoiceId)||{}; data.invoiceNumber=inv.number||'';}
+      if(c==='supplierPayments')Object.assign(data,supplierPaymentData({...original,...data},{excludePaymentId:id}));
       data.updatedAt=serverTimestamp();
-      await updateDoc(docPath(c,id),data);
+      if(c==='supplierPayments'&&original.cashflowId){
+        const batch=writeBatch(db);
+        batch.update(docPath(c,id),data);
+        batch.update(docPath('cashflow',original.cashflowId),{date:data.date,amount:data.amount,concept:`Pago suplidor ${data.supplierName}${data.purchaseId?' · '+data.purchaseNumber:''}`,updatedAt:serverTimestamp()});
+        await batch.commit();
+      }else await updateDoc(docPath(c,id),data);
       closeEditModal();
     }catch(err){alert(err.message||err);}
   };
@@ -2233,24 +2273,28 @@ async function editRecord(c,id){
 async function createInvoice(serviceId){
   const s=state.services.find(x=>x.id===serviceId); if(!s)return;
   const existing=serviceInvoice(s);
-  if(existing){previewInvoice(existing.id);return;}
+  if(existing){collectInvoice(existing.id);return;}
   if(s.status!=='Completado')return alert('Completa el servicio antes de facturarlo.');
   if(!canCreate('invoices')){alert('Límite de facturas alcanzado.');show('plans');return;}
   try{
     const invoiceId='service-'+s.id;
-    await runTransaction(db,async tx=>{
+    const invoice=await runTransaction(db,async tx=>{
       const sr=docPath('services',s.id),ir=docPath('invoices',invoiceId);
       const [serviceSnap,invoiceSnap]=await Promise.all([tx.get(sr),tx.get(ir)]);
-      if(invoiceSnap.exists())return;
+      if(invoiceSnap.exists())return {...invoiceSnap.data(),id:invoiceId};
       if(!serviceSnap.exists())throw new Error('El servicio ya no existe.');
       const fresh={...serviceSnap.data(),id:s.id};
       if(fresh.invoiceId)throw new Error('Este servicio ya tiene factura. Recarga el listado.');
       if(fresh.status!=='Completado')throw new Error('Completa el servicio antes de facturarlo.');
       const totals=invoiceTotalsFromService(fresh);
-      tx.set(ir,{number:'INV-'+s.id.toUpperCase(),date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items:fresh.items?.length?fresh.items:[{description:serviceTitle(fresh),qty:1,price:serviceSubtotal(fresh)}],fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+      const payload={number:'INV-'+s.id.toUpperCase(),date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items:fresh.items?.length?fresh.items:[{description:serviceTitle(fresh),qty:1,price:serviceSubtotal(fresh)}],fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
+      tx.set(ir,payload);
       tx.update(sr,{status:'Facturado',invoiceId,invoicedAt:serverTimestamp(),updatedAt:serverTimestamp()});
+      return {...payload,id:invoiceId};
     });
-    show('billing');
+    // Make the committed invoice selectable before the realtime listener arrives.
+    if(!state.invoices.some(inv=>inv.id===invoice.id))state.invoices.push(invoice);
+    collectInvoice(invoice.id);
   }catch(e){alert('No se pudo facturar: '+e.message);}
 }
 function docHeader(title){const p=profile(),logo=p.logoPdf||p.logoDashboard;return `<div class="doc-page"><div class="doc-body"><div class="doc-head">${logo?`<img class="doc-logo" src="${logo}">`:''}<div class="doc-title">${esc(p.businessName||'Empresa')}</div><div>${esc(p.address||'')}</div><div>${esc(p.phone||'')} ${p.email?' · '+esc(p.email):''} ${p.web?' · '+esc(p.web):''}</div><div>${p.merchant?'Registro: '+esc(p.merchant):''}</div></div><h2 style="text-align:center">${esc(title)}</h2>`;}
@@ -2564,18 +2608,7 @@ function bindForms(){
   $('supplierForm').onsubmit=e=>{e.preventDefault();add('suppliers',{name:$('supName').value,phone:$('supPhone').value,whatsapp:$('supWhatsapp')?.value||'',email:$('supEmail').value,contact:$('supContact')?.value||'',category:$('supCategory')?.value||'',creditLimit:Number($('supCredit')?.value||0),openingBalance:Number($('supOpening').value||0),fields:industry().supplierFields.map((_,n)=>$('supF'+n)?.value||'')});e.target.reset();};
   $('supplierPaymentForm').onclick=e=>{if(e.target?.id==='reconcileSupplierPayments')reconcileGeneralSupplierPayments();};
   $('supplierPaymentForm').onchange=e=>{if(e.target?.id==='spSupplier')syncSupplierPurchaseOptions();};
-  $('supplierPaymentForm').onsubmit=async e=>{
-    e.preventDefault();
-    const s=supplierBy($('spSupplier').value);if(!s.id)return alert('Selecciona suplidor.');
-    const pu=state.purchases.find(x=>x.id===($('spPurchase')?.value||''))||{};
-    if(pu.id&&pu.supplierId!==s.id)return alert('La compra seleccionada pertenece a otro suplidor.');
-    const amount=Number($('spAmount').value||0);if(!(amount>0))return alert('Escribe un monto válido.');
-    const allocations=pu.id?[]:allocationsForGeneralPayment(s.id,amount);
-    await add('supplierPayments',{supplierId:s.id,supplierName:s.name,purchaseId:pu.id||'',purchaseNumber:pu.number||pu.reference||'',allocations,date:$('spDate').value,method:$('spMethod').value,amount,note:$('spNote').value});
-    await add('cashflow',{date:$('spDate').value,type:'Gasto',concept:`Pago suplidor ${s.name}${pu.id?' · '+(pu.number||pu.concept):''}`,amount});
-    e.target.reset();
-    if(!pu.id&&allocations.length){alert(`Pago registrado. ${money(allocations.reduce((a,x)=>a+Number(x.amount||0),0))} aplicado automáticamente a ${allocations.length} compra(s) pendiente(s).`);}
-  };
+  $('supplierPaymentForm').onsubmit=saveSupplierPaymentForm;
   $('payrollForm').onsubmit=async e=>{e.preventDefault();const t=teamBy($('prTeam').value);if(!t.id)return alert('Selecciona empleado/equipo.');const gross=Number($('prGross').value||0),bonus=Number($('prBonus')?.value||0),retention=Number($('prRetention')?.value||0),ded=Number($('prDeductions').value||0),adv=Number($('prAdvance')?.value||0),retType=$('prRetentionType')?.value||'Hacienda',retDest=$('prRetentionDest')?.value||'Departamento de Hacienda',retDue=$('prRetentionDue')?.value||plusDays(15),net=Math.max(0,gross+bonus-retention-ded-adv);const payrollRef=await add('payroll',{teamId:t.id,teamName:t.name,date:$('prDate').value,period:$('prPeriod').value,hours:Number($('prHours')?.value||0),overtime:Number($('prOvertime')?.value||0),gross,bonus,retention,retentionType:retType,retentionDestination:retDest,retentionDueDate:retDue,advance:adv,deductions:ded,totalDeductions:retention+ded+adv,net,method:$('prMethod').value,note:$('prNote').value});const payrollId=payrollRef?.id||'';if(retention>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:retType,destination:retDest,amount:retention,status:'Pendiente',dueDate:retDue,note:$('prNote').value});}if(adv>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:'Adelanto al empleado',destination:t.name,amount:adv,status:'Aplicada',dueDate:$('prDate').value,paidAt:$('prDate').value,note:'Adelanto descontado en nómina'});}if(ded>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:'Descuento interno',destination:'Empresa',amount:ded,status:'Aplicada',dueDate:$('prDate').value,paidAt:$('prDate').value,note:'Descuento aplicado en nómina'});}await add('cashflow',{date:$('prDate').value,type:'Gasto',concept:`Nómina ${t.name}`,amount:net,note:`Bruto ${money(gross)} · Bonos ${money(bonus)} · Retenciones ${money(retention)} → ${retDest} · Adelantos ${money(adv)} · Otros descuentos ${money(ded)} · Neto ${money(net)}`});e.target.reset();};
   $('purchaseForm').onsubmit=e=>{e.preventDefault();const s=supplierBy($('puSupplier').value);if(!s.id)return alert('Selecciona suplidor.');const subtotal=Number($('puSubtotal').value||0),tax=Number($('puTax').value||0),total=subtotal+tax;add('purchases',{supplierId:s.id,supplierName:s.name,date:$('puDate').value,dueDate:$('puDue').value,concept:$('puConcept').value,reference:$('puRef').value,number:$('puRef').value||('PO-'+String(Date.now()).slice(-6)),subtotal,tax,total,status:$('puStatus').value,note:$('puNote').value});e.target.reset();};
   $('paymentForm').onsubmit=async e=>{e.preventDefault();const inv=state.invoices.find(x=>x.id===$('pInvoice').value);if(!inv)return alert('Selecciona factura.');if(invoiceStatus(inv)==='Cancelada')return alert('No se puede cobrar una factura cancelada.');const amount=Number($('pAmount').value||0);if(amount<=0)return alert('Monto inválido.');const bal=invoiceBalance(inv);if(amount>bal+0.01 && !confirm('El cobro excede el balance. ¿Registrar de todos modos?')) return;const selectedMethod=$('pMethod').value;await add('payments',{invoiceId:inv.id,invoiceNumber:inv.number,date:$('pDate').value,method:selectedMethod,amount,note:$('pNote').value});await add('cashflow',{date:$('pDate').value,type:'Ingreso',concept:`Cobro ${inv.number}`,amount});const newBal=Math.max(0,bal-amount);await updateDoc(docPath('invoices',inv.id),{status:newBal<=0?'Pagada':amount>0?'Parcial':invoiceStatus(inv),paymentMethod:selectedMethod,updatedAt:serverTimestamp()});e.target.reset();};
