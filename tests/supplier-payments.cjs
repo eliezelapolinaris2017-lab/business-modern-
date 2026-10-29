@@ -1,0 +1,24 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'utf8');
+const block=(a,b)=>source.slice(source.indexOf(a),source.indexOf(b,source.indexOf(a)));
+const state={suppliers:[{id:'s1',name:'Suplidor A'},{id:'s2',name:'Suplidor B'}],purchases:[{id:'a',supplierId:'s1',number:'A',date:'2026-01-01',total:0.3},{id:'b',supplierId:'s1',number:'B',date:'2026-02-01',total:100},{id:'c',supplierId:'s2',total:50}],supplierPayments:[]};
+const fields={spSupplier:{value:'s1'},spPurchase:{value:'b'},spAmount:{value:'40'},spDate:{value:'2026-10-29'},spMethod:{value:'Efectivo'},spNote:{value:'Prueba'}};
+const alerts=[],saved=[];let limit=true,fail=false,resets=0,serial=0,commits=0;
+const context={state,db:{},supplierBy:id=>state.suppliers.find(s=>s.id===id)||{},$:id=>fields[id],canCreate:()=>limit,colPath:c=>c,doc:c=>({id:'id'+(++serial),collection:c}),serverTimestamp:()=>1,money:n=>'$'+n,render:()=>{},alert:m=>alerts.push(m),writeBatch:()=>{const pending=[];return {set:(ref,data)=>pending.push({ref,data}),commit:async()=>{commits++;if(fail)throw Error('offline');saved.push(...pending);}}}};
+vm.createContext(context);vm.runInContext(block('function supplierMoney(', 'function syncSupplierPurchaseOptions('),context);
+const event={preventDefault(){},currentTarget:{reset(){resets++;}}};
+(async()=>{
+ state.supplierPayments=[{id:'p1',supplierId:'s1',purchaseId:'a',amount:0.1,allocations:[{purchaseId:'b',amount:99}]},{id:'p2',supplierId:'s1',purchaseId:'a',amount:0.2}];
+ assert.equal(context.purchaseBalance(state.purchases[0]),0,'No residual cents');assert.equal(context.purchasePaid('b'),0,'Ignore stale allocations on direct payments');
+ state.supplierPayments=[{id:'general',supplierId:'s1',amount:50,allocations:[{purchaseId:'b',amount:50}]}];
+ let data=context.supplierPaymentData({supplierId:'s1',amount:80,purchaseId:''},{excludePaymentId:'general'});
+ assert.equal(data.allocations.reduce((s,a)=>s+a.amount,0),80);assert.equal(data.allocations[0].purchaseId,'a');
+ data=context.supplierPaymentData({supplierId:'s2',amount:20,purchaseId:''},{excludePaymentId:'general'});assert.equal(data.allocations[0].purchaseId,'c');
+ assert.throws(()=>context.supplierPaymentData({supplierId:'s1',purchaseId:'c',amount:5}),/mismo suplidor/);
+ assert.throws(()=>context.supplierPaymentData({supplierId:'s1',purchaseId:'missing',amount:5}),/no existe/);
+ for(const amount of [0,-1,Infinity,'bad'])assert.throws(()=>context.supplierPaymentData({supplierId:'s1',amount}),/monto válido/);
+ limit=false;await context.saveSupplierPaymentForm(event);assert.equal(saved.length,0);assert.equal(resets,0);
+ limit=true;fail=true;await context.saveSupplierPaymentForm(event);assert.equal(saved.length,0,'Atomic failure leaves neither record');assert.equal(resets,0,'Retain form on failure');
+ fail=false;await Promise.all([context.saveSupplierPaymentForm(event),context.saveSupplierPaymentForm(event)]);assert.equal(saved.length,2,'One payment plus one expense despite double submit');assert.equal(resets,1);assert.equal(saved[0].data.cashflowId,saved[1].ref.id);assert.equal(saved[1].data.supplierPaymentId,saved[0].ref.id);assert.equal(saved[1].data.date,'2026-10-29');assert.equal(saved[0].data.amount,40);assert.equal(context.purchaseBalance(state.purchases[1]),10);
+ assert.equal(commits,2);console.log('PASS: allocation editing, supplier validation, cents, stale allocations, atomic failure, limits, double submit, linked cashflow and balance.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
