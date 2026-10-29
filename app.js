@@ -2233,24 +2233,28 @@ async function editRecord(c,id){
 async function createInvoice(serviceId){
   const s=state.services.find(x=>x.id===serviceId); if(!s)return;
   const existing=serviceInvoice(s);
-  if(existing){previewInvoice(existing.id);return;}
+  if(existing){collectInvoice(existing.id);return;}
   if(s.status!=='Completado')return alert('Completa el servicio antes de facturarlo.');
   if(!canCreate('invoices')){alert('Límite de facturas alcanzado.');show('plans');return;}
   try{
     const invoiceId='service-'+s.id;
-    await runTransaction(db,async tx=>{
+    const invoice=await runTransaction(db,async tx=>{
       const sr=docPath('services',s.id),ir=docPath('invoices',invoiceId);
       const [serviceSnap,invoiceSnap]=await Promise.all([tx.get(sr),tx.get(ir)]);
-      if(invoiceSnap.exists())return;
+      if(invoiceSnap.exists())return {...invoiceSnap.data(),id:invoiceId};
       if(!serviceSnap.exists())throw new Error('El servicio ya no existe.');
       const fresh={...serviceSnap.data(),id:s.id};
       if(fresh.invoiceId)throw new Error('Este servicio ya tiene factura. Recarga el listado.');
       if(fresh.status!=='Completado')throw new Error('Completa el servicio antes de facturarlo.');
       const totals=invoiceTotalsFromService(fresh);
-      tx.set(ir,{number:'INV-'+s.id.toUpperCase(),date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items:fresh.items?.length?fresh.items:[{description:serviceTitle(fresh),qty:1,price:serviceSubtotal(fresh)}],fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+      const payload={number:'INV-'+s.id.toUpperCase(),date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items:fresh.items?.length?fresh.items:[{description:serviceTitle(fresh),qty:1,price:serviceSubtotal(fresh)}],fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
+      tx.set(ir,payload);
       tx.update(sr,{status:'Facturado',invoiceId,invoicedAt:serverTimestamp(),updatedAt:serverTimestamp()});
+      return {...payload,id:invoiceId};
     });
-    show('billing');
+    // Make the committed invoice selectable before the realtime listener arrives.
+    if(!state.invoices.some(inv=>inv.id===invoice.id))state.invoices.push(invoice);
+    collectInvoice(invoice.id);
   }catch(e){alert('No se pudo facturar: '+e.message);}
 }
 function docHeader(title){const p=profile(),logo=p.logoPdf||p.logoDashboard;return `<div class="doc-page"><div class="doc-body"><div class="doc-head">${logo?`<img class="doc-logo" src="${logo}">`:''}<div class="doc-title">${esc(p.businessName||'Empresa')}</div><div>${esc(p.address||'')}</div><div>${esc(p.phone||'')} ${p.email?' · '+esc(p.email):''} ${p.web?' · '+esc(p.web):''}</div><div>${p.merchant?'Registro: '+esc(p.merchant):''}</div></div><h2 style="text-align:center">${esc(title)}</h2>`;}
