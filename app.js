@@ -1376,7 +1376,7 @@ function renderBillingTable(){
 
 function renderQuotesTable(){
   const box=$('quotesTable'); if(!box) return;
-  box.innerHTML=table(['Cotización','Cliente','Válida','Total','Estado','Acción'],state.quotes.map(q=>{const t=quoteTotals(q), st=quoteStatus(q);return `<tr><td><b>${esc(q.number||'')}</b><br><span class="muted">${esc(q.title||q.serviceType||'')}</span></td><td>${esc(q.clientName||'')}</td><td>${esc(q.validUntil||'—')}</td><td>${money(t.total)}</td><td>${statusChip(st)}</td><td><div class="actions"><button data-prev-quote="${q.id}" type="button">Preview</button><button data-edit-quote="${q.id}" type="button">Editar</button>${quoteCanInvoice(q)?`<button data-invoice-quote="${q.id}" type="button">Factura</button>`:''}${quoteCanConvert(q)?`<button data-convert-quote="${q.id}" type="button">Servicio</button>`:''}<button class="danger" data-del="quotes:${q.id}" type="button">Borrar</button></div></td></tr>`;}));
+  box.innerHTML=table(['Cotización','Cliente','Válida','Total','Estado','Acción'],state.quotes.map(q=>{const t=quoteTotals(q), st=quoteStatus(q);return `<tr><td><b>${esc(q.number||'')}</b><br><span class="muted">${esc(q.title||q.serviceType||'')}</span></td><td>${esc(q.clientName||'')}</td><td>${esc(q.validUntil||'—')}</td><td>${money(t.total)}</td><td>${statusChip(st)}</td><td><div class="actions"><button type="button" data-contract-quote="${esc(q.id)}">Crear contrato de servicio</button><button data-prev-quote="${q.id}" type="button">Preview</button><button data-edit-quote="${q.id}" type="button">Editar</button>${quoteCanInvoice(q)?`<button data-invoice-quote="${q.id}" type="button">Factura</button>`:''}${quoteCanConvert(q)?`<button data-convert-quote="${q.id}" type="button">Servicio</button>`:''}<button class="danger" data-del="quotes:${q.id}" type="button">Borrar</button></div></td></tr>`;}));
   document.querySelectorAll('[data-prev-quote]').forEach(b=>b.onclick=()=>previewQuote(b.dataset.prevQuote));
   document.querySelectorAll('[data-edit-quote]').forEach(b=>b.onclick=()=>editQuoteRecord(b.dataset.editQuote));
   document.querySelectorAll('[data-convert-quote]').forEach(b=>b.onclick=()=>convertQuoteToService(b.dataset.convertQuote));
@@ -1714,9 +1714,34 @@ function contractClientOptions(){
   return state.clients.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{sensitivity:'base'}))
     .map(c=>({value:c.id,label:c.name||'Cliente'}));
 }
+function contractFromQuote(q){
+  const c=clientBy(q.clientId)||{}, totals=quoteTotals(q);
+  const items=quoteItemsFallback(q).map(i=>({...i}));
+  const scope=[q.title||q.serviceType||'',q.assetName?`Equipo: ${q.assetName}`:'',
+    ...items.map(i=>`${i.qty??1} × ${i.description||i.desc||'Servicio'} — ${money(i.price)} c/u — ${money(Number(i.qty??1)*Number(i.price||0))}`),
+    `Subtotal: ${money(totals.subtotal)} · IVU: ${money(totals.ivu)} · Total: ${money(totals.total)}`].filter(Boolean).join('\n');
+  return {sourceQuoteId:q.id,sourceQuoteNumber:q.number||'',clientId:q.clientId||'',
+    clientName:q.clientName||c.name||'',clientPhone:q.clientPhone||c.phone||'',clientEmail:q.clientEmail||c.email||'',
+    number:contractNumber(),date:today(),place:'Puerto Rico',
+    address:q.workAddress||q.address||[c.address,c.city].filter(Boolean).join(', '),
+    service:scope,amount:money(totals.total),paymentTerms:q.paymentTerms||'',
+    conditions:[q.notes,q.terms].filter(Boolean).join('\n\n'),
+    startDate:'',endDate:'',frequency:'',termination:'',items,subtotal:totals.subtotal,ivu:totals.ivu,total:totals.total,taxPercent:totals.taxPercent};
+}
+function openContractFromQuote(id){
+  const q=state.quotes.find(q=>q.id===id);if(!q)return;
+  if(!clientBy(q.clientId)?.id)return alert('El cliente de esta cotización ya no existe. Actualiza la cotización antes de crear el contrato.');
+  state.editingContractId=null;
+  state.contractQuoteDraft=contractFromQuote(q);
+  show('contracts');
+  $('contractForm')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function contractDraftFromForm(){
   const c=clientBy($('ctClient')?.value||'');
+  const source=(state.editingContractId?state.contracts.find(x=>x.id===state.editingContractId):state.contractQuoteDraft)||{};
+  const provenance=source.sourceQuoteId?Object.fromEntries(['sourceQuoteId','sourceQuoteNumber','items','subtotal','ivu','total','taxPercent'].filter(k=>source[k]!==undefined).map(k=>[k,source[k]])):{};
   return {
+    ...provenance,
     clientId:c.id||'',clientName:c.name||'',clientPhone:c.phone||'',clientEmail:c.email||'',
     number:$('ctNumber')?.value||contractNumber(),
     date:$('ctDate')?.value||today(),
@@ -1742,7 +1767,7 @@ En ${d.place||'________________'}, Puerto Rico, a ${d.date||'________________'},
 
 PRIMERO — OBJETO Y ALCANCE
 EL PROVEEDOR prestará los siguientes servicios:
-${d.service||'________________________________________________________________'}
+${d.sourceQuoteId?'Cotización de referencia: '+(d.sourceQuoteNumber||d.sourceQuoteId)+'\n':''}${d.service||'________________________________________________________________'}
 
 SEGUNDO — LUGAR DEL SERVICIO
 Los servicios se realizarán en:
@@ -1778,14 +1803,15 @@ Fecha: __________________________`;
 }
 function renderContractForm(){
   const f=$('contractForm'); if(!f)return;
-  const selected=state.editingContractId ? (state.contracts.find(c=>c.id===state.editingContractId)||{}) : {};
+  const selected=state.editingContractId ? (state.contracts.find(c=>c.id===state.editingContractId)||{}) : (state.contractQuoteDraft||{});
   f.innerHTML=
+    (selected.sourceQuoteId?`<p class="wide muted">Basado en cotización ${esc(selected.sourceQuoteNumber||selected.sourceQuoteId)}. Revisa los datos y completa la vigencia antes de guardar.</p>`:'')+
     select('Cliente','ctClient',contractClientOptions(),selected.clientId||'')+
     input('Contrato #','ctNumber','text',selected.number||contractNumber())+
     input('Fecha','ctDate','date',selected.date||today())+
     input('Lugar','ctPlace','text',selected.place||'Puerto Rico')+
     input('Dirección / lugar del servicio','ctAddress','text',selected.address||'','wide')+
-    input('Servicio o alcance','ctService','text',selected.service||'','wide')+
+    `<div class="wide"><label for="ctService">Servicio o alcance</label><textarea id="ctService" rows="6">${esc(selected.service||'')}</textarea></div>`+
     input('Fecha inicio','ctStart','date',selected.startDate||'')+
     input('Fecha terminación (si aplica)','ctEnd','date',selected.endDate||'')+
     input('Frecuencia / duración','ctFrequency','text',selected.frequency||'')+
@@ -1793,12 +1819,20 @@ function renderContractForm(){
     input('Condiciones de pago','ctPaymentTerms','text',selected.paymentTerms||'','wide')+
     `<div class="wide"><label>Condiciones del servicio</label><textarea id="ctConditions" rows="4">${esc(selected.conditions||'')}</textarea></div>`+
     `<div class="wide"><label>Cancelación / terminación</label><textarea id="ctTermination" rows="3">${esc(selected.termination||'')}</textarea></div>`+
-    `<div class="wide"><label>Texto del contrato</label><textarea id="ctBody" rows="20">${esc(selected.body||'')}</textarea><small class="muted">Puedes editar el texto antes de guardarlo.</small></div>`+
-    `<div class="wide form-actions"><button id="generateContractText" type="button">Generar texto</button><button class="primary" type="submit">${state.editingContractId?'Actualizar contrato':'Guardar contrato'}</button>${state.editingContractId?'<button id="cancelContractEdit" type="button" class="ghost">Cancelar edición</button>':''}</div>`;
+    `<div class="wide"><label>Texto del contrato</label><textarea id="ctBody" rows="20">${esc(selected.body||(selected.sourceQuoteId?buildContractText(selected):''))}</textarea><small class="muted">Puedes editar el texto antes de guardarlo.</small></div>`+
+    `<div class="wide form-actions"><button id="generateContractText" type="button">Generar texto</button><button class="primary" type="submit">${state.editingContractId?'Actualizar contrato':'Guardar contrato'}</button>${state.editingContractId||state.contractQuoteDraft?'<button id="cancelContractEdit" type="button" class="ghost">Cancelar edición</button>':''}</div>`;
+  if(state.contractQuoteDraft&&!state.editingContractId){
+    let generated=$('ctBody').value;
+    f.oninput=()=>{
+      const d=contractDraftFromForm();
+      if($('ctBody').value===generated){generated=buildContractText(d);$('ctBody').value=generated;}
+      state.contractQuoteDraft={...d,body:$('ctBody').value};
+    };
+  }else f.oninput=null;
   const clientSel=$('ctClient');
   if(clientSel)clientSel.onchange=()=>{const c=clientBy(clientSel.value);if(c.id&&!$('ctAddress').value)$('ctAddress').value=[c.address,c.city].filter(Boolean).join(', ');};
   if($('generateContractText'))$('generateContractText').onclick=()=>{$('ctBody').value=buildContractText(contractDraftFromForm());};
-  if($('cancelContractEdit'))$('cancelContractEdit').onclick=()=>{state.editingContractId=null;renderContractForm();bindContractForm();};
+  if($('cancelContractEdit'))$('cancelContractEdit').onclick=()=>{state.editingContractId=null;state.contractQuoteDraft=null;renderContractForm();bindContractForm();};
 }
 function contractPrintHtml(c){
   const p=profile();
@@ -1848,6 +1882,7 @@ function bindContractForm(){
         const ref=await add('contracts',{...payload,createdAt:serverTimestamp()});
         if(!ref)return;
       }
+      state.contractQuoteDraft=null;
       alert('Contrato guardado correctamente.');
       renderContractForm();bindContractForm();
     }catch(err){
@@ -3023,7 +3058,7 @@ function v66RenderQuotes(){
   const box=$('quotesTable'); if(!box) return;
   const rows=v66ApplyModuleFilter(state.quotes,'quotes');
   box.innerHTML=v66Toolbar('quotes','Buscar cotizaciones','Número COT, cliente, servicio, estado, fecha, monto...',state.quotes,{dates:true,status:true})+
-    table(['Fecha','Número','Cliente','Cotización','Estado','Total','Acciones'],rows.map(q=>{const totals=quoteTotals(q), st=quoteStatus(q);return `<tr><td>${esc(q.date||'')}<br><span class="muted">Válida: ${esc(q.validUntil||'')}</span></td><td><b>${esc(q.number||'')}</b></td><td>${esc(q.clientName||'')}<br><span class="muted">${esc(q.assetName||'')}</span></td><td><b>${esc(q.title||q.serviceType||'Cotización')}</b><br><span class="muted">${esc(q.serviceType||'')}</span></td><td>${statusChip(st)}${q.clientDecision?`<br><small>${esc(q.clientDecision.name)} · ${esc(q.clientDecision.at?.toDate?.().toLocaleString('es-PR')||'Respuesta del cliente')}</small><button type="button" data-decision-quote="${esc(q.id)}">Ver respuesta / firma</button>`:''}</td><td><b>${money(totals.total)}</b></td><td><div class="actions"><button data-preview-quote="${q.id}" type="button">Ver</button>${st==='Aprobada'||st==='Enviada'?`<button data-quote-invoice="${q.id}" type="button">Convertir a factura</button>`:''}${action('quotes',q.id)}</div></td></tr>`;}));
+    table(['Fecha','Número','Cliente','Cotización','Estado','Total','Acciones'],rows.map(q=>{const totals=quoteTotals(q), st=quoteStatus(q);return `<tr><td>${esc(q.date||'')}<br><span class="muted">Válida: ${esc(q.validUntil||'')}</span></td><td><b>${esc(q.number||'')}</b></td><td>${esc(q.clientName||'')}<br><span class="muted">${esc(q.assetName||'')}</span></td><td><b>${esc(q.title||q.serviceType||'Cotización')}</b><br><span class="muted">${esc(q.serviceType||'')}</span></td><td>${statusChip(st)}${q.clientDecision?`<br><small>${esc(q.clientDecision.name)} · ${esc(q.clientDecision.at?.toDate?.().toLocaleString('es-PR')||'Respuesta del cliente')}</small><button type="button" data-decision-quote="${esc(q.id)}">Ver respuesta / firma</button>`:''}</td><td><b>${money(totals.total)}</b></td><td><div class="actions"><button type="button" data-contract-quote="${esc(q.id)}">Crear contrato de servicio</button><button data-preview-quote="${q.id}" type="button">Ver</button>${st==='Aprobada'||st==='Enviada'?`<button data-quote-invoice="${q.id}" type="button">Convertir a factura</button>`:''}${action('quotes',q.id)}</div></td></tr>`;}));
   v66BindToolbar('quotes');
 }
 function v66RenderBilling(){
@@ -3470,3 +3505,9 @@ function bindEmployeeCommandButtons(root=document){
     serviceDialog('Informe y evidencias',`<p><b>${esc(workOrderNumber(s))}</b> · ${esc(s.teamName||'')}</p><p class="employee-report">${esc(s.completion?.report||s.employeeIssue?.report||'')}</p><div class="employee-evidence">${photos.map(photo=>`<img src="${esc(photo)}" alt="Evidencia del servicio">`).join('')}</div>`);
   });
 }
+
+// Open an editable draft; persistence only happens through Guardar contrato.
+document.addEventListener('click',e=>{
+  const button=e.target.closest('[data-contract-quote]');
+  if(button)openContractFromQuote(button.dataset.contractQuote);
+});

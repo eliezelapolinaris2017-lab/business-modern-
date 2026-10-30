@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const src=fs.readFileSync('app.js','utf8');
+const names=['quoteTotals','quoteItemsFallback','contractFromQuote','openContractFromQuote'];
+const code=names.map(name=>src.slice(src.indexOf('function '+name+'('),src.indexOf('\n}',src.indexOf('function '+name+'('))+2)).join('\n');
+const c={id:'c',name:'Cliente',address:'Calle 1',city:'San Juan'};
+const context={clientBy:()=>c,profile:()=>({tax:11.5}),serviceItemsTotal:items=>items.reduce((a,i)=>a+i.qty*i.price,0),money:n=>'$'+Number(n||0).toFixed(2),contractNumber:()=> 'CTR-001',today:()=> '2026-10-30',state:{quotes:[]},show:v=>context.view=v,$:()=>null,alert:()=>{throw Error('unexpected alert')}};
+vm.createContext(context);vm.runInContext(code,context);
+const q={id:'q',number:'COT-123',clientId:'c',title:'Mantenimiento',items:[{description:'Mini split',qty:2,price:60}],subtotal:120,ivu:13.8,total:133.8,notes:'Acceso coordinado',terms:'Depósito requerido',workAddress:'Local 7'};
+const before=JSON.stringify(q),d=context.contractFromQuote(q);
+assert.equal(d.total,133.8);assert.equal(d.amount,'$133.80');assert.equal(d.address,'Local 7');assert.match(d.service,/2 × Mini split/);assert.match(d.conditions,/Depósito requerido/);assert.equal(d.startDate,'');assert.equal(d.sourceQuoteId,'q');d.items[0].price=1;assert.equal(JSON.stringify(q),before);
+context.state.quotes=[q];context.openContractFromQuote('q');assert.equal(context.view,'contracts');assert.equal(context.state.contractQuoteDraft.clientId,'c');assert.equal(context.state.editingContractId,null);
+const legacy=context.contractFromQuote({id:'old',clientId:'c',title:'Servicio',subtotal:75,taxPercent:0});assert.equal(legacy.total,75);assert.match(legacy.service,/Servicio/);
+console.log('quote-contract: OK (mapping, totals, legacy quote, source immutability, editable navigation)');
