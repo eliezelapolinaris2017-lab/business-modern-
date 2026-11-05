@@ -14,7 +14,7 @@ const chip=s=>`<span class="chip">${esc(s||'—')}</span>`;
 function card(title,value,detail=''){return `<article class="metric"><small>${esc(title)}</small><strong>${esc(value)}</strong><span>${esc(detail)}</span></article>`}
 function empty(msg){return `<div class="empty">${esc(msg)}</div>`}
 function table(headers,rows){return `<div class="table-wrap"><table><thead><tr>${headers.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`}
-function actionButtons(type,id){return `<div class="portal-doc-actions"><button type="button" data-print-document="${type}:${esc(id)}">Imprimir / Guardar PDF</button>${type==='quote'?decisionButton(id):''}</div>`}
+function actionButtons(type,id){return `<div class="portal-doc-actions"><button type="button" data-print-document="${type}:${esc(id)}">Imprimir / Guardar PDF</button>${type==='quote'?decisionButton(id):type==='contract'?contractDecisionButton(id):''}</div>`}
 function bindPdfButtons(){
   bindDecisionButtons();
   document.querySelectorAll('[data-print-document]').forEach(b=>b.onclick=()=>printPortalDocument(b.dataset.printDocument));
@@ -24,7 +24,7 @@ function printPortalDocument(key){
   const row=({invoice:data.invoices,quote:data.quotes,contract:data.contracts,payment:data.payments}[type]||[]).find(x=>String(x.id)===id);
   if(!row){alert('Documento no disponible.');return;}
   const original=data.sharedDocument?.type===type&&String(data.sharedDocument.id)===id&&data.printHtml;
-  const html=(original||documentHtml(type,row))+(type==='quote'?decisionReceipt(row.clientDecision):'');
+  const html=(original||documentHtml(type,row))+(decisionReceipt(row.clientDecision));
   const css=new URL(original?'./styles.css':'./portal.css',import.meta.url).href;
   // Keep documents inside the installed app; Safari standalone has no browser Back button.
   document.querySelector('.portal-document-viewer')?.remove();
@@ -126,8 +126,8 @@ function renderTab(){
     box.innerHTML=`<h3>Historial de pagos</h3>${rows.length?table(['Fecha','Factura','Método','Pagado','Comprobante'],rows):empty('No hay pagos registrados.')}`;bindPdfButtons();return;
   }
   if(active==='contracts'){
-    const rows=(data.contracts||[]).map(x=>`<tr><td><b>${esc(x.number)}</b><br>${esc(x.title)}</td><td>${esc(x.date)}</td><td>${esc(x.startDate||'—')}</td><td>${esc(x.endDate||'—')}</td><td>${actionButtons('contract',x.id)}</td></tr>`);
-    box.innerHTML=`<h3>Contratos</h3>${rows.length?table(['Contrato','Fecha','Inicio','Terminación','Documento'],rows):empty('No hay contratos registrados.')}`;bindPdfButtons();return;
+    const rows=(data.contracts||[]).map(x=>`<tr><td><b>${esc(x.number)}</b><br>${esc(x.title)}</td><td>${esc(x.date)}</td><td>${esc(x.startDate||'—')}</td><td>${esc(x.endDate||'—')}</td><td>${chip(x.status)}</td><td>${actionButtons('contract',x.id)}</td></tr>`);
+    box.innerHTML=`<h3>Contratos</h3>${rows.length?table(['Contrato','Fecha','Inicio','Terminación','Estado','Documento'],rows):empty('No hay contratos registrados.')}`;bindPdfButtons();return;
   }
   if(active==='invoices'){
     const rows=(data.invoices||[]).map(x=>`<tr><td><b>${esc(x.number)}</b><br><small>${esc(x.serviceTitle)}</small></td><td>${esc(x.date)}</td><td>${esc(x.dueDate||'—')}</td><td>${money(x.total)}</td><td>${money(x.paid)}</td><td><b>${money(x.balance)}</b></td><td>${chip(x.status)}</td><td>${actionButtons('invoice',x.id)}${portalPaymentActions(data.business,{balance:x.balance,invoiceNumber:x.number,status:x.status,compact:true})}</td></tr>`);
@@ -160,15 +160,16 @@ function documentHtml(type,docData){
   const rows=items.length?items.map(i=>`<tr><td>${esc(i.description||'Servicio')}</td><td>${Number(i.qty||1)}</td><td>${money(i.price)}</td><td>${money(Number(i.qty||1)*Number(i.price||0))}</td></tr>`).join(''):`<tr><td>${esc(docData.serviceTitle||docData.title||'Servicio')}</td><td>1</td><td>${money(subtotal||docData.total)}</td><td>${money(subtotal||docData.total)}</td></tr>`;
   return `<div id="portalPdfDocument" class="portal-pdf"><div class="pdf-head"><div><h1>${label}</h1><div class="pdf-number"># ${esc(docData.number||'')}</div></div><div class="pdf-business">${b.logo?`<img src="${esc(b.logo)}" alt="Logo">`:''}<b>${esc(b.name||'')}</b><span>${esc(b.address||'')}</span><span>${esc(b.phone||'')} ${b.email?'· '+esc(b.email):''}</span></div></div><div class="pdf-meta"><div><small>Cliente</small><b>${esc(c.name||'')}</b><span>${esc(c.address||c.city||'')}</span><span>${esc(c.phone||'')} ${c.email?'· '+esc(c.email):''}</span></div><div><small>Fecha</small><b>${esc(docData.date||'—')}</b><small>${isInv?'Vence':'Válida hasta'}</small><b>${esc((isInv?docData.dueDate:docData.validUntil)||'—')}</b><small>Estado</small><b>${esc(docData.status||'—')}</b></div></div><table class="pdf-table"><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><div class="pdf-totals"><div><span>Subtotal</span><b>${money(subtotal)}</b></div><div><span>IVU / Impuesto</span><b>${money(tax)}</b></div><div class="grand"><span>Total</span><b>${money(docData.total)}</b></div>${isInv?`<div><span>Pagado</span><b>${money(docData.paid)}</b></div><div class="grand"><span>Balance</span><b>${money(docData.balance)}</b></div>`:''}</div>${docData.notes?`<section><h4>Notas</h4><p>${esc(docData.notes)}</p></section>`:''}${docData.terms?`<section><h4>Términos</h4><p>${esc(docData.terms)}</p></section>`:''}<footer>${esc(b.name||'')} · Documento disponible en el Portal del Cliente</footer></div>`;
 }
-async function loadQuoteResponses(portal,token){
-  await Promise.all((portal.quotes||[]).map(async q=>{
+async function loadDocumentResponses(portal,token){
+  const documents=[...(portal.quotes||[]).map(row=>[row,'responses']),...(portal.contracts||[]).filter(row=>Object.hasOwn(portal.contractRevisions||{},row.id)).map(row=>[row,'contractResponses'])];
+  await Promise.all(documents.map(async ([q,collection])=>{
     try{
-      const response=await getDoc(doc(db,'clientPortals',token,'responses',q.id));
+      const response=await getDoc(doc(db,'clientPortals',token,collection,q.id));
       if(response.exists()){q.clientDecision=response.data();q.status=q.clientDecision.status;}
       q.responseUnavailable=false;
     }catch(error){
       q.responseUnavailable=true;
-      console.warn('Respuesta de cotización no disponible:',error.code||'unknown');
+      console.warn('Respuesta del documento no disponible:',error.code||'unknown');
     }
   }));
   if(data===portal&&accessToken===token)render();
@@ -199,7 +200,8 @@ async function openPortal(token){
       if(!data.sharedDocument||data.client?.id){try{localStorage.setItem('nexusPortalAccess',token);}catch(_){}}
       $('loginMsg').textContent='';
       $('portalLogin').classList.add('hidden');$('portalApp').classList.remove('hidden');
-      render();finish();void loadQuoteResponses(data,token);
+      (data.contracts||[]).forEach(c=>c.responseUnavailable=true);
+      render();finish();void loadDocumentResponses(data,token);
     },error=>{
       if(data&&error.code!=='permission-denied'){$('lastUpdate').textContent='No se pudo actualizar. Verifica tu conexión.';return;}
       fail('Entra con tu correo para abrir tu información. Si el problema continúa, contacta al negocio.',error);
@@ -210,7 +212,7 @@ async function openPortal(token){
 $('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)void openPortal(token).catch(()=>{});};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;renderTab()});
 $('exitBtn').onclick=async()=>{if(stopPortal)stopPortal();localStorage.removeItem('nexusPortalAccess');await window.portalSignOut?.();location.href='./'};
-const params=new URLSearchParams(location.search);let remembered='';try{remembered=localStorage.getItem('nexusPortalAccess')||'';}catch(_){}const initial=params.get('access')||params.get('token')||remembered;if(initial){$('accessCode').value=initial;if(params.has('document'))void openPortal(initial).catch(()=>{});}
+const params=new URLSearchParams(location.search);if(params.get('tab')==='contracts')active='contracts';let remembered='';try{remembered=localStorage.getItem('nexusPortalAccess')||'';}catch(_){}const initial=params.get('access')||params.get('token')||remembered;if(initial){$('accessCode').value=initial;if(params.has('document')||params.get('tab')==='contracts')void openPortal(initial).catch(()=>{});}
 
 
 // PWA Portal del Cliente
@@ -246,7 +248,7 @@ if('serviceWorker' in navigator){
 
 function decisionReceipt(d){
   if(!d)return '';
-  return `<section style="break-inside:avoid;padding:20px;border-top:1px solid #ccc"><h3>${esc(d.status)}</h3><p>${esc(d.name)} · ${esc(d.at?.toDate?.().toLocaleString('es-PR')||'')}</p>${d.signature?`<img alt="Firma del cliente" src="${esc(d.signature)}" style="width:420px;max-width:100%">`:''}<p>${esc(d.reason||'')}</p></section>`;
+  return `<section style="break-inside:avoid;padding:20px;border-top:1px solid #ccc"><h3>${esc(d.status)}</h3><p>${esc(d.name)} · ${esc(d.at?.toDate?.().toLocaleString('es-PR',{timeZone:'America/Puerto_Rico'})||'')}</p>${d.signature?`<img alt="Firma del cliente" src="${esc(d.signature)}" style="width:420px;max-width:100%">`:''}<p>${esc(d.reason||'')}</p></section>`;
 }
 function decisionButton(id){
   const q=data.quotes?.find(x=>String(x.id)===String(id));if(!q)return '';
@@ -264,11 +266,29 @@ function decisionButton(id){
   if(q.responseUnavailable)return '<p>Puede consultar e imprimir su cotización. La firma y la respuesta en línea no están disponibles por el momento.</p>';
   return `<button type="button" data-respond-quote="${esc(id)}">Firmar / Responder cotización</button>`;
 }
-function bindDecisionButtons(){document.querySelectorAll('[data-respond-quote]').forEach(b=>b.onclick=()=>openDecision(b.dataset.respondQuote));}
-function openDecision(id){
-  const q=data.quotes.find(x=>String(x.id)===id);if(!q)return;
+function contractDecisionButton(id){
+  const contract=data.contracts?.find(row=>String(row.id)===String(id));
+  if(!contract)return '';
+  if(contract.clientDecision)return decisionReceipt(contract.clientDecision);
+  if(['Firmado','Rechazado','Cancelado'].includes(contract.status))return '';
+  if(!Object.hasOwn(data.contractRevisions||{},id))return '<p>Solicite al negocio un enlace actualizado para firmar este contrato.</p>';
+  if(contract.responseUnavailable)return '<p>La firma en línea no está disponible por el momento.</p>';
+  return `<button type="button" data-respond-contract="${esc(id)}">Revisar y firmar contrato</button>`;
+}
+function bindDecisionButtons(){
+  document.querySelectorAll('[data-respond-quote]').forEach(b=>b.onclick=()=>openDecision(b.dataset.respondQuote));
+  document.querySelectorAll('[data-respond-contract]').forEach(b=>b.onclick=()=>openDecision(b.dataset.respondContract,'contract'));
+}
+function openDecision(id,type='quote'){
+  const isContract=type==='contract';
+  const label=isContract?'contrato':'cotización';
+  const collection=isContract?'contracts':'quotes';
+  const responseCollection=isContract?'contractResponses':'responses';
+  const portal=data,token=accessToken;
+  const q=portal[collection].find(x=>String(x.id)===id);if(!q)return;
+  const revision=portal.contractRevisions?.[id]??null;
   const modal=document.createElement('dialog');modal.className='quote-decision';
-  modal.innerHTML=`<form><h2>Responder cotización ${esc(q.number)}</h2><p>Total: <b>${money(q.total)}</b>. Revise el documento y sus términos antes de responder.</p><label>Nombre completo<input name="signer" required maxlength="120" autocomplete="name"></label><label>Firma con el dedo o el ratón<canvas width="900" height="280" aria-label="Área para dibujar su firma"></canvas></label><button type="button" data-clear>Borrar firma</button><label><input type="checkbox" name="consent"> He leído la cotización y sus términos. Al aceptar, autorizo registrar mi firma electrónica.</label><label>Motivo del rechazo (opcional)<textarea name="reason" maxlength="1000"></textarea></label><p role="status" data-message></p><div class="decision-actions"><button type="button" data-close>Cancelar</button><button type="submit" value="reject" formnovalidate>Rechazar cotización</button><button type="submit" value="accept">Aceptar cotización</button></div></form>`;
+  modal.innerHTML=`<form><h2>Responder ${label} ${esc(q.number)}</h2>${isContract?documentHtml(type,q):`<p>Total: <b>${money(q.total)}</b>. Revise el documento y sus términos antes de responder.</p>`}<label>Nombre completo<input name="signer" required maxlength="120" autocomplete="name"></label><label>Firma con el dedo o el ratón<canvas width="900" height="280" aria-label="Área para dibujar su firma"></canvas></label><button type="button" data-clear>Borrar firma</button><label><input type="checkbox" name="consent"> Leí ${isContract?'el':'la'} ${label} y acepto sus términos. Al aceptar, autorizo registrar mi firma electrónica.</label><label>Motivo del rechazo (opcional)<textarea name="reason" maxlength="1000"></textarea></label><p role="status" data-message></p><div class="decision-actions"><button type="button" data-close>Cancelar</button><button type="submit" value="reject" formnovalidate>Rechazar ${label}</button><button type="submit" value="accept">${isContract?'Firmar contrato':'Aceptar cotización'}</button></div></form>`;
   document.body.append(modal);modal.showModal();
   const canvas=modal.querySelector('canvas'),ctx=canvas.getContext('2d');let drawing=false,marks=0,busy=false;
   ctx.lineWidth=3;ctx.lineCap='round';ctx.strokeStyle='#172033';
@@ -285,12 +305,13 @@ function openDecision(id){
     if(accept&&(!f.elements.consent.checked||marks<3)){msg.textContent='Dibuje su firma y confirme que acepta los términos.';return;}
     busy=true;modal.querySelectorAll('button').forEach(b=>b.disabled=true);msg.textContent='Guardando respuesta…';
     try{
-      const response={status:accept?'Aprobada':'Rechazada',name,signature:accept?canvas.toDataURL('image/png'):'',reason:accept?'':f.elements.reason.value.trim(),at:serverTimestamp(),portalToken:accessToken};
+      const status=isContract?(accept?'Firmado':'Rechazado'):(accept?'Aprobada':'Rechazada');
+      const response={status,name,signature:accept?canvas.toDataURL('image/png'):'',reason:accept?'':f.elements.reason.value.trim(),at:serverTimestamp(),portalToken:token,...(isContract?{revision}:{})};
       const batch=writeBatch(db);
-      batch.set(doc(db,'clientPortals',accessToken,'responses',id),response);
-      batch.update(doc(db,'users',data.ownerId,'quotes',id),{status:response.status,clientDecision:response,updatedAt:serverTimestamp()});
+      batch.set(doc(db,'clientPortals',token,responseCollection,id),response);
+      batch.update(doc(db,'users',portal.ownerId,collection,id),{status:response.status,clientDecision:response,updatedAt:serverTimestamp()});
       await batch.commit();q.clientDecision={...response,at:{toDate:()=>new Date()}};q.status=response.status;
-      busy=false;close();render();
-    }catch(error){busy=false;modal.querySelectorAll('button').forEach(b=>b.disabled=false);msg.textContent=error.code==='permission-denied'?'Firebase no autorizó guardar la respuesta. Solicite al negocio que actualice y reenvíe la cotización; si continúa, debe revisar las reglas publicadas.':error.code==='unavailable'?'No hay conexión con Firebase. Compruebe internet y vuelva a intentar.':'No se pudo guardar la respuesta ('+(error.code||'error')+'). Mantenga esta ventana abierta y vuelva a intentar.';console.error(error);}
+      busy=false;close();if(data===portal)render();else if(accessToken===token&&data)void loadDocumentResponses(data,token);
+    }catch(error){busy=false;modal.querySelectorAll('button').forEach(b=>b.disabled=false);msg.textContent=error.code==='permission-denied'?'Firebase no autorizó guardar la respuesta. Solicite al negocio que actualice y reenvíe el documento; si continúa, debe revisar las reglas publicadas.':error.code==='unavailable'?'No hay conexión con Firebase. Compruebe internet y vuelva a intentar.':'No se pudo guardar la respuesta ('+(error.code||'error')+'). Mantenga esta ventana abierta y vuelva a intentar.';console.error(error);}
   };
 }

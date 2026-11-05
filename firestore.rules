@@ -6,7 +6,7 @@ service cloud.firestore {
     function admin() { return signed() && request.auth.token.email == "nexustoolspr@gmail.com"; }
     function protectedPlanKeys() { return ['plan','planStatus','stripeCustomerId','stripeSubscriptionId','planUpdatedAt','planExpiresAt','lastPaymentMethod','lastPaymentAmount','lastPaymentDate']; }
     function pendingRequestKeys() { return ['pendingPlan','pendingPlanName','pendingPaymentUrl','pendingPlanStatus','pendingPlanRequestedAt']; }
-    function normalCollections() { return ['clients','services','quotes','followups','contracts','team','assets','suppliers','supplierPayments','payroll','payrollRetentions','purchases','invoices','payments','cashflow']; }
+    function normalCollections() { return ['clients','services','quotes','followups','team','assets','suppliers','supplierPayments','payroll','payrollRetentions','purchases','invoices','payments','cashflow']; }
 
     function portalAccess(portal) {
       return portal.get('claimedBy', '') == '' || (signed() && (portal.get('claimedBy', '') == request.auth.uid || portal.ownerId == request.auth.uid));
@@ -57,6 +57,54 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time
         && !exists(/databases/$(database)/documents/clientPortals/$(request.resource.data.clientDecision.portalToken)/responses/$(quoteId))
         && getAfter(/databases/$(database)/documents/clientPortals/$(request.resource.data.clientDecision.portalToken)/responses/$(quoteId)).data == request.resource.data.clientDecision;
+    }
+
+    function validContractDecision(userId, contractId, decision) {
+      let portal = get(/databases/$(database)/documents/clientPortals/$(decision.portalToken)).data;
+      let contract = get(/databases/$(database)/documents/users/$(userId)/contracts/$(contractId)).data;
+      return portalAccess(portal) && portal.enabled == true && portal.ownerId == userId
+        && contract.clientId == portal.client.id
+        && contractId in portal.contractRevisions
+        && decision.revision == portal.contractRevisions[contractId]
+        && decision.revision == contract.get('updatedAt', null)
+        && contract.body is string && contract.body.size() > 0
+        && contract.get('clientDecision', null) == null
+        && !(contract.get('status', '') in ['Firmado','Rechazado','Cancelado'])
+        && decision.keys().hasAll(['status','name','signature','reason','at','portalToken','revision'])
+        && decision.keys().hasOnly(['status','name','signature','reason','at','portalToken','revision'])
+        && decision.name is string && decision.name.size() > 0 && decision.name.size() <= 120
+        && decision.reason is string && decision.reason.size() <= 1000
+        && decision.signature is string && decision.signature.size() <= 200000
+        && ((decision.status == 'Rechazado' && decision.signature == '')
+          || (decision.status == 'Firmado' && decision.signature.matches('data:image/png;base64,.*')
+            && decision.signature.size() > 100 && decision.reason == ''))
+        && decision.at == request.time;
+    }
+
+    match /users/{userId}/contracts/{contractId} {
+      allow read: if owner(userId) || admin();
+      allow create: if (owner(userId) || admin()) && request.resource.data.get('clientDecision', null) == null;
+      allow update: if (owner(userId) || admin())
+        && resource.data.get('clientDecision', null) == null
+        && request.resource.data.get('clientDecision', null) == null;
+      allow delete: if (owner(userId) || admin()) && resource.data.get('clientDecision', null) == null;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','clientDecision','updatedAt'])
+        && validContractDecision(userId, contractId, request.resource.data.clientDecision)
+        && request.resource.data.status == request.resource.data.clientDecision.status
+        && request.resource.data.updatedAt == request.time
+        && !exists(/databases/$(database)/documents/clientPortals/$(request.resource.data.clientDecision.portalToken)/contractResponses/$(contractId))
+        && getAfter(/databases/$(database)/documents/clientPortals/$(request.resource.data.clientDecision.portalToken)/contractResponses/$(contractId)).data == request.resource.data.clientDecision;
+    }
+
+    match /clientPortals/{portalId}/contractResponses/{contractId} {
+      function portal() { return get(/databases/$(database)/documents/clientPortals/$(portalId)).data; }
+      function savedContract() { return getAfter(/databases/$(database)/documents/users/$(portal().ownerId)/contracts/$(contractId)).data; }
+      allow get: if portal().enabled == true && portalAccess(portal());
+      allow create: if request.resource.data.portalToken == portalId
+        && validContractDecision(portal().ownerId, contractId, request.resource.data)
+        && savedContract().clientDecision == request.resource.data
+        && savedContract().status == request.resource.data.status
+        && savedContract().updatedAt == request.time;
     }
 
     match /users/{userId} {

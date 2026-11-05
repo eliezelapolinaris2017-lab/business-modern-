@@ -3,7 +3,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
 (async()=>{
 const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:390,height:844}});
 let source=fs.readFileSync('portal.js','utf8');
-source=source.slice(source.indexOf('const $='),source.indexOf('async function openPortal('))+source.slice(source.indexOf('function decisionReceipt('));
+source=source.slice(source.indexOf('const $='),source.indexOf('async function openPortal(')).replaceAll('import.meta.url','location.href')+source.slice(source.indexOf('function decisionReceipt('));
 await page.setContent('<div id="portalApp"></div>');
 await page.addScriptTag({content:`const db={};const doc=(...x)=>x;const serverTimestamp=()=>123;let writes=[];const writeBatch=()=>({set:(...x)=>writes.push(['set',...x]),update:(...x)=>writes.push(['update',...x]),commit:async()=>{}});${source}\ndata={ownerId:'owner',quotes:[{id:'q1',number:'COT-1',total:650,status:'Enviada'}]};accessToken='private';render=()=>{};openDecision('q1');`});
 await page.click('button[value=accept]');assert.equal(await page.locator('dialog').count(),1);
@@ -12,5 +12,27 @@ const box=await page.locator('canvas').boundingBox();await page.mouse.move(box.x
 await page.waitForFunction(()=>!document.querySelector('dialog'));
 const result=await page.evaluate(()=>({writes,decision:data.quotes[0].clientDecision}));assert.equal(result.writes.length,2);assert.equal(result.decision.status,'Aprobada');assert.match(result.decision.signature,/^data:image\/png;base64,/);
 await page.evaluate(()=>{data.quotes[0].clientDecision=null;openDecision('q1')});await page.fill('input[name=signer]','Cliente Prueba');await page.fill('textarea','No estoy de acuerdo');await page.click('button[value=reject]');await page.waitForFunction(()=>!document.querySelector('dialog'));assert.equal(await page.evaluate(()=>data.quotes[0].clientDecision.status),'Rechazada');
+await page.evaluate(()=>{
+  data.contracts=[{id:'c1',number:'CT-1',body:'Términos de prueba',status:'Registrado'}];
+  data.contractRevisions={c1:456};
+  openDecision('c1','contract');
+});
+assert.match(await page.locator('dialog').innerText(),/Términos de prueba/);
+await page.fill('input[name=signer]','Cliente Prueba');
+const canvas=page.locator('dialog canvas');
+await canvas.scrollIntoViewIfNeeded();
+const contractBox=await canvas.boundingBox();
+await page.mouse.move(contractBox.x+20,contractBox.y+30);
+await page.mouse.down();
+await page.mouse.move(contractBox.x+100,contractBox.y+60,{steps:12});
+await page.mouse.up();
+await page.check('input[name=consent]');
+await page.click('button[value=accept]');
+await page.waitForFunction(()=>!document.querySelector('dialog'));
+const contract=await page.evaluate(()=>({writes:writes.slice(-2),decision:data.contracts[0].clientDecision}));
+assert.deepEqual(contract.writes.map(write=>write[1].slice(-2)),[['contractResponses','c1'],['contracts','c1']]);
+assert.equal(contract.decision.status,'Firmado');
+assert.equal(contract.decision.revision,456);
+assert.match(contract.decision.signature,/^data:image\/png;base64,/);
 await browser.close();console.log('PASS: mobile signature, missing consent/signature validation, atomic acceptance, rejection without signature.');
 })().catch(e=>{console.error(e);process.exit(1)});

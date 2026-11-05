@@ -1,5 +1,5 @@
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
-import { buildClientPortalPayload } from './client-portal-data.js?v=118';
+import { buildClientPortalPayload } from './client-portal-data.js?v=127';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
