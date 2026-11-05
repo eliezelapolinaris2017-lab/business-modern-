@@ -124,7 +124,7 @@ document.addEventListener('click', async e => {
   const preview = e.target.closest('#mPreviewInvoice'); if(preview){ openInvoiceDoc(null, buildInvoicePreviewObject('Vista previa')); return; }
   const last = e.target.closest('#mViewLastDoc'); if(last){ if(lastCreatedInvoiceId) openInvoiceDoc(lastCreatedInvoiceId); else openInvoiceDoc(null, buildInvoicePreviewObject('Vista previa')); return; }
   if(e.target.id === 'mCloseDoc'){ closeDoc(); return; }
-  if(e.target.id === 'mPrintDoc'){ window.print(); return; }
+  if(e.target.id === 'mPrintDoc'){ printCurrentDoc(); return; }
   if(e.target.id === 'mShareDoc'){ shareCurrentDoc(); return; }
   if(e.target.id === 'applyUpdateBtn'){ applyWaitingUpdate(); return; }
 });
@@ -333,7 +333,7 @@ function renderInvoices(){
   const rows = sorted(state.invoices, 'date').slice(0,30);
   $('mInvoiceList').innerHTML = rows.length ? rows.map(inv => {
     const c = clientBy(inv.clientId);
-    return `<div class="row-card"><div class="top"><div><h4>${esc(inv.number || 'Factura')}</h4><p>${esc(inv.clientName || c.name || 'Cliente')} · ${esc(inv.serviceTitle || inv.invoiceType || 'Servicio')}</p></div>${statusBadge(invoiceStatus(inv))}</div><p>Total ${money(inv.total)} · Balance ${money(invoiceBalance(inv))}</p><div class="actions"><button data-view-invoice="${esc(inv.id)}" type="button">Ver documento</button><button data-share-invoice="${esc(inv.id)}" type="button">Compartir</button>${invoiceBalance(inv) > 0 ? `<button data-mark-paid="${esc(inv.id)}" type="button">Marcar pagada</button>` : ''}</div></div>`;
+    return `<div class="row-card"><div class="top"><div><h4>${esc(inv.number || 'Factura')}</h4><p>${esc(inv.clientName || c.name || 'Cliente')} · ${esc(inv.serviceTitle || inv.invoiceType || 'Servicio')}</p></div>${statusBadge(invoiceStatus(inv))}</div><p>Total ${money(inv.total)} · Balance ${money(invoiceBalance(inv))}</p><p>${inv.printedAt ? 'Impresa' : 'Sin impresión registrada'}</p><div class="actions"><button data-view-invoice="${esc(inv.id)}" type="button">Ver documento</button><button data-share-invoice="${esc(inv.id)}" type="button">Compartir</button>${invoiceBalance(inv) > 0 ? `<button data-mark-paid="${esc(inv.id)}" type="button">Marcar pagada</button>` : ''}</div></div>`;
   }).join('') : '<div class="empty">No hay facturas.</div>';
 }
 function followStatus(f){ if(String(f.status || '') === 'Completado') return 'Completado'; const d = String(f.dueDate || ''); if(d && d < today()) return 'Vencida'; if(d && d <= plusDays(14)) return 'Próximo'; return f.status || 'Programado'; }
@@ -844,6 +844,19 @@ function openInvoiceDoc(id, supplied=null){
   currentDocId = inv.id || id || null;
   $('mDocPreview').innerHTML = buildDesktopInvoiceDocument(inv);
   $('mDocModal').classList.remove('hidden');
+}
+function printCurrentDoc(){
+  const invoiceRef = currentDocId ? docRef('invoices', currentDocId) : null;
+  if(invoiceRef){
+    window.addEventListener('afterprint', () => {
+      setTimeout(async () => {
+        if(!confirm('¿Se imprimió la factura?')) return;
+        try{ await updateDoc(invoiceRef, {printedAt:serverTimestamp()}); }
+        catch(error){ console.error(error); alert('No se pudo guardar la marca de impresión.'); }
+      }, 0);
+    }, {once:true});
+  }
+  window.print();
 }
 function closeDoc(){ $('mDocModal').classList.add('hidden'); }
 async function shareCurrentDoc(){
