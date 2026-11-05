@@ -1,5 +1,5 @@
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
-import { buildClientPortalPayload } from './client-portal-data.js?v=118';
+import { buildClientPortalPayload } from './client-portal-data.js?v=127';
 import {createEmployeeCommand} from './employee-admin.js?v=2';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { firebaseConfig } from "./firebase-config.js";
@@ -1835,8 +1835,9 @@ function renderContractForm(){
   if($('cancelContractEdit'))$('cancelContractEdit').onclick=()=>{state.editingContractId=null;state.contractQuoteDraft=null;renderContractForm();bindContractForm();};
 }
 function contractPrintHtml(c){
-  const p=profile();
-  return `<div class="doc-page contract-doc"><div class="contract-doc-head">${p.logoPdf?`<img class="contract-doc-logo" src="${esc(p.logoPdf)}" alt="Logo">`:''}<div class="contract-doc-heading"><h2>CONTRATO DE PRESTACIÓN DE SERVICIOS</h2><p>${esc(p.businessName||'')}</p><small>${esc(c.number||'')} · ${esc(c.date||'')}</small></div></div><div class="doc-body contract-doc-body">${esc(c.body||buildContractText(c))}</div><div class="doc-foot contract-doc-foot">Contrato ${esc(c.number||'')} · ${esc(c.date||'')}</div></div>`;
+  const p=profile(),d=c.clientDecision;
+  const receipt=d?`<section style="break-inside:avoid;margin-top:20px"><b>${esc(d.status)} · ${esc(d.name)}</b><p>${esc(d.at?.toDate?.().toLocaleString('es-PR',{timeZone:'America/Puerto_Rico'})||'')}</p>${d.signature?`<img alt="Firma del cliente" src="${esc(d.signature)}" style="width:280px;max-width:100%">`:''}<p>${esc(d.reason||'')}</p></section>`:'';
+  return `<div class="doc-page contract-doc"><div class="contract-doc-head">${p.logoPdf?`<img class="contract-doc-logo" src="${esc(p.logoPdf)}" alt="Logo">`:''}<div class="contract-doc-heading"><h2>CONTRATO DE PRESTACIÓN DE SERVICIOS</h2><p>${esc(p.businessName||'')}</p><small>${esc(c.number||'')} · ${esc(c.date||'')}</small></div></div><div class="doc-body contract-doc-body">${esc(c.body||buildContractText(c))}</div>${receipt}<div class="doc-foot contract-doc-foot">Contrato ${esc(c.number||'')} · ${esc(c.date||'')}</div></div>`;
 }
 function printServiceContract(id){
   const c=state.contracts.find(x=>x.id===id);if(!c)return;
@@ -1862,8 +1863,20 @@ function renderContractsTable(){
   const box=$('contractsTable');if(!box)return;
   const rows=[...(state.contracts||[])].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
   if($('contractsCount'))$('contractsCount').textContent=`${rows.length} contrato${rows.length===1?'':'s'}`;
-  box.innerHTML=table(['Fecha','Contrato','Cliente','Servicio','Vigencia','Acción'],rows.map(c=>`<tr><td>${esc(c.date||'')}</td><td><b>${esc(c.number||'')}</b></td><td><b>${esc(c.clientName||'')}</b><br><span class="muted">${esc(c.address||'')}</span></td><td>${esc(c.service||'')}</td><td>${esc(c.startDate||'')}${c.endDate?' → '+esc(c.endDate):''}<br><span class="muted">${esc(c.frequency||'')}</span></td><td><div class="actions"><button type="button" data-contract-print="${c.id}">Imprimir / PDF</button><button type="button" data-contract-edit="${c.id}">Editar</button><button type="button" class="danger" data-contract-delete="${c.id}">Borrar</button></div></td></tr>`));
+  box.innerHTML=table(['Fecha','Contrato','Cliente','Servicio','Vigencia','Acción'],rows.map(c=>`<tr><td>${esc(c.date||'')}</td><td><b>${esc(c.number||'')}</b><br><span class="muted">${esc(c.status||'Registrado')}</span></td><td><b>${esc(c.clientName||'')}</b><br><span class="muted">${esc(c.address||'')}</span></td><td>${esc(c.service||'')}</td><td>${esc(c.startDate||'')}${c.endDate?' → '+esc(c.endDate):''}<br><span class="muted">${esc(c.frequency||'')}</span></td><td><div class="actions"><button type="button" data-contract-print="${c.id}">Imprimir / PDF</button>${!c.clientDecision&&c.status!=='Cancelado'&&c.body?.trim()?`<button type="button" data-contract-share="${c.id}">Enlace para firma</button>`:''}${c.clientDecision?'':`<button type="button" data-contract-edit="${c.id}">Editar</button><button type="button" class="danger" data-contract-delete="${c.id}">Borrar</button>`}</div></td></tr>`));
   box.querySelectorAll('[data-contract-print]').forEach(b=>b.onclick=()=>printServiceContract(b.dataset.contractPrint));
+  box.querySelectorAll('[data-contract-share]').forEach(b=>b.onclick=async()=>{
+    const c=rows.find(row=>row.id===b.dataset.contractShare);
+    b.disabled=true;
+    try{
+      const portalLink=await syncClientPortal(c.clientId,{openAfter:false,copyLink:false,notify:false});
+      if(!portalLink)return;
+      const link=portalLink+'&tab=contracts';
+      if(await copyPortalLink(link))alert('Enlace para firma copiado.');
+      else window.prompt('Copia el enlace para firma:',link);
+    }catch(error){alert('No se pudo preparar el enlace. '+(error.message||''));}
+    finally{b.disabled=false;}
+  });
   box.querySelectorAll('[data-contract-edit]').forEach(b=>b.onclick=()=>{state.editingContractId=b.dataset.contractEdit;renderContractForm();bindContractForm();window.scrollTo({top:0,behavior:'smooth'});});
   box.querySelectorAll('[data-contract-delete]').forEach(b=>b.onclick=async()=>{if(confirm('¿Borrar este contrato?'))await deleteDoc(docPath('contracts',b.dataset.contractDelete));});
 }

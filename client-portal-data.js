@@ -18,6 +18,7 @@ export function buildClientPortalPayload({state,client,ownerId,token,business,se
     identityPhone:normalizePortalPhone(client.phone),identityEmail:String(client.email||'').trim().toLowerCase(),
     client:{id:client.id,name:client.name||'',email:client.email||'',phone:client.phone||'',city:client.city||'',address:client.address||''},
     quoteExpires:Object.fromEntries(own('quotes').map(q=>[q.id,serialize.quoteExpiry?serialize.quoteExpiry(q):q.validUntil?new Date(q.validUntil+'T23:59:59-04:00'):new Date('2100-01-01T00:00:00Z')])),
+    contractRevisions:Object.fromEntries(own('contracts').filter(c=>c.body?.trim()).map(c=>[c.id,c.updatedAt||null])),
     quoteRevisions:Object.fromEntries(own('quotes').map(q=>[q.id,q.updatedAt||null])),
     invoices:mappedInvoices,quotes:newest(own('quotes').map(quote)),services:newest(own('services').map(service)),assets:own('assets').map(asset),
     maintenance:own('followups').filter(f=>/mantenimiento|grooming/i.test(f.type||'')).map(maintenance).sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate))),

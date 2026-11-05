@@ -3,7 +3,7 @@ const source=fs.readFileSync(require('node:path').join(__dirname,'../portal.js')
 const fn=source.slice(source.indexOf('async function openPortal(token){'),source.indexOf("$('accessForm').onsubmit"));
 const nodes={},node=id=>nodes[id]??={textContent:'',classList:{add(){},remove(){}}};
 let timeout,callbacks,cleared=0,unsubscribed=0,rendered=0;
-const ctx={Promise,Error,Object,console,db:{},doc:()=>'',onSnapshot:(_,next,error)=>{callbacks={next,error};return ()=>unsubscribed++;},setTimeout:cb=>{timeout=cb;return 1;},clearTimeout:()=>cleared++,$:node,localStorage:{setItem(){}},render:()=>rendered++,loadQuoteResponses:async()=>{}};
+const ctx={Promise,Error,Object,console,db:{},doc:()=>'',onSnapshot:(_,next,error)=>{callbacks={next,error};return ()=>unsubscribed++;},setTimeout:cb=>{timeout=cb;return 1;},clearTimeout:()=>cleared++,$:node,localStorage:{setItem(){}},render:()=>rendered++,loadDocumentResponses:async()=>{}};
 vm.createContext(ctx);vm.runInContext('let stopPortal=null,data=null,accessToken="";'+fn,ctx);
 (async()=>{
  let result=vm.runInContext('openPortal("t1")',ctx);assert.match(node('loginMsg').textContent,/Abriendo/);timeout();await assert.rejects(result,/conexión/);assert.match(node('loginMsg').textContent,/vuelve a intentar/);assert.equal(unsubscribed,1);
