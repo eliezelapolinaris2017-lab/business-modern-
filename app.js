@@ -1,3 +1,4 @@
+import { createViewMemory } from './ui-context.js?v=124';
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
 import { buildClientPortalPayload } from './client-portal-data.js?v=118';
 import {createEmployeeCommand} from './employee-admin.js?v=2';
@@ -610,7 +611,14 @@ function controlCenter(){
 }
 
 function enforceModuleView(){const active=state.activeView||'dashboard';document.querySelectorAll('.main > section.view').forEach(view=>{const ok=view.id===active;view.classList.toggle('active',ok);view.hidden=!ok;view.setAttribute('aria-hidden',ok?'false':'true');view.style.display=ok?'block':'none';view.style.visibility=ok?'visible':'hidden';view.style.height=ok?'auto':'0px';view.style.overflow=ok?'visible':'hidden';});}
-function show(v){state.activeView=lockedModule(v)?'plans':(v||'dashboard');render();if(innerWidth<921)document.querySelector('.sidebar')?.classList.remove('open');}
+const viewMemory=createViewMemory({getView:()=>state.activeView||'dashboard',getRoot:()=>$(state.activeView||'dashboard')});
+let previewOrigin=null;
+function rememberPreviewOrigin(){if(state.activeView!=='reports')previewOrigin=viewMemory.capture();}
+function returnFromPreview(origin=previewOrigin){
+  if(!origin||state.activeView!=='reports')return;
+  previewOrigin=null;show(origin.view);viewMemory.restore(origin);
+}
+function show(v){viewMemory.save();state.activeView=lockedModule(v)?'plans':(v||'dashboard');render();viewMemory.recall();if(state.activeView!=='reports')previewOrigin=null;if(innerWidth<921)document.querySelector('.sidebar')?.classList.remove('open');}
 function openBilling(filter='all', search=''){
   state.billingFilter = filter || 'all';
   state.billingSearch = search || '';
@@ -1840,6 +1848,7 @@ function contractPrintHtml(c){
 }
 function printServiceContract(id){
   const c=state.contracts.find(x=>x.id===id);if(!c)return;
+  const origin=viewMemory.capture();
   const html=contractPrintHtml(c),w=open('','_blank');if(!w)return alert('Permite ventanas emergentes para imprimir.');
   w.document.write(`<html><head><meta charset="utf-8"><title>${esc(c.number||'Contrato')}</title><style>
     @page{size:letter;margin:.48in}
@@ -1856,6 +1865,7 @@ function printServiceContract(id){
     .contract-doc-foot{margin-top:.12in;padding-top:.07in;border-top:1px solid #ddd;text-align:center;color:#777;font-size:7.5pt}
     @media print{.contract-doc-logo{max-width:1.05in!important;max-height:.72in!important}.contract-doc-head{break-inside:avoid}.contract-doc-body{orphans:3;widows:3}}
   </style></head><body>${html}</body></html>`);
+  w.addEventListener('afterprint',()=>setTimeout(()=>{confirm('¿Se imprimió el contrato?');w.close();viewMemory.restore(origin);},0),{once:true});
   w.document.close();setTimeout(()=>{w.focus();w.print();},450);
 }
 function renderContractsTable(){
@@ -1896,7 +1906,8 @@ forms=function(){__v90Forms();renderContractForm();};
 const __v90Tables=tables;
 tables=function(){__v90Tables();renderContractsTable();};
 
-function render(){document.body.dataset.industry=profile().industry;setVisuals();nav();forms();bindSearchableClientFields();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(industryTitle(state.activeView));$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
+function render(){return viewMemory.preserve(()=>renderContent());}
+function renderContent(){document.body.dataset.industry=profile().industry;setVisuals();nav();forms();bindSearchableClientFields();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(industryTitle(state.activeView));$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
 async function add(c,data){if(!canCreate(c)){alert(`Límite alcanzado en plan ${plan().name}. Mejora tu plan.`);show('plans');return null;}return await addDoc(colPath(c),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});}
 
 function showClientSummary(id){
@@ -2336,6 +2347,7 @@ async function sendPreviewWhatsapp(printAlso=false){
   const phone=documentWhatsappPhone(row.clientPhone||row.phone||c.whatsapp||c.phone);
   if(!phone){alert('El cliente no tiene un teléfono válido. Edite el cliente e incluya el código de país si corresponde.');return;}
   const html=state.previewHtml;
+  const origin=previewOrigin;
   const printTab=printAlso?window.open('','_blank'):null;
   if(printAlso&&!printTab){alert('Permita ventanas emergentes para imprimir y abrir WhatsApp.');return;}
   const tab=window.open('','_blank');
@@ -2365,7 +2377,7 @@ async function sendPreviewWhatsapp(printAlso=false){
     if(printAlso){
       if(state.previewHtml===html) $('printPreview').onclick({printWindow:printTab,html});
       else {printTab.close();alert('WhatsApp está listo. La vista cambió durante el envío; vuelva a abrir el documento para imprimir.');}
-    }
+    }else returnFromPreview(origin);
   }catch(error){tab.close();if(printTab)printTab.close();console.error('WhatsApp documento',error);alert('No se pudo preparar el documento. '+(error.message||'Verifique su conexión y vuelva a intentar.'));}
   finally{buttons.forEach(b=>{if(b)b.disabled=false;});}
 }
@@ -2390,28 +2402,28 @@ async function generatePreviewPdf(html){
   }finally{host.remove();}
 }
 
-function previewInvoice(id){
+function previewInvoice(id){rememberPreviewOrigin();
   state.previewDocument={type:'invoice',id};
   const inv=state.invoices.find(x=>x.id===id);if(!inv)return;const c=clientBy(inv.clientId),totals=invoiceTotals(inv),bal=invoiceBalance(inv),paid=invoicePaid(inv),status=invoiceStatus(inv);
   const items=inv.items&&inv.items.length?inv.items:[{description:inv.serviceTitle||'Servicio',qty:1,price:totals.subtotal}];
   const html=businessDocumentHtml({label:'FACTURA',number:inv.number,date:niceDate(inv.date),validLabel:'Vence',validDate:inv.dueDate?niceDate(inv.dueDate):'—',status,clientName:inv.clientName,client:c,items,totals,paid,balance:bal,notes:inv.notes||'Gracias por confiar en nuestros servicios.',terms:invoicePaymentTerms(inv,inv.terms||inv.conditions||'Pago a través del método acordado.')});
   state.previewHtml=html;state.sharedPreviewHtml=html;$('reportPreview').innerHTML=html;closeReportWorkspace();show('reports');
 }
-function previewQuote(id){
+function previewQuote(id){rememberPreviewOrigin();
   state.previewDocument={type:'quote',id};
   const q=state.quotes.find(x=>x.id===id);if(!q)return;const c=clientBy(q.clientId),totals=quoteTotals(q),items=quoteItemsFallback(q);
   const html=businessDocumentHtml({label:'COTIZACIÓN',number:q.number,date:niceDate(q.date||today()),validLabel:'Válida hasta',validDate:q.validUntil?niceDate(q.validUntil):'—',status:quoteStatus(q),clientName:q.clientName,client:c,items,totals,notes:q.notes||'Cotización profesional sujeta a evaluación final y disponibilidad.',terms:q.terms||'Precios válidos hasta la fecha indicada. Aprobación requerida para iniciar servicio.'});
   state.previewHtml=html;state.sharedPreviewHtml=html;$('reportPreview').innerHTML=html;closeReportWorkspace();show('reports');
 }
 
-function previewPaystub(id){
+function previewPaystub(id){rememberPreviewOrigin();
   state.previewDocument=null;
   const pmt=state.payroll.find(x=>x.id===id); if(!pmt) return;
   let html=docHeader('COMPROBANTE DE NÓMINA');
   html+=`<table class="doc-table"><tr><th>Empleado</th><td>${esc(pmt.teamName)}</td></tr><tr><th>Fecha</th><td>${esc(pmt.date)}</td></tr><tr><th>Periodo</th><td>${esc(pmt.period)}</td></tr><tr><th>Bruto</th><td>${money(pmt.gross)}</td></tr><tr><th>Bonos / comisiones</th><td>${money(pmt.bonus)}</td></tr><tr><th>Retenciones</th><td>${money(payrollRetention(pmt))}</td></tr><tr><th>Adelantos</th><td>${money(payrollAdvance(pmt))}</td></tr><tr><th>Otros descuentos</th><td>${money(payrollOtherDeductions(pmt))}</td></tr><tr><th>Total descuentos</th><td>${money(payrollTotalDeductions(pmt))}</td></tr><tr><th>Neto pagado</th><td><b>${money(payrollNet(pmt))}</b></td></tr><tr><th>Método</th><td>${esc(pmt.method)}</td></tr></table>`;
   html+=docFooter(); state.previewHtml=html; $('reportPreview')&&($('reportPreview').innerHTML=html); closeReportWorkspace(); show('reports');
 }
-function preview(type){state.previewDocument=null;let title={executive:'REPORTE EJECUTIVO',finance:'REPORTE FINANCIERO',receivable:'CUENTAS POR COBRAR',invoices:'REPORTE DE FACTURAS',payments:'REPORTE DE COBROS',payroll:'REPORTE DE NÓMINA',retentions:'REPORTE DE RETENCIONES',suppliers:'REPORTE DE SUPLIDORES',services:'REPORTE DE SERVICIOS',quotes:'REPORTE DE COTIZACIONES',assetsClient:'ACTIVOS POR CLIENTE',assetsStatus:'ACTIVOS POR ESTADO',purchases:'COMPRAS Y CUENTAS POR PAGAR',ops:'REPORTE OPERACIONAL'}[type]||'REPORTE';let html=docHeader(title);if(type==='executive'){html+=`<table class="doc-table"><tr><th>Concepto</th><th>Total</th></tr><tr><td>Clientes</td><td>${state.clients.length}</td></tr><tr><td>Servicios</td><td>${state.services.length}</td></tr><tr><td>Facturado</td><td>${money(sum(state.invoices,'total'))}</td></tr><tr><td>Cobrado</td><td>${money(sum(state.payments,'amount'))}</td></tr><tr><td>Nómina pagada</td><td>${money(state.payroll.reduce((a,x)=>a+payrollNet(x),0))}</td></tr><tr><td>Suplidores pagados</td><td>${money(sum(state.supplierPayments,'amount'))}</td></tr></table>`;}else if(type==='finance'){const f=financialSummary();html+=`<table class="doc-table"><tr><th>Indicador</th><th>Total</th></tr><tr><td>Facturado</td><td>${money(f.invoiced)}</td></tr><tr><td>Cobrado</td><td>${money(f.paid)}</td></tr><tr><td>Por cobrar</td><td>${money(f.receivable)}</td></tr><tr><td>Vencido</td><td>${money(f.overdue)}</td></tr><tr><td>Gastos</td><td>${money(f.expenses)}</td></tr><tr><td>Caja neta</td><td>${money(f.net)}</td></tr><tr><td>Ingreso del mes</td><td>${money(f.monthIncome)}</td></tr><tr><td>Gasto del mes</td><td>${money(f.monthExpenses)}</td></tr><tr><td>Neto del mes</td><td>${money(f.monthNet)}</td></tr></table>`;}else if(type==='receivable'){const rows=state.invoices.filter(inv=>invoiceBalance(inv)>0 && invoiceStatus(inv)!=='Cancelada').map(inv=>`<tr><td>${esc(inv.number)}</td><td>${esc(inv.clientName)}</td><td>${esc(inv.dueDate||'—')}</td><td>${money(inv.total)}</td><td>${money(invoicePaid(inv))}</td><td>${money(invoiceBalance(inv))}</td><td>${esc(invoiceStatus(inv))}</td></tr>`).join('');html+=`<table class="doc-table"><tr><th>Factura</th><th>Cliente</th><th>Vence</th><th>Total</th><th>Pagado</th><th>Balance</th><th>Estado</th></tr>${rows}</table>`;}else if(type==='invoices'){html+=`<table class="doc-table"><tr><th>Factura</th><th>Cliente</th><th>Total</th><th>Pagado</th><th>Balance</th><th>Estado</th></tr>${state.invoices.map(x=>`<tr><td>${esc(x.number)}</td><td>${esc(x.clientName)}</td><td>${money(x.total)}</td><td>${money(invoicePaid(x))}</td><td>${money(invoiceBalance(x))}</td><td>${esc(invoiceStatus(x))}</td></tr>`).join('')}</table>`;}else if(type==='payments'){html+=`<table class="doc-table"><tr><th>Fecha</th><th>Factura</th><th>Método</th><th>Monto</th></tr>${state.payments.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.invoiceNumber)}</td><td>${esc(x.method)}</td><td>${money(x.amount)}</td></tr>`).join('')}</table>`;}else if(type==='payroll'){const bruto=sum(state.payroll,'gross'), bonos=sum(state.payroll,'bonus'), ret=state.payroll.reduce((a,x)=>a+payrollRetention(x),0), adv=state.payroll.reduce((a,x)=>a+payrollAdvance(x),0), desc=state.payroll.reduce((a,x)=>a+payrollOtherDeductions(x),0), neto=state.payroll.reduce((a,x)=>a+payrollNet(x),0);html+=`<table class="doc-table"><tr><th>Resumen</th><th>Total</th></tr><tr><td>Bruto</td><td>${money(bruto)}</td></tr><tr><td>Bonos / comisiones</td><td>${money(bonos)}</td></tr><tr><td>Retenciones</td><td>${money(ret)}</td></tr><tr><td>Adelantos</td><td>${money(adv)}</td></tr><tr><td>Otros descuentos</td><td>${money(desc)}</td></tr><tr><td>Neto pagado</td><td><b>${money(neto)}</b></td></tr></table><br><table class="doc-table"><tr><th>Fecha</th><th>Empleado</th><th>Periodo</th><th>Bruto</th><th>Retenciones</th><th>Otros desc.</th><th>Neto</th></tr>${state.payroll.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.teamName)}</td><td>${esc(x.period)}</td><td>${money(x.gross)}</td><td>${money(payrollRetention(x))}</td><td>${money(payrollAdvance(x)+payrollOtherDeductions(x))}</td><td>${money(payrollNet(x))}</td></tr>`).join('')}</table>`;}else if(type==='retentions'){const pending=retentionPendingAmount(), paid=retentionPaidAmount();html+=`<table class="doc-table"><tr><th>Resumen</th><th>Total</th></tr><tr><td>Retenciones pendientes</td><td>${money(pending)}</td></tr><tr><td>Retenciones pagadas</td><td>${money(paid)}</td></tr></table><br><table class="doc-table"><tr><th>Fecha</th><th>Empleado</th><th>Tipo</th><th>Destino</th><th>Monto</th><th>Estado</th><th>Fecha límite</th><th>Pagado</th></tr>${state.payrollRetentions.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.teamName)}</td><td>${esc(r.type)}</td><td>${esc(r.destination)}</td><td>${money(r.amount)}</td><td>${esc(retentionStatus(r))}</td><td>${esc(r.dueDate||'')}</td><td>${esc(r.paidAt||'')}</td></tr>`).join('')}</table>`;}else if(type==='retentions'){
+function preview(type){rememberPreviewOrigin();state.previewDocument=null;let title={executive:'REPORTE EJECUTIVO',finance:'REPORTE FINANCIERO',receivable:'CUENTAS POR COBRAR',invoices:'REPORTE DE FACTURAS',payments:'REPORTE DE COBROS',payroll:'REPORTE DE NÓMINA',retentions:'REPORTE DE RETENCIONES',suppliers:'REPORTE DE SUPLIDORES',services:'REPORTE DE SERVICIOS',quotes:'REPORTE DE COTIZACIONES',assetsClient:'ACTIVOS POR CLIENTE',assetsStatus:'ACTIVOS POR ESTADO',purchases:'COMPRAS Y CUENTAS POR PAGAR',ops:'REPORTE OPERACIONAL'}[type]||'REPORTE';let html=docHeader(title);if(type==='executive'){html+=`<table class="doc-table"><tr><th>Concepto</th><th>Total</th></tr><tr><td>Clientes</td><td>${state.clients.length}</td></tr><tr><td>Servicios</td><td>${state.services.length}</td></tr><tr><td>Facturado</td><td>${money(sum(state.invoices,'total'))}</td></tr><tr><td>Cobrado</td><td>${money(sum(state.payments,'amount'))}</td></tr><tr><td>Nómina pagada</td><td>${money(state.payroll.reduce((a,x)=>a+payrollNet(x),0))}</td></tr><tr><td>Suplidores pagados</td><td>${money(sum(state.supplierPayments,'amount'))}</td></tr></table>`;}else if(type==='finance'){const f=financialSummary();html+=`<table class="doc-table"><tr><th>Indicador</th><th>Total</th></tr><tr><td>Facturado</td><td>${money(f.invoiced)}</td></tr><tr><td>Cobrado</td><td>${money(f.paid)}</td></tr><tr><td>Por cobrar</td><td>${money(f.receivable)}</td></tr><tr><td>Vencido</td><td>${money(f.overdue)}</td></tr><tr><td>Gastos</td><td>${money(f.expenses)}</td></tr><tr><td>Caja neta</td><td>${money(f.net)}</td></tr><tr><td>Ingreso del mes</td><td>${money(f.monthIncome)}</td></tr><tr><td>Gasto del mes</td><td>${money(f.monthExpenses)}</td></tr><tr><td>Neto del mes</td><td>${money(f.monthNet)}</td></tr></table>`;}else if(type==='receivable'){const rows=state.invoices.filter(inv=>invoiceBalance(inv)>0 && invoiceStatus(inv)!=='Cancelada').map(inv=>`<tr><td>${esc(inv.number)}</td><td>${esc(inv.clientName)}</td><td>${esc(inv.dueDate||'—')}</td><td>${money(inv.total)}</td><td>${money(invoicePaid(inv))}</td><td>${money(invoiceBalance(inv))}</td><td>${esc(invoiceStatus(inv))}</td></tr>`).join('');html+=`<table class="doc-table"><tr><th>Factura</th><th>Cliente</th><th>Vence</th><th>Total</th><th>Pagado</th><th>Balance</th><th>Estado</th></tr>${rows}</table>`;}else if(type==='invoices'){html+=`<table class="doc-table"><tr><th>Factura</th><th>Cliente</th><th>Total</th><th>Pagado</th><th>Balance</th><th>Estado</th></tr>${state.invoices.map(x=>`<tr><td>${esc(x.number)}</td><td>${esc(x.clientName)}</td><td>${money(x.total)}</td><td>${money(invoicePaid(x))}</td><td>${money(invoiceBalance(x))}</td><td>${esc(invoiceStatus(x))}</td></tr>`).join('')}</table>`;}else if(type==='payments'){html+=`<table class="doc-table"><tr><th>Fecha</th><th>Factura</th><th>Método</th><th>Monto</th></tr>${state.payments.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.invoiceNumber)}</td><td>${esc(x.method)}</td><td>${money(x.amount)}</td></tr>`).join('')}</table>`;}else if(type==='payroll'){const bruto=sum(state.payroll,'gross'), bonos=sum(state.payroll,'bonus'), ret=state.payroll.reduce((a,x)=>a+payrollRetention(x),0), adv=state.payroll.reduce((a,x)=>a+payrollAdvance(x),0), desc=state.payroll.reduce((a,x)=>a+payrollOtherDeductions(x),0), neto=state.payroll.reduce((a,x)=>a+payrollNet(x),0);html+=`<table class="doc-table"><tr><th>Resumen</th><th>Total</th></tr><tr><td>Bruto</td><td>${money(bruto)}</td></tr><tr><td>Bonos / comisiones</td><td>${money(bonos)}</td></tr><tr><td>Retenciones</td><td>${money(ret)}</td></tr><tr><td>Adelantos</td><td>${money(adv)}</td></tr><tr><td>Otros descuentos</td><td>${money(desc)}</td></tr><tr><td>Neto pagado</td><td><b>${money(neto)}</b></td></tr></table><br><table class="doc-table"><tr><th>Fecha</th><th>Empleado</th><th>Periodo</th><th>Bruto</th><th>Retenciones</th><th>Otros desc.</th><th>Neto</th></tr>${state.payroll.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.teamName)}</td><td>${esc(x.period)}</td><td>${money(x.gross)}</td><td>${money(payrollRetention(x))}</td><td>${money(payrollAdvance(x)+payrollOtherDeductions(x))}</td><td>${money(payrollNet(x))}</td></tr>`).join('')}</table>`;}else if(type==='retentions'){const pending=retentionPendingAmount(), paid=retentionPaidAmount();html+=`<table class="doc-table"><tr><th>Resumen</th><th>Total</th></tr><tr><td>Retenciones pendientes</td><td>${money(pending)}</td></tr><tr><td>Retenciones pagadas</td><td>${money(paid)}</td></tr></table><br><table class="doc-table"><tr><th>Fecha</th><th>Empleado</th><th>Tipo</th><th>Destino</th><th>Monto</th><th>Estado</th><th>Fecha límite</th><th>Pagado</th></tr>${state.payrollRetentions.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.teamName)}</td><td>${esc(r.type)}</td><td>${esc(r.destination)}</td><td>${money(r.amount)}</td><td>${esc(retentionStatus(r))}</td><td>${esc(r.dueDate||'')}</td><td>${esc(r.paidAt||'')}</td></tr>`).join('')}</table>`;}else if(type==='retentions'){
     rows.push(['Fecha','Empleado','Tipo','Destino','Monto','Estado','Fecha límite','Pagado','Referencia']); state.payrollRetentions.forEach(r=>rows.push([r.date,r.teamName,r.type,r.destination,r.amount,retentionStatus(r),r.dueDate||'',r.paidAt||'',r.reference||'']));
   }else if(type==='suppliers'){html+=`<table class="doc-table"><tr><th>Suplidor</th><th>Compras</th><th>Pagado</th><th>Balance</th></tr>${state.suppliers.map(x=>`<tr><td>${esc(x.name)}</td><td>${money(supplierPurchasesTotal(x.id))}</td><td>${money(supplierPaid(x.id))}</td><td>${money(supplierBalance(x.id))}</td></tr>`).join('')}</table>`;}else if(type==='purchases'){html+=`<table class="doc-table"><tr><th>Fecha</th><th>Suplidor</th><th>Concepto</th><th>Total</th><th>Pagado</th><th>Balance</th><th>Estado</th></tr>${state.purchases.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.supplierName)}</td><td>${esc(x.concept)}</td><td>${money(x.total)}</td><td>${money(purchasePaid(x.id))}</td><td>${money(purchaseBalance(x))}</td><td>${esc(purchaseStatus(x))}</td></tr>`).join('')}</table>`;}else if(type==='ops'){const o=operationalSummary();html+=`<table class="doc-table"><tr><th>Indicador</th><th>Total</th></tr><tr><td>Empleados activos</td><td>${o.employees}</td></tr><tr><td>Nómina pendiente</td><td>${money(o.payrollDue)}</td></tr><tr><td>Suplidores</td><td>${o.suppliers}</td></tr><tr><td>Compras registradas</td><td>${o.purchases}</td></tr><tr><td>Cuentas por pagar</td><td>${money(o.purchaseDebt)}</td></tr><tr><td>Compras vencidas</td><td>${money(o.overduePurchases)}</td></tr></table>`;}else if(type==='quotes'){const rows=state.quotes.map(q=>{const t=quoteTotals(q);return `<tr><td>${esc(q.number)}</td><td>${esc(q.clientName)}</td><td>${esc(q.validUntil||'—')}</td><td>${money(t.total)}</td><td>${esc(quoteStatus(q))}</td></tr>`;}).join('');html+=`<table class="doc-table"><tr><th>Cotización</th><th>Cliente</th><th>Válida</th><th>Total</th><th>Estado</th></tr>${rows}</table>`;}else if(type==='assetsClient'){html+=`<table class="doc-table"><tr><th>Cliente</th><th>Activo</th><th>Categoría</th><th>Ubicación</th><th>Estado</th></tr>${state.assets.map(a=>`<tr><td>${esc(a.clientName||'Sin cliente')}</td><td>${esc(assetName(a))}</td><td>${esc(assetCategory(a))}</td><td>${esc(assetLocation(a))}</td><td>${esc(assetStatus(a))}</td></tr>`).join('')}</table>`;}else if(type==='assetsStatus'){const groups={};state.assets.forEach(a=>{const st=assetStatus(a);groups[st]=(groups[st]||0)+1;});html+=`<table class="doc-table"><tr><th>Estado</th><th>Cantidad</th></tr>${Object.entries(groups).map(([st,c])=>`<tr><td>${esc(st)}</td><td>${c}</td></tr>`).join('')}</table>`;}else{html+=`<table class="doc-table"><tr><th>Fecha</th><th>Cliente</th><th>Activo</th><th>Servicio</th><th>Monto</th></tr>${state.services.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.clientName)}</td><td>${esc(x.assetName||'')}</td><td>${esc(serviceTitle(x))}</td><td>${money(serviceAmount(x))}</td></tr>`).join('')}</table>`;}html+=docFooter();state.previewHtml=html;$('reportPreview').innerHTML=html;closeReportWorkspace();}
 
@@ -2621,22 +2633,23 @@ function bindForms(){
   if($('reportPdfBtn')) $('reportPdfBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());setTimeout(downloadCurrentPreview,250);};
   if($('reportExportBtn')) $('reportExportBtn').onclick=()=>exportReport(currentReportType());
   if($('reportSearch')) $('reportSearch').oninput=filterReportCenter;
-  $('printPreview').onclick=(event)=>{const html=event?.html||state.previewHtml||$('reportPreview').innerHTML;const w=event?.printWindow||open('','_blank');if(!w){alert('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e intenta nuevamente.');return;}const preview=state.previewDocument;
+  $('printPreview').onclick=(event)=>{const html=event?.html||state.previewHtml||$('reportPreview').innerHTML;const w=event?.printWindow||open('','_blank');if(!w){alert('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e intenta nuevamente.');return;}const preview=state.previewDocument;const origin=previewOrigin;
   const invoiceRef=preview?.type==='invoice' && html===state.sharedPreviewHtml ? docPath('invoices',preview.id) : null;
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><link rel="stylesheet" href="styles.css?v=98"><style>@page{size:letter;margin:.38in;}html,body{margin:0!important;padding:0!important;background:#fff!important;width:100%!important;}body{display:block!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}.doc-page{box-sizing:border-box!important;width:100%!important;max-width:none!important;min-height:calc(11in - .76in)!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;transform:none!important;zoom:1!important;display:flex!important;flex-direction:column!important;overflow:visible!important;}.doc-body{flex:1 1 auto!important;padding:0 0 .08in 0!important;}.doc-foot,.clean-doc-footer{position:static!important;margin-top:auto!important;text-align:center!important;}.doc-table,.clean-items{width:100%!important;table-layout:fixed!important;}.clean-items td,.clean-items th{overflow-wrap:anywhere!important;word-break:normal!important;}@media print{html,body{width:100%!important;height:auto!important}.doc-page{page-break-after:auto!important;break-after:auto!important}}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},500));<\/script></body></html>`);if(invoiceRef){
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><link rel="stylesheet" href="styles.css?v=98"><style>@page{size:letter;margin:.38in;}html,body{margin:0!important;padding:0!important;background:#fff!important;width:100%!important;}body{display:block!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}.doc-page{box-sizing:border-box!important;width:100%!important;max-width:none!important;min-height:calc(11in - .76in)!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;transform:none!important;zoom:1!important;display:flex!important;flex-direction:column!important;overflow:visible!important;}.doc-body{flex:1 1 auto!important;padding:0 0 .08in 0!important;}.doc-foot,.clean-doc-footer{position:static!important;margin-top:auto!important;text-align:center!important;}.doc-table,.clean-items{width:100%!important;table-layout:fixed!important;}.clean-items td,.clean-items th{overflow-wrap:anywhere!important;word-break:normal!important;}@media print{html,body{width:100%!important;height:auto!important}.doc-page{page-break-after:auto!important;break-after:auto!important}}</style></head><body>${html}<script>window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print();},500));<\/script></body></html>`);
     w.addEventListener('afterprint',()=>{
       setTimeout(async()=>{
         window.focus();
-        if(!confirm('¿Se imprimió la factura?')) return;
-        try{await updateDoc(invoiceRef,{printedAt:serverTimestamp()});}
+        const printed=confirm(invoiceRef?'¿Se imprimió la factura?':'¿Se imprimió el documento?');
+        try{if(invoiceRef&&printed)await updateDoc(invoiceRef,{printedAt:serverTimestamp()});}
         catch(error){console.error(error);alert('No se pudo guardar la marca de impresión.');}
+        finally{w.close();returnFromPreview(origin);}
       },0);
     },{once:true});
-  }
   w.document.close();};
+  $('backFromPreview').onclick=()=>returnFromPreview();
   $('whatsappPreview').onclick=()=>sendPreviewWhatsapp();
   $('printWhatsappPreview').onclick=()=>sendPreviewWhatsapp(true);
-  $('downloadPreview').onclick=async()=>{const btn=$('downloadPreview');btn.disabled=true;try{const pdf=await generatePreviewPdf(state.previewHtml||$('reportPreview').innerHTML);pdf.save('nexus-documento.pdf');}catch(error){console.error(error);alert('No se pudo generar el PDF. Intente nuevamente.');}finally{btn.disabled=false;}};
+  $('downloadPreview').onclick=async()=>{const btn=$('downloadPreview');btn.disabled=true;try{const pdf=await generatePreviewPdf(state.previewHtml||$('reportPreview').innerHTML);pdf.save('nexus-documento.pdf');returnFromPreview();}catch(error){console.error(error);alert('No se pudo generar el PDF. Intente nuevamente.');}finally{btn.disabled=false;}};
   if($('sideUpgrade')) $('sideUpgrade').onclick=()=>{if(canUpgradePlan())show('plans');};$('mobileMenu').onclick=()=>document.querySelector('.sidebar').classList.toggle('open');$('logoutBtn').onclick=()=>signOut(auth);if($('globalSearch')) $('globalSearch').oninput=renderGlobalSearch;
 }
 
@@ -3210,6 +3223,7 @@ function v74RestoreActiveField(snapshot){
 }
 const __v66Tables=tables;
 tables=function(){
+  return viewMemory.preserve(()=>{
   const active=v74CaptureActiveField();
   __v66Tables();
   v66RenderClients();
@@ -3221,6 +3235,7 @@ tables=function(){
   v66RenderFollowups();
   v66BindDynamicActions();
   v74RestoreActiveField(active);
+  });
 };
 
 /* V66 Dashboard acciones precisas con filtros */
@@ -3414,12 +3429,13 @@ function workOrderSections(s){
   return sections;
 }
 function serviceDialog(title,body){
+  const origin=viewMemory.capture();
   $('serviceCommandDialog')?.remove();
   const dialog=document.createElement('dialog');dialog.id='serviceCommandDialog';dialog.className='service-command-dialog';
   dialog.innerHTML=`<div class="section-head"><h2>${esc(title)}</h2><button type="button" data-close-dialog aria-label="Cerrar">×</button></div>${body}`;
   document.body.appendChild(dialog);
   dialog.querySelector('[data-close-dialog]').onclick=()=>dialog.close();
-  dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();return dialog;
+  dialog.addEventListener('close',()=>{dialog.remove();viewMemory.restore(origin);},{once:true});dialog.showModal();return dialog;
 }
 function openWorkOrder(id){
   const s=state.services.find(s=>s.id===id);if(!s)return;
@@ -3428,11 +3444,12 @@ function openWorkOrder(id){
   const dialog=serviceDialog('Hoja de servicio / Orden de trabajo',`<p class="muted">Exporta el PDF para compartirlo con ${esc(s.teamName||'el empleado')}. Incluye el alcance y espacio para documentar el cierre.</p><div class="actions"><button class="primary" type="button" data-export-order>Exportar PDF</button><button type="button" data-print-order>Imprimir</button></div><div class="work-order-paper"><header>${logo?`<img src="${esc(logo)}" alt="Logo de la empresa">`:''}<h2>${esc(p.businessName||'Empresa')}</h2><p>${esc(p.phone||'')} · ${esc(p.email||'')}</p><h3>ORDEN DE TRABAJO</h3></header>${sections.map(([title,text])=>`<section><h4>${esc(title)}</h4><p>${esc(text)}</p></section>`).join('')}<footer>${esc(workOrderNumber(s))} · Hoja operativa</footer></div>`);
   dialog.querySelector('[data-export-order]').onclick=async e=>{
     const btn=e.currentTarget;btn.disabled=true;btn.textContent='Generando PDF...';
-    try{await exportWorkOrderPdf(s);}catch(err){alert('No se pudo exportar la orden: '+err.message);}finally{btn.disabled=false;btn.textContent='Exportar PDF';}
+    try{await exportWorkOrderPdf(s);dialog.close();}catch(err){alert('No se pudo exportar la orden: '+err.message);}finally{btn.disabled=false;btn.textContent='Exportar PDF';}
   };
   dialog.querySelector('[data-print-order]').onclick=()=>{
     const w=window.open('','_blank');if(!w)return alert('Permite ventanas emergentes para imprimir.');
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(workOrderNumber(s))}</title><style>@page{size:letter;margin:18mm}body{font:12px Arial;color:#172033}header{text-align:center;border-bottom:2px solid #172033}header img{max-width:150px;max-height:85px}h4{margin:18px 0 6px}p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}section{break-inside:avoid}footer{margin-top:24px;text-align:center}</style></head><body>${dialog.querySelector('.work-order-paper').innerHTML}</body></html>`);
+    w.addEventListener('afterprint',()=>setTimeout(()=>{confirm('¿Se imprimió el documento?');w.close();dialog.close();},0),{once:true});
     w.document.close();
     Promise.all([...w.document.images].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;}))).then(()=>{w.focus();w.print();});
   };
