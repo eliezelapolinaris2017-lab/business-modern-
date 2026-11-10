@@ -1,3 +1,4 @@
+import { createViewMemory } from './ui-context.js?v=124';
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
 import { buildClientPortalPayload } from './client-portal-data.js?v=118';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
@@ -94,8 +95,11 @@ function showUpdateToast(){
 }
 function applyWaitingUpdate(){ if(updateWaiting) updateWaiting.postMessage({ type:'SKIP_WAITING' }); else location.reload(); }
 
+const viewMemory=createViewMemory({getView:()=>document.querySelector('.mobile-view.active')?.id,getRoot:()=>document.querySelector('.mobile-view.active')});
+let documentOrigin=null;
 function switchTab(id){
   if (!document.getElementById(id)?.classList.contains('mobile-view')) return;
+  viewMemory.save();
   const titles = {mDashboard:'Tu operación en la calle',mServices:'Trabajos pendientes',mInvoice:'Nueva factura',mClients:'Clientes',mFollowups:'Seguimientos',mHistory:'Historial',mSync:'Aplicación y sincronización',mMore:'Más herramientas'};
   document.querySelector('.mobile-top p').textContent = titles[id] || 'Nexus Mobile';
   document.querySelectorAll('.mobile-tabs button').forEach(b => {
@@ -104,7 +108,7 @@ function switchTab(id){
   });
   document.querySelectorAll('.mobile-view').forEach(v => v.classList.toggle('active', v.id === id));
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
-  window.scrollTo({ top:0, behavior:'smooth' });
+  viewMemory.recall();
 }
 
 document.addEventListener('click', async e => {
@@ -230,7 +234,8 @@ async function loadProfile(){
   state.profile = snap.exists() ? snap.data() : { businessName:'Nexus Business', tax:'11.5' };
   $('mobileBusiness').textContent = state.profile.businessName || 'Nexus Business';
 }
-function renderAll(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); }
+function renderAll(){return viewMemory.preserve(()=>renderAllContent());}
+function renderAllContent(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); }
 function renderSelects(){
   const opts = state.clients.map(c => `<option value="${esc(c.id)}">${esc(c.name || 'Cliente')}</option>`).join('');
   ['mInvClient', 'mFollowClient'].forEach(id => { const el = $(id); if(el){ const prev = el.value; el.innerHTML = `<option value="">Seleccionar cliente</option>${opts}`; if(prev) el.value = prev; } });
@@ -694,10 +699,13 @@ async function shareInvoice(id){
     if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
       if(btn) btn.textContent = 'Compartiendo…';
       await navigator.share({ title:`Factura ${inv.number || ''}`, text:'Factura adjunta en PDF. Consulte su historial y próximos servicios: '+portalLink+'&document='+encodeURIComponent('invoice:'+inv.id), files:[file] });
+      closeDoc();
       return;
     }
     await openPdfFile(file, filename);
+    closeDoc();
   }catch(err){
+    if(err.name==='AbortError')return;
     console.error('PDF share failed', err);
     alert('No se pudo compartir directamente. Se abrirá/descargará el PDF para compartirlo desde Archivos.');
     try{
@@ -841,24 +849,24 @@ function buildDesktopInvoiceDocument(inv){
 function openInvoiceDoc(id, supplied=null){
   const inv = supplied || state.invoices.find(i => i.id === id);
   if(!inv) return;
+  if($('mDocModal').classList.contains('hidden'))documentOrigin=viewMemory.capture();
   currentDocId = inv.id || id || null;
   $('mDocPreview').innerHTML = buildDesktopInvoiceDocument(inv);
   $('mDocModal').classList.remove('hidden');
 }
 function printCurrentDoc(){
   const invoiceRef = currentDocId ? docRef('invoices', currentDocId) : null;
-  if(invoiceRef){
-    window.addEventListener('afterprint', () => {
-      setTimeout(async () => {
-        if(!confirm('¿Se imprimió la factura?')) return;
-        try{ await updateDoc(invoiceRef, {printedAt:serverTimestamp()}); }
-        catch(error){ console.error(error); alert('No se pudo guardar la marca de impresión.'); }
-      }, 0);
-    }, {once:true});
-  }
+  window.addEventListener('afterprint', () => {
+    setTimeout(async () => {
+      const printed=confirm(invoiceRef?'¿Se imprimió la factura?':'¿Se imprimió el documento?');
+      try{if(invoiceRef&&printed)await updateDoc(invoiceRef,{printedAt:serverTimestamp()});}
+      catch(error){console.error(error);alert('No se pudo guardar la marca de impresión.');}
+      finally{closeDoc();}
+    },0);
+  },{once:true});
   window.print();
 }
-function closeDoc(){ $('mDocModal').classList.add('hidden'); }
+function closeDoc(){ $('mDocModal').classList.add('hidden');if(documentOrigin)viewMemory.restore(documentOrigin);documentOrigin=null; }
 async function shareCurrentDoc(){
   if(currentDocId) return shareInvoice(currentDocId);
   const preview = buildInvoicePreviewObject('Vista previa');
@@ -868,9 +876,11 @@ async function shareCurrentDoc(){
     if(!file || file.size < 10000) throw new Error('PDF vacío o inválido.');
     if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
       await navigator.share({ title:'Factura', text:'Vista previa de factura adjunta en PDF.', files:[file] });
+      closeDoc();
       return;
     }
     await openPdfFile(file, filename);
+    closeDoc();
   }catch(err){
     console.error(err);
     alert('No se pudo preparar el PDF. Se intentará descargarlo.');
