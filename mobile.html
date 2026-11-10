@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=63" />
   <link rel="apple-touch-icon" href="assets/logo.png" />
   <link rel="stylesheet" href="mobile.css?v=116" />
-  <link rel="stylesheet" href="mobile-field.css?v=116" />
+  <link rel="stylesheet" href="mobile-field.css?v=126" />
 <script>
 (()=>{const incoming=new URL(location.href);if(incoming.searchParams.has('access')||incoming.searchParams.has('token')){const portal=new URL('./portal/',incoming);portal.search=incoming.search;portal.hash=incoming.hash;location.replace(portal);}})();
 </script>
@@ -44,7 +44,7 @@
 
     <section id="mDashboard" class="mobile-view active">
       <div class="field-heading"><span>OPERACIÓN MÓVIL</span><h2>Tu día, bajo control.</h2><p>Consulta tus trabajos, factura y atiende a tus clientes.</p></div>
-      <div class="quick-grid field-shortcuts"><button data-tab="mInvoice" type="button">＋ Nueva factura</button><button data-tab="mServices" type="button">▦ Mis trabajos</button><button data-tab="mClients" type="button">♙ Clientes</button><button data-tab="mFollowups" type="button">◷ Seguimientos</button></div>
+      <div class="quick-grid field-shortcuts"><button data-tab="mInvoice" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16 M4 12h16"/></svg><span>Nueva factura</span></button><button data-tab="mServices" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v14H3z M8 7V3h8v4 M3 12h18 M10 12v3h4v-3"/></svg><span>Mis trabajos</span></button><button data-tab="mClients" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M18 8a3 3 0 0 1 0 6 M22 21v-2a4 4 0 0 0-3-4"/></svg><span>Clientes</span></button><button data-tab="mFollowups" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5l3 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0"/></svg><span>Seguimientos</span></button></div>
       <div class="mobile-hero">
         <span>RESUMEN DEL NEGOCIO</span>
         <h2 id="mMonthNet">$0.00</h2>
@@ -62,7 +62,16 @@
     </section>
 
     <section id="mServices" class="mobile-view"><div class="mobile-card"><div class="section-row"><h3>Mis trabajos</h3><span class="muted">Pendientes y próximos</span></div><input id="mServiceSearch" class="search" type="search" placeholder="Buscar cliente o trabajo" aria-label="Buscar trabajos" /><div id="mServiceList" class="mobile-list"></div></div></section>
-    <section id="mMore" class="mobile-view"><div class="field-heading"><h2>Más herramientas</h2><p>Todo lo que necesitas a mano.</p></div><div class="quick-grid"><button data-tab="mFollowups" type="button">Seguimientos</button><button data-tab="mHistory" type="button">Historial</button><button data-tab="mSync" type="button">Aplicación y sincronización</button></div></section>
+    <section id="mMore" class="mobile-view"><div class="field-heading"><span>ESPACIO DE TRABAJO</span><h2>Más posibilidades.</h2><p>Herramientas para resolver desde donde estés.</p></div><div class="tool-grid">
+<button data-tab="mAgenda" data-icon="calendar" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v16H4z M8 2v6 M16 2v6 M4 10h16"/></svg><b>Agenda de trabajo</b><small>Hoy, próximos y pendientes</small></button>
+<button data-tab="mReceivable" data-icon="wallet" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h17v16H3z M3 5V3h14 M16 11h6v5h-6z"/></svg><b>Cuentas por cobrar</b><small>Balances y documentos</small></button>
+<button data-tab="mFollowups" data-icon="clock" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5l3 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0"/></svg><b>Seguimientos</b><small>Recordatorios y clientes</small></button>
+<button data-tab="mHistory" data-icon="history" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4v6h6 M3 10a9 9 0 1 1 1 8 M12 7v5l4 2"/></svg><b>Historial</b><small>Consulta tu operación</small></button>
+<button data-tab="mCalculator" data-icon="calculator" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2h14v20H5z M8 5h8v4H8z M8 13h1 M15 13h1 M8 17h1 M15 17h1"/></svg><b>Calculadora de precio</b><small>Descuento, IVU y total</small></button>
+<button data-tab="mSync" data-icon="sync" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 0 1 16-5l2 3 M21 2v6h-6 M21 14a9 9 0 0 1-16 5l-2-3 M3 22v-6h6"/></svg><b>Aplicación</b><small>Actualización y conexión</small></button></div></section>
+    <section id="mAgenda" class="mobile-view"><div class="field-heading"><span>PLANIFICA TU DÍA</span><h2>Agenda de trabajo</h2><p>Consulta servicios abiertos por fecha.</p></div><div class="segmented" role="group" aria-label="Periodo de agenda"><button data-agenda-filter="today" type="button">Hoy</button><button data-agenda-filter="next" type="button" class="active">Próximos 7 días</button><button data-agenda-filter="overdue" type="button">Atrasados</button></div><div id="mAgendaList" class="mobile-list"></div></section>
+    <section id="mReceivable" class="mobile-view"><div class="field-heading"><span>COBROS</span><h2>Cuentas por cobrar</h2><p id="mReceivableTotal"></p></div><input id="mReceivableSearch" class="search" type="search" placeholder="Buscar cliente o factura" aria-label="Buscar balances"><div id="mReceivableList" class="mobile-list"></div></section>
+    <section id="mCalculator" class="mobile-view"><div class="field-heading"><span>HERRAMIENTA RÁPIDA</span><h2>Calcula tu precio</h2><p>Una referencia rápida antes de preparar la factura.</p></div><div class="mobile-card mobile-form"><label>Importe antes de IVU<input id="mCalcAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label><div class="two-col"><label>Descuento %<input id="mCalcDiscount" type="number" inputmode="decimal" min="0" max="100" value="0"></label><label>IVU %<input id="mCalcTax" type="number" inputmode="decimal" min="0" max="100" value="11.5"></label></div><div id="mCalcResult" aria-live="polite"></div></div></section>
     <section id="mInvoice" class="mobile-view">
       <div class="step-bar">
         <span class="active">1 Información</span><span>2 Líneas</span><span>3 Resumen</span><span>4 Guardar</span>
@@ -72,7 +81,7 @@
         <div class="mobile-card">
           <div class="section-row"><h3>Información general</h3><span class="muted"></span></div>
           <div class="two-col">
-            <label>Cliente *<select id="mInvClient" required></select></label>
+            <div class="client-picker" data-picker="mInvClient"><div class="picker-label"><label for="mInvClientSearch">Cliente *</label><button type="button" data-add-client="mInvClient">Nuevo cliente</button></div><input id="mInvClientSearch" type="search" placeholder="Escribe nombre, teléfono o email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mInvClientResults" required><select id="mInvClient" hidden tabindex="-1" aria-hidden="true"></select><div id="mInvClientResults" class="client-results" role="listbox" hidden></div><small id="mInvClientSelected" class="picker-selected">Busca y selecciona un cliente existente.</small></div>
             <label>Número de documento<input id="mInvNumber" placeholder="Se generará automáticamente" /></label>
           </div>
           <div class="two-col">
@@ -128,10 +137,9 @@
     </section>
 
     <section id="mFollowups" class="mobile-view">
-      <div class="mobile-card sticky-card">
-        <div class="section-row"><h3>Área Seguimientos</h3><span class="muted">6 meses estándar</span></div>
+      <details class="mobile-card follow-create"><summary>Nuevo seguimiento <span>Programar recordatorio</span></summary>
         <form id="mFollowupForm" class="mobile-form compact">
-          <label>Cliente<select id="mFollowClient" required></select></label>
+          <div class="client-picker" data-picker="mFollowClient"><div class="picker-label"><label for="mFollowClientSearch">Cliente *</label><button type="button" data-add-client="mFollowClient">Nuevo cliente</button></div><input id="mFollowClientSearch" type="search" placeholder="Escribe el nombre del cliente" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mFollowClientResults" required><select id="mFollowClient" hidden tabindex="-1" aria-hidden="true"></select><div id="mFollowClientResults" class="client-results" role="listbox" hidden></div><small id="mFollowClientSelected" class="picker-selected">Busca por nombre o teléfono.</small></div>
           <label>Tipo<select id="mFollowType"><option>Mantenimiento</option><option>Cotización</option><option>Instalación</option><option>Servicio</option><option>Garantía</option><option>Otro</option></select></label>
           <label>Asunto<input id="mFollowTitle" placeholder="Mantenimiento preventivo 6 meses" required /></label>
           <div class="two-col">
@@ -141,7 +149,8 @@
           <label>Prioridad<select id="mFollowPriority"><option>Normal</option><option>Alta</option><option>Urgente</option></select></label>
           <button class="primary" type="submit">Guardar seguimiento</button>
         </form>
-      </div>
+      </details>
+      <input id="mFollowSearch" class="search" type="search" placeholder="Buscar cliente o seguimiento" aria-label="Buscar seguimientos">
       <div class="filter-bar">
         <button data-follow-filter="all" class="active" type="button">Todos</button>
         <button data-follow-filter="due" type="button">Vencidos</button>
@@ -152,8 +161,7 @@
     </section>
 
     <section id="mClients" class="mobile-view">
-      <div class="mobile-card sticky-card">
-        <div class="section-row"><h3>Añadir cliente</h3><span class="muted"></span></div>
+      <details id="mNewClientPanel" class="mobile-card client-create"><summary>Nuevo cliente <span>Crear contacto</span></summary>
         <form id="mClientForm" class="mobile-form compact client-mobile-form">
           <label>Nombre del cliente *<input id="mClientName" autocomplete="name" placeholder="Nombre o compañía" required /></label>
           <div class="two-col">
@@ -171,7 +179,7 @@
             <button class="primary" type="submit">Guardar cliente</button>
           </div>
         </form>
-      </div>
+      </details>
 
       <div class="mobile-card">
         <div class="section-row"><h3>Clientes</h3><span id="mClientCount" class="muted"></span></div>
@@ -211,19 +219,19 @@
     </div>
 
     <nav class="mobile-tabs" aria-label="Navegación móvil">
-      <button class="active" data-tab="mDashboard" type="button"><span aria-hidden="true">⌂</span>Inicio</button>
-      <button data-tab="mServices" type="button"><span aria-hidden="true">▦</span>Trabajos</button>
-      <button data-tab="mInvoice" type="button"><span aria-hidden="true">＋</span>Facturar</button>
-      <button data-tab="mClients" type="button"><span aria-hidden="true">♙</span>Clientes</button>
-      <button data-tab="mMore" type="button"><span aria-hidden="true">•••</span>Más</button>
+      <button class="active" data-tab="mDashboard" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 3l9 7v10H3z M9 20v-7h6v7"/></svg>Inicio</button>
+      <button data-tab="mServices" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v14H3z M8 7V3h8v4 M3 12h18 M10 12v3h4v-3"/></svg>Trabajos</button>
+      <button data-tab="mInvoice" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16 M4 12h16"/></svg>Facturar</button>
+      <button data-tab="mClients" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M18 8a3 3 0 0 1 0 6 M22 21v-2a4 4 0 0 0-3-4"/></svg>Clientes</button>
+      <button data-tab="mMore" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>Más</button>
     </nav>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="mobile.js?v=124-view-memory"></script>
+  <script type="module" src="mobile.js?v=126-mobile-premium"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=116').catch(()=>{}));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=126').catch(()=>{}));
     }
   </script>
 </body>

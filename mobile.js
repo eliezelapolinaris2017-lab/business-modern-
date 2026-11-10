@@ -1,3 +1,4 @@
+import { searchClients, normalizeClientSearch } from './client-search.js?v=126';
 import { createViewMemory } from './ui-context.js?v=124';
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
 import { buildClientPortalPayload } from './client-portal-data.js?v=118';
@@ -6,7 +7,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v118';
+const APP_VERSION = 'v126';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
@@ -100,10 +101,10 @@ let documentOrigin=null;
 function switchTab(id){
   if (!document.getElementById(id)?.classList.contains('mobile-view')) return;
   viewMemory.save();
-  const titles = {mDashboard:'Tu operación en la calle',mServices:'Trabajos pendientes',mInvoice:'Nueva factura',mClients:'Clientes',mFollowups:'Seguimientos',mHistory:'Historial',mSync:'Aplicación y sincronización',mMore:'Más herramientas'};
+  const titles = {mDashboard:'Tu operación en la calle',mServices:'Trabajos pendientes',mInvoice:'Nueva factura',mClients:'Clientes',mFollowups:'Seguimientos',mHistory:'Historial',mSync:'Aplicación y sincronización',mMore:'Más herramientas',mAgenda:'Agenda de trabajo',mReceivable:'Cuentas por cobrar',mCalculator:'Calculadora de precio'};
   document.querySelector('.mobile-top p').textContent = titles[id] || 'Nexus Mobile';
   document.querySelectorAll('.mobile-tabs button').forEach(b => {
-    const selected = b.dataset.tab === id || (b.dataset.tab === 'mMore' && ['mFollowups','mHistory','mSync'].includes(id));
+    const selected = b.dataset.tab === id || (b.dataset.tab === 'mMore' && ['mFollowups','mHistory','mSync','mAgenda','mReceivable','mCalculator'].includes(id));
     b.setAttribute('aria-current', selected ? 'page' : 'false');
   });
   document.querySelectorAll('.mobile-view').forEach(v => v.classList.toggle('active', v.id === id));
@@ -233,12 +234,14 @@ async function loadProfile(){
   const ref = doc(db, 'users', uid()); const snap = await getDoc(ref);
   state.profile = snap.exists() ? snap.data() : { businessName:'Nexus Business', tax:'11.5' };
   $('mobileBusiness').textContent = state.profile.businessName || 'Nexus Business';
+  if($('mCalcTax')){$('mCalcTax').value=String(state.profile.tax??11.5);calculateMobilePrice();}
 }
 function renderAll(){return viewMemory.preserve(()=>renderAllContent());}
-function renderAllContent(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); }
+function renderAllContent(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); renderMobileTools(); }
 function renderSelects(){
   const opts = state.clients.map(c => `<option value="${esc(c.id)}">${esc(c.name || 'Cliente')}</option>`).join('');
   ['mInvClient', 'mFollowClient'].forEach(id => { const el = $(id); if(el){ const prev = el.value; el.innerHTML = `<option value="">Seleccionar cliente</option>${opts}`; if(prev) el.value = prev; } });
+  for(const id of ['mInvClient','mFollowClient']){const selected=clientBy($(id)?.value);if(selected.id&&document.activeElement!==$(id+'Search'))$(id+'Search').value=selected.name||'';}
   if($('mInvDate') && !$('mInvDate').value) $('mInvDate').value = today();
   if($('mInvDue') && !$('mInvDue').value) $('mInvDue').value = plusDays(15);
   if($('mFollowDue') && !$('mFollowDue').value) $('mFollowDue').value = plusMonths(today(), 6);
@@ -260,16 +263,27 @@ async function saveMobileClient(e){
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
+  const button=e.target.querySelector('[type=submit]');if(button)button.disabled=true;
+  try{
   const ref = await addDoc(colRef('clients'), payload);
   e.target.reset();
   setSync('Cliente guardado · sincronizando');
   switchTab('mInvoice');
-  setTimeout(() => { const sel = $('mInvClient'); if(sel){ sel.value = ref.id; } }, 500);
+  if(!state.clients.some(c=>c.id===ref.id))state.clients.push({id:ref.id,...payload});
+  renderSelects();
+  const picker=returnClientPicker||'mInvClient';returnClientPicker=null;
+  $('mNewClientPanel').open=false;
+  if(picker==='mFollowClient'){switchTab('mFollowups');document.querySelector('.follow-create').open=true;}
+  chooseMobileClient(picker,ref.id);
+  $(picker+'Search').scrollIntoView({block:'center'});
+  }catch(error){showMobileNotice('No se pudo guardar el cliente. '+firebaseMessage(error),'danger');}
+  finally{if(button)button.disabled=false;}
 }
 function startInvoiceForClient(clientId){
   switchTab('mInvoice');
   const sel = $('mInvClient');
-  if(sel) sel.value = clientId || '';
+  if(sel)chooseMobileClient('mInvClient',clientId||'');
+  $('mInvClientSearch')?.scrollIntoView({block:'center'});
 }
 function setInvoiceStatus(status){
   $('mInvStatus').value = status;
@@ -378,6 +392,8 @@ function followCard(f){ const c = clientBy(f.clientId); const phone = phoneLink(
 
 function renderFollowups(){
   let rows = followupRows();
+  const query=normalizeClientSearch($('mFollowSearch')?.value);
+  if(query)rows=rows.filter(f=>normalizeClientSearch([f.clientName,clientBy(f.clientId).name,f.title,f.type].join(' ')).includes(query));
   if(currentFilter === 'due') rows = rows.filter(f => followStatus(f) === 'Vencida');
   if(currentFilter === 'next') rows = rows.filter(f => followStatus(f) === 'Próximo');
   if(currentFilter === 'maint') rows = rows.filter(f => String(f.type || '').toLowerCase().includes('mant'));
@@ -387,7 +403,7 @@ function renderClients(){
   const q = String($('mClientSearch')?.value || '').toLowerCase();
   const rows = state.clients.filter(c => [c.name,c.phone,c.email,c.address].join(' ').toLowerCase().includes(q)).slice(0,60);
   $('mClientCount').textContent = `${state.clients.length} clientes`;
-  $('mClientList').innerHTML = rows.length ? rows.map(c => { const invs = state.invoices.filter(i => i.clientId === c.id), fol = state.followups.filter(f => f.clientId === c.id); return `<div class="row-card"><div class="top"><div><h4>${esc(c.name || 'Cliente')}</h4><p>${esc(c.phone || '')} ${c.email ? '· ' + esc(c.email) : ''}</p></div><span class="badge">${invs.length} fac.</span></div><p>${esc(c.address || c.city || '')}</p><div class="actions"><button data-new-invoice-client="${esc(c.id)}" type="button">Facturar</button><button data-tab="mHistory" type="button">Historial</button>${phoneLink(c) ? `<a href="${phoneLink(c)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<span class="badge">${fol.length} seg.</span></div></div>`; }).join('') : '<div class="empty">Sin clientes.</div>';
+  $('mClientList').innerHTML = rows.length ? rows.map(c => { const invs = state.invoices.filter(i => i.clientId === c.id), fol = state.followups.filter(f => f.clientId === c.id); return `<div class="row-card"><div class="top"><div><h4>${esc(c.name || 'Cliente')}</h4><p>${esc(c.phone || '')} ${c.email ? '· ' + esc(c.email) : ''}</p></div><span class="badge">${invs.length} fac.</span></div><p>${esc(c.address || c.city || '')}</p><div class="actions"><button data-new-invoice-client="${esc(c.id)}" type="button">Facturar</button><button data-client-history="${esc(c.id)}" type="button">Historial</button>${phoneLink(c) ? `<a href="${phoneLink(c)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<span class="badge">${fol.length} seg.</span></div></div>`; }).join('') : '<div class="empty">Sin clientes.</div>';
 }
 function renderHistory(){
   const q = String($('mHistorySearch')?.value || '').toLowerCase();
@@ -894,7 +910,7 @@ function renderServices(){
   const rows = [...state.services].filter(s => {
     const status = s.status || s.fields?.[3] || '';
     const c = clientBy(s.clientId);
-    return !['Completado','Completada','Cancelado','Cancelada'].includes(status) && `${s.title || s.serviceType || ''} ${s.clientName || c.name || ''} ${s.date || ''}`.toLowerCase().includes(query);
+    return !['Completado','Completada','Cancelado','Cancelada','Facturado'].includes(status) && `${s.title || s.serviceType || ''} ${s.clientName || c.name || ''} ${s.date || ''}`.toLowerCase().includes(query);
   }).sort((a,b)=>String(a.date || '9999').localeCompare(String(b.date || '9999')));
   $('mServiceList').innerHTML = rows.length ? rows.map(s=>{
     const c=clientBy(s.clientId), address=c.address || c.city || '', phone=String(c.phone || '').replace(/[^+0-9]/g,'');
@@ -902,3 +918,67 @@ function renderServices(){
   }).join('') : '<div class="empty">No hay trabajos pendientes para esta búsqueda.</div>';
 }
 $('mServiceSearch')?.addEventListener('input', renderServices);
+
+// Search clients without opening a long native select menu.
+let returnClientPicker=null;
+function chooseMobileClient(picker,id){
+  const c=clientBy(id),select=$(picker),input=$(picker+'Search');
+  if(!select||!input)return;
+  if(id&&!Array.from(select.options).some(o=>o.value===id))select.add(new Option(c.name||'Cliente',id));
+  select.value=id||'';input.value=c.name||'';
+  input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');
+  $(picker+'Results').hidden=true;
+  $(picker+'Selected').textContent=c.id?[c.phone||c.whatsapp,c.email,c.city].filter(Boolean).join(' · ')||'Cliente seleccionado':'Busca y selecciona un cliente existente.';
+}
+function showClientResults(picker){
+  const input=$(picker+'Search'),box=$(picker+'Results');if(!input||!box)return;
+  const rows=searchClients(state.clients,input.value,8);
+  box.innerHTML=rows.length?rows.map((c,i)=>`<button id="${picker}Option${i}" type="button" role="option" aria-selected="false" data-pick-client="${esc(c.id)}" data-picker-id="${picker}"><b>${esc(c.name||'Cliente')}</b><small>${esc([c.phone||c.whatsapp,c.email||c.city].filter(Boolean).join(' · '))}</small></button>`).join(''):'<div class="empty">No hay coincidencias. Puedes crear un nuevo cliente.</div>';
+  box.hidden=false;input.setAttribute('aria-expanded','true');input.removeAttribute('aria-activedescendant');
+}
+for(const picker of ['mInvClient','mFollowClient']){
+  const input=$(picker+'Search');
+  input?.addEventListener('input',()=>{$(picker).value='';$(picker+'Selected').textContent='Selecciona uno de los resultados.';showClientResults(picker);});
+  input?.addEventListener('focus',()=>showClientResults(picker));
+  input?.addEventListener('keydown',e=>{
+    const box=$(picker+'Results');
+    if(e.key==='Escape'){box.hidden=true;input.setAttribute('aria-expanded','false');return;}
+    if(!['ArrowDown','ArrowUp','Enter'].includes(e.key))return;
+    if(box.hidden){if(e.key==='Enter')return;showClientResults(picker);}
+    const options=[...box.querySelectorAll('[data-pick-client]')];if(!options.length)return;
+    e.preventDefault();let index=options.findIndex(o=>o.getAttribute('aria-selected')==='true');
+    if(e.key==='Enter'){if(index>=0)chooseMobileClient(picker,options[index].dataset.pickClient);return;}
+    index=e.key==='ArrowDown'?Math.min(index+1,options.length-1):Math.max(index-1,0);
+    options.forEach((o,i)=>o.setAttribute('aria-selected',i===index?'true':'false'));
+    input.setAttribute('aria-activedescendant',options[index].id);options[index].scrollIntoView({block:'nearest'});
+  });
+}
+document.addEventListener('click',e=>{
+  const choice=e.target.closest('[data-pick-client]');
+  if(choice){chooseMobileClient(choice.dataset.pickerId,choice.dataset.pickClient);return;}
+  const add=e.target.closest('[data-add-client]');
+  if(add){returnClientPicker=add.dataset.addClient;switchTab('mClients');$('mNewClientPanel').open=true;$('mClientName').focus({preventScroll:true});$('mNewClientPanel').scrollIntoView({block:'start',behavior:'smooth'});return;}
+  if(!e.target.closest('.client-picker'))for(const id of ['mInvClient','mFollowClient']){$(id+'Results').hidden=true;$(id+'Search').setAttribute('aria-expanded','false');}
+  const agenda=e.target.closest('[data-agenda-filter]');if(agenda){agendaFilter=agenda.dataset.agendaFilter;document.querySelectorAll('[data-agenda-filter]').forEach(b=>b.classList.toggle('active',b===agenda));renderMobileTools();}
+  const history=e.target.closest('[data-client-history]');if(history){$('mHistorySearch').value=clientBy(history.dataset.clientHistory).name||'';renderHistory();switchTab('mHistory');}
+});
+let agendaFilter='next';
+function renderMobileTools(){
+  const now=today(),end=plusDays(7);
+  const services=sorted(state.services).filter(s=>!['Completado','Completada','Cancelado','Cancelada','Facturado'].includes(s.status||s.fields?.[3]||'')).filter(s=>agendaFilter==='today'?s.date===now:agendaFilter==='overdue'?s.date&&s.date<now:s.date>=now&&s.date<=end).reverse();
+  $('mAgendaList').innerHTML=services.length?services.map(s=>{const c=clientBy(s.clientId),address=c.address||c.city;return `<article class="row-card"><div class="top"><div><h4>${esc(s.clientName||c.name||'Cliente')}</h4><p>${esc(s.title||s.serviceType||'Servicio')}</p></div>${statusBadge(s.status||'Pendiente')}</div><p>${esc(s.date||'Sin fecha')} ${esc(s.time||'')}</p><p>${esc(address||'Sin dirección')}</p><div class="actions">${address?`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}" target="_blank" rel="noopener">Ver ruta</a>`:''}<button data-new-invoice-client="${esc(c.id||'')}" type="button">Facturar cliente</button></div></article>`;}).join(''):'<div class="empty">No hay trabajos en este periodo.</div>';
+  const q=normalizeClientSearch($('mReceivableSearch').value);
+  const invoices=sorted(state.invoices).filter(i=>!['Cancelada','Borrador'].includes(invoiceStatus(i))&&invoiceBalance(i)>0);
+  $('mReceivableTotal').textContent=money(invoices.reduce((a,i)=>a+invoiceBalance(i),0))+' pendiente · '+invoices.length+' facturas';
+  const filtered=invoices.filter(i=>normalizeClientSearch([i.number,i.clientName,clientBy(i.clientId).name].join(' ')).includes(q));
+  $('mReceivableList').innerHTML=filtered.length?filtered.map(i=>`<article class="row-card"><div class="top"><div><h4>${esc(i.clientName||clientBy(i.clientId).name||'Cliente')}</h4><p>${esc(i.number||'Factura')} · Vence ${esc(i.dueDate||'Sin fecha')}</p></div>${statusBadge(invoiceStatus(i))}</div><p>Balance <b>${money(invoiceBalance(i))}</b></p><div class="actions"><button data-view-invoice="${esc(i.id)}" type="button">Ver factura</button><button data-share-invoice="${esc(i.id)}" type="button">Compartir</button><button data-mark-paid="${esc(i.id)}" type="button">Saldar factura</button></div></article>`).join(''):'<div class="empty">No hay balances para esta búsqueda.</div>';
+}
+function calculateMobilePrice(){
+  const amount=Math.max(0,Number($('mCalcAmount').value)||0),discount=Math.min(100,Math.max(0,Number($('mCalcDiscount').value)||0)),rate=Math.min(100,Math.max(0,Number($('mCalcTax').value)||0));
+  const net=amount*(1-discount/100),tax=net*rate/100;
+  $('mCalcResult').innerHTML=`<div class="summary-row"><span>Descuento</span><b>${money(amount-net)}</b></div><div class="summary-row"><span>Subtotal</span><b>${money(net)}</b></div><div class="summary-row"><span>IVU</span><b>${money(tax)}</b></div><div class="summary-row total"><span>Total</span><b>${money(net+tax)}</b></div>`;
+}
+$('mReceivableSearch')?.addEventListener('input',renderMobileTools);
+$('mFollowSearch')?.addEventListener('input',renderFollowups);
+for(const id of ['mCalcAmount','mCalcDiscount','mCalcTax'])$(id)?.addEventListener('input',calculateMobilePrice);
+calculateMobilePrice();
