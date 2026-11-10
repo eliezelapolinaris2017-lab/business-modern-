@@ -1,3 +1,4 @@
+import { createWhatsappTab } from './whatsapp-tab.js?v=125';
 import { createViewMemory } from './ui-context.js?v=124';
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
 import { buildClientPortalPayload } from './client-portal-data.js?v=118';
@@ -12,6 +13,12 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const $ = id => document.getElementById(id);
+const whatsappTab=createWhatsappTab();
+document.addEventListener('click',event=>{
+  const link=event.target.closest('a[href]');
+  if(!link||!whatsappTab.isWhatsappUrl(link.href))return;
+  event.preventDefault();whatsappTab.open(link.href);
+});
 const money = n => Number(n || 0).toLocaleString('en-US', { style:'currency', currency:'USD' });
 const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const today = () => new Date().toISOString().slice(0,10);
@@ -1510,7 +1517,7 @@ function renderDirectory(){
 
       <div class="directory-primary-actions">
         ${map?`<a class="directory-action-main" href="${esc(map)}" target="_blank" rel="noopener"><span>⌖</span>Google Maps</a>`:''}
-        ${phone?`<a class="directory-action-main" href="https://wa.me/${phone}" target="_blank" rel="noopener"><span>◉</span>WhatsApp</a>`:''}
+        ${phone?`<a class="directory-action-main" href="https://wa.me/${phone}" target="NexusWhatsapp" rel="noopener"><span>◉</span>WhatsApp</a>`:''}
       </div>
 
       <div class="directory-secondary-actions">
@@ -1624,7 +1631,7 @@ function tables(){const i=industry();
   $('payrollTable').innerHTML=table(['Fecha',i.team,'Periodo','Bruto','Bonos','Retención / salida','Adelantos / otros','Neto','Acción'],state.payroll.map(p=>`<tr><td>${esc(p.date)}</td><td>${esc(p.teamName)}</td><td>${esc(p.period)}<br><span class="muted">${Number(p.hours||0)}h + ${Number(p.overtime||0)}h extra</span></td><td>${money(p.gross)}</td><td>${money(p.bonus)}</td><td>${money(payrollRetention(p))}<br><span class="muted">${esc(p.retentionType||'')} ${p.retentionDestination?'→ '+esc(p.retentionDestination):''}</span></td><td>${money(payrollAdvance(p)+payrollOtherDeductions(p))}</td><td><b>${money(payrollNet(p))}</b><br><span class="muted">${esc(p.method)}</span></td><td><div class="actions"><button data-paystub="${p.id}" type="button">PDF</button>${action('payroll',p.id)}</div></td></tr>`));
   if($('retentionsTable')) $('retentionsTable').innerHTML=`<div class="section-head"><h3>Retenciones por pagar</h3><span class="limit-chip">Pendiente ${money(retentionPendingAmount())}</span></div>`+table(['Fecha','Empleado','Tipo','Destino','Monto','Estado','Fecha límite','Pagado','Acción'],state.payrollRetentions.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.teamName)}</td><td>${esc(r.type)}</td><td>${esc(r.destination)}</td><td><b>${money(r.amount)}</b></td><td>${statusChip(retentionStatus(r))}</td><td>${esc(r.dueDate||'—')}</td><td>${esc(r.paidAt||'—')}</td><td><div class="actions">${retentionStatus(r)==='Pendiente'?`<button data-pay-retention="${r.id}" type="button">Marcar pagada</button>`:''}${action('payrollRetentions',r.id)}</div></td></tr>`));
   $('assetsTable').innerHTML=table(['Activo','Cliente','Categoría','Ubicación','Estado','Garantía','Acción'],state.assets.map(a=>`<tr><td><b>${esc(assetName(a))}</b><br><span class="muted">${esc(a.notes||'')}</span></td><td>${esc(a.clientName||'Sin cliente')}</td><td>${esc(assetCategory(a))}</td><td>${esc(assetLocation(a))}</td><td>${esc(assetStatus(a))}</td><td>${esc(a.warranty||'')}</td><td>${action('assets',a.id)}</td></tr>`));
-  $('suppliersTable').innerHTML=table(['Suplidor','Contacto','Crédito','Compras','Pagado','Balance','Acción'],state.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b><br><span class="muted">${esc(s.category||'')} ${(s.fields||[]).filter(Boolean).map(esc).join(' · ')}</span></td><td>${esc(s.phone)}<br><span class="muted">${esc(s.email)}</span><br>${s.whatsapp?`<a href="https://wa.me/${String(s.whatsapp).replace(/\D/g,'')}" target="_blank">WhatsApp</a>`:''}</td><td>${money(s.creditLimit)}</td><td>${money(supplierPurchasesTotal(s.id))}</td><td>${money(supplierPaid(s.id))}</td><td><b>${money(supplierBalance(s.id))}</b></td><td>${action('suppliers',s.id)}</td></tr>`));
+  $('suppliersTable').innerHTML=table(['Suplidor','Contacto','Crédito','Compras','Pagado','Balance','Acción'],state.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b><br><span class="muted">${esc(s.category||'')} ${(s.fields||[]).filter(Boolean).map(esc).join(' · ')}</span></td><td>${esc(s.phone)}<br><span class="muted">${esc(s.email)}</span><br>${s.whatsapp?`<a href="https://wa.me/${String(s.whatsapp).replace(/\D/g,'')}" target="NexusWhatsapp">WhatsApp</a>`:''}</td><td>${money(s.creditLimit)}</td><td>${money(supplierPurchasesTotal(s.id))}</td><td>${money(supplierPaid(s.id))}</td><td><b>${money(supplierBalance(s.id))}</b></td><td>${action('suppliers',s.id)}</td></tr>`));
   $('supplierPaymentsTable').innerHTML=table(['Fecha','Suplidor','Compra','Método','Monto','Nota','Acción'],state.supplierPayments.map(p=>`<tr><td>${esc(p.date)}</td><td>${esc(p.supplierName)}</td><td>${esc(p.purchaseNumber||'General')}</td><td>${esc(p.method)}</td><td>${money(p.amount)}</td><td>${esc(p.note)}</td><td>${action('supplierPayments',p.id)}</td></tr>`));
   $('purchasesTable').innerHTML=table(['Fecha','Suplidor','Concepto','Vence','Total','Pagado','Balance','Estado','Acción'],state.purchases.map(p=>`<tr><td>${esc(p.date)}</td><td>${esc(p.supplierName)}</td><td><b>${esc(p.number||p.reference||'')}</b><br><span class="muted">${esc(p.concept)}</span></td><td>${esc(p.dueDate||'—')}</td><td>${money(p.total)}</td><td>${money(purchasePaid(p.id))}</td><td><b>${money(purchaseBalance(p))}</b></td><td>${statusChip(purchaseStatus(p))}</td><td>${action('purchases',p.id)}</td></tr>`));
   renderQuotesTable();
@@ -2350,10 +2357,8 @@ async function sendPreviewWhatsapp(printAlso=false){
   const origin=previewOrigin;
   const printTab=printAlso?window.open('','_blank'):null;
   if(printAlso&&!printTab){alert('Permita ventanas emergentes para imprimir y abrir WhatsApp.');return;}
-  const tab=window.open('','_blank');
-  if(!tab){if(printTab)printTab.close();alert('Permita ventanas emergentes para abrir WhatsApp e intente nuevamente.');return;}
-  tab.opener=null;
-  tab.document.body.textContent='Preparando documento para WhatsApp…';
+  const request=whatsappTab.reserve();
+  if(!request){if(printTab)printTab.close();return;}
   const buttons=[$('whatsappPreview'),$('printWhatsappPreview')];
   buttons.forEach(b=>{if(b)b.disabled=true;});
   try{
@@ -2373,12 +2378,12 @@ async function sendPreviewWhatsapp(printAlso=false){
     const link=portalLink+'&document='+encodeURIComponent(type+':'+row.id);
     const label=type==='invoice'?'factura':'cotización';
     const message=`Hola ${row.clientName||c.name||''}, le compartimos su ${label} ${row.number||''} de ${p.businessName||'nuestro negocio'}. Puede consultar el PDF, su historial y próximos servicios aquí: ${link}`;
-    tab.location.replace('https://wa.me/'+phone+'?text='+encodeURIComponent(message));
+    request.send('https://wa.me/'+phone+'?text='+encodeURIComponent(message));
     if(printAlso){
       if(state.previewHtml===html) $('printPreview').onclick({printWindow:printTab,html});
       else {printTab.close();alert('WhatsApp está listo. La vista cambió durante el envío; vuelva a abrir el documento para imprimir.');}
     }else returnFromPreview(origin);
-  }catch(error){tab.close();if(printTab)printTab.close();console.error('WhatsApp documento',error);alert('No se pudo preparar el documento. '+(error.message||'Verifique su conexión y vuelva a intentar.'));}
+  }catch(error){request.cancel();if(printTab)printTab.close();console.error('WhatsApp documento',error);alert('No se pudo preparar el documento. '+(error.message||'Verifique su conexión y vuelva a intentar.'));}
   finally{buttons.forEach(b=>{if(b)b.disabled=false;});}
 }
 
@@ -2743,7 +2748,7 @@ function followupWhatsappUrl(f){
 async function sendFollowupWhatsapp(id){
   const f=(state.followups||[]).find(x=>x.id===id); if(!f) return;
   const url=followupWhatsappUrl(f);
-  open(url,'_blank');
+  if(!whatsappTab.open(url))return;
   const sentAt=new Date().toISOString();
   await updateDoc(docPath('followups',id),{status:'En espera de ser atendido',sentAt,lastSentAt:sentAt,channel:'WhatsApp',updatedAt:serverTimestamp()}).catch(console.warn);
   if(f.clientId) await updateDoc(docPath('clients',f.clientId),{followupStatus:'En espera de ser atendido',lastFollowupAt:sentAt,updatedAt:serverTimestamp()}).catch(console.warn);
@@ -3520,13 +3525,12 @@ function bindEmployeeCommandButtons(root=document){
   root.querySelectorAll('[data-send-employee]').forEach(b=>b.onclick=async()=>{
     const service=state.services.find(s=>s.id===b.dataset.sendEmployee),team=state.team.find(t=>t.id===service?.teamId);
     const newAccess=!team?.employeePortal?.enabled;
-    const popup=window.open('about:blank','_blank');if(popup)popup.opener=null;b.disabled=true;
+    const request=whatsappTab.reserve();if(!request)return;b.disabled=true;
     try{
       const url=await employeeCommand.dispatch(b.dataset.sendEmployee);
-      if(popup)popup.location.href=url;
-      else serviceDialog('Compartir orden',`<p>Tu orden está lista para compartir.</p><a href="${esc(url)}" target="_blank" rel="noopener">Abrir WhatsApp</a>`);
+      request.send(url);
       if(newAccess&&team)await employeeCommand.manage(team.id);
-    }catch(e){popup?.close();alert('No se pudo preparar la orden: '+e.message);}finally{b.disabled=false;}
+    }catch(e){request.cancel();alert('No se pudo preparar la orden: '+e.message);}finally{b.disabled=false;}
   });
   root.querySelectorAll('[data-service-evidence]').forEach(b=>b.onclick=()=>{
     const s=state.services.find(s=>s.id===b.dataset.serviceEvidence);if(!s)return;
