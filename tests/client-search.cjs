@@ -1,0 +1,8 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const ctx={};vm.createContext(ctx);vm.runInContext(fs.readFileSync('client-search.js','utf8').replaceAll('export function','function'),ctx);
+const clients=[{id:'1',name:'José Rivera',phone:'787-555-0100',email:'jr@example.com'},{id:'2',name:'Ana Peña',phone:'787-444-0200'},{id:'3',name:'Rivera Plumbing',email:'service@example.com'}];
+assert.equal(ctx.searchClients(clients,'jose')[0].id,'1');assert.equal(ctx.searchClients(clients,'pena')[0].id,'2');assert.equal(ctx.searchClients(clients,'787555')[0].id,'1');assert.equal(ctx.searchClients(clients,'jose rivera')[0].id,'1');assert.equal(ctx.searchClients(clients,'jr@example.com')[0].id,'1');assert.equal(ctx.searchClients(clients,'no existe').length,0);assert.equal(ctx.searchClients(clients,'',2).length,2);assert.equal(clients[0].id,'1');
+// Use the actual calculator with a controlled DOM.
+const src=fs.readFileSync('mobile.js','utf8'),nodes={mCalcAmount:{value:'100'},mCalcDiscount:{value:'10'},mCalcTax:{value:'11.5'},mCalcResult:{innerHTML:''}};
+ctx.$=id=>nodes[id];ctx.money=n=>n.toFixed(2);vm.runInContext(src.slice(src.indexOf('function calculateMobilePrice(){'),src.indexOf("$('mReceivableSearch')?.addEventListener")),ctx);ctx.calculateMobilePrice();assert.match(nodes.mCalcResult.innerHTML,/100.35/);nodes.mCalcDiscount.value='200';ctx.calculateMobilePrice();assert.match(nodes.mCalcResult.innerHTML,/Total<\/span><b>0.00/);
+console.log('PASS: accents, names, formatted phones, email, result limits, no mutation; calculator discount, IVU and bounds');
