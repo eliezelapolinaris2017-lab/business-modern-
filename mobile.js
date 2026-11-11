@@ -7,7 +7,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v130';
+const APP_VERSION = 'v131';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
@@ -16,6 +16,8 @@ let invoiceLines = [];
 let lastCreatedInvoiceId = null;
 let editingInvoiceId = null;
 let invoiceSaving = false;
+let mobileInvoiceListLimit=40;
+let invoiceEditReturnView=null;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -103,7 +105,7 @@ let documentOrigin=null;
 function switchTab(id){
   if (!document.getElementById(id)?.classList.contains('mobile-view')) return;
   viewMemory.save();
-  const titles = {mDashboard:'Tu operación en la calle',mServices:'Trabajos pendientes',mInvoice:'Nueva factura',mClients:'Clientes',mFollowups:'Seguimientos',mHistory:'Historial',mSync:'Aplicación y sincronización',mMore:'Más herramientas',mAgenda:'Agenda de trabajo',mReceivable:'Cuentas por cobrar',mCalculator:'Calculadora de precio'};
+  const titles = {mDashboard:'Tu operación en la calle',mServices:'Trabajos pendientes',mInvoice:'Nueva factura',mInvoices:'Facturas',mClients:'Clientes',mFollowups:'Seguimientos',mHistory:'Historial',mSync:'Aplicación y sincronización',mMore:'Más herramientas',mAgenda:'Agenda de trabajo',mReceivable:'Cuentas por cobrar',mCalculator:'Calculadora de precio'};
   document.querySelector('.mobile-top p').textContent = titles[id] || 'Nexus Mobile';
   document.querySelectorAll('.mobile-tabs button').forEach(b => {
     const selected = b.dataset.tab === id || (b.dataset.tab === 'mMore' && ['mFollowups','mHistory','mSync','mAgenda','mReceivable','mCalculator'].includes(id));
@@ -115,14 +117,15 @@ function switchTab(id){
 }
 
 document.addEventListener('click', async e => {
-  const tab = e.target.closest('[data-tab]'); if(tab){ switchTab(tab.dataset.tab); return; }
+  const tab = e.target.closest('[data-tab]'); if(tab){ if(tab.dataset.tab==='mInvoice'&&editingInvoiceId)resetMobileInvoiceEditor();switchTab(tab.dataset.tab); return; }
   const invClient = e.target.closest('[data-new-invoice-client]'); if(invClient){ startInvoiceForClient(invClient.dataset.newInvoiceClient); return; }
   if(e.target.closest('#mClearClient')){ $('mClientForm')?.reset(); return; }
   const f = e.target.closest('[data-follow-filter]'); if(f){ currentFilter = f.dataset.followFilter; document.querySelectorAll('[data-follow-filter]').forEach(b => b.classList.toggle('active', b === f)); renderFollowups(); return; }
   const complete = e.target.closest('[data-complete-follow]'); if(complete){ await completeFollowup(complete.dataset.completeFollow); return; }
   const del = e.target.closest('[data-delete-follow]'); if(del && confirm('¿Borrar seguimiento?')){ await deleteDoc(docRef('followups', del.dataset.deleteFollow)); return; }
+  if(e.target.closest('#mLoadMoreInvoices')){mobileInvoiceListLimit+=40;renderMobileInvoiceList();return;}
   const editInv=e.target.closest('[data-edit-invoice]');if(editInv){editMobileInvoice(editInv.dataset.editInvoice);return;}
-  if(e.target.closest('#mCancelInvoiceEdit')){resetMobileInvoiceEditor();return;}
+  if(e.target.closest('#mCancelInvoiceEdit')){const back=invoiceEditReturnView;resetMobileInvoiceEditor();if(back)switchTab(back);return;}
   const shareInv = e.target.closest('[data-share-invoice]'); if(shareInv){ shareInvoice(shareInv.dataset.shareInvoice); return; }
   const pay = e.target.closest('[data-mark-paid]'); if(pay){ await markInvoicePaid(pay.dataset.markPaid); return; }
   const view = e.target.closest('[data-view-invoice]'); if(view){ openInvoiceDoc(view.dataset.viewInvoice); return; }
@@ -353,12 +356,25 @@ function renderInvoiceTypeKpis(monthInvoices){
   const rows = preferred.filter(k => grouped[k]).concat(Object.keys(grouped).filter(k => !preferred.includes(k)));
   target.innerHTML = rows.length ? rows.map(k => `<div class="type-chip"><small>${esc(k)} · ${grouped[k].count}</small><b>${money(grouped[k].total)}</b></div>`).join('') : '<div class="empty">Sin facturas este mes.</div>';
 }
+function mobileInvoiceCard(inv,{recent=false}={}){
+  const c=clientBy(inv.clientId);
+  return `<article class="row-card"><div class="top"><div><h4>${esc(inv.number||'Factura')}</h4><p>${esc(inv.clientName||c.name||'Cliente')}</p></div>${statusBadge(invoiceStatus(inv))}</div><p>${esc(inv.date||'')} · ${esc(inv.serviceTitle||inv.invoiceType||'Servicio')}</p><p>Total <b>${money(inv.total)}</b> · Balance <b>${money(invoiceBalance(inv))}</b></p><div class="actions">${!recent&&inv.status!=='Cancelada'?`<button class="primary" data-edit-invoice="${esc(inv.id)}" type="button">Editar factura</button>`:''}<button data-view-invoice="${esc(inv.id)}" type="button">Ver documento</button>${!recent?`<button data-share-invoice="${esc(inv.id)}" type="button">Compartir</button>`:''}</div></article>`;
+}
 function renderInvoices(){
-  const rows = sorted(state.invoices, 'date').slice(0,30);
-  $('mInvoiceList').innerHTML = rows.length ? rows.map(inv => {
-    const c = clientBy(inv.clientId);
-    return `<div class="row-card"><div class="top"><div><h4>${esc(inv.number || 'Factura')}</h4><p>${esc(inv.clientName || c.name || 'Cliente')} · ${esc(inv.serviceTitle || inv.invoiceType || 'Servicio')}</p></div>${statusBadge(invoiceStatus(inv))}</div><p>Total ${money(inv.total)} · Balance ${money(invoiceBalance(inv))}</p><p>${inv.printedAt ? 'Impresa' : 'Sin impresión registrada'}</p><div class="actions"><button data-edit-invoice="${esc(inv.id)}" type="button">Editar factura</button><button data-view-invoice="${esc(inv.id)}" type="button">Ver documento</button><button data-share-invoice="${esc(inv.id)}" type="button">Compartir</button>${invoiceBalance(inv) > 0 ? `<button data-mark-paid="${esc(inv.id)}" type="button">Marcar pagada</button>` : ''}</div></div>`;
-  }).join('') : '<div class="empty">No hay facturas.</div>';
+  const rows=sorted(state.invoices,'date').slice(0,5);
+  $('mInvoiceList').innerHTML=rows.length?rows.map(inv=>mobileInvoiceCard(inv,{recent:true})).join(''):'<div class="empty">No hay facturas recientes.</div>';
+  renderMobileInvoiceList();
+}
+function renderMobileInvoiceList(){
+  const box=$('mAllInvoiceList');if(!box)return;
+  const q=normalizeClientSearch($('mInvoicesSearch')?.value||''),status=$('mInvoicesStatus')?.value||'all';
+  const rows=sorted(state.invoices,'date').filter(inv=>{
+    const text=normalizeClientSearch([inv.number,inv.clientName,clientBy(inv.clientId).name,inv.serviceTitle,inv.invoiceType].join(' '));
+    return q.split(/\s+/).filter(Boolean).every(token=>text.includes(token))&&(status==='all'||invoiceStatus(inv)===status);
+  });
+  $('mInvoicesCount').textContent=`${rows.length} factura${rows.length===1?'':'s'} · ${state.invoices.length} en total`;
+  box.innerHTML=rows.length?rows.slice(0,mobileInvoiceListLimit).map(inv=>mobileInvoiceCard(inv)).join(''):'<div class="empty">No hay facturas para esta búsqueda.</div>';
+  $('mLoadMoreInvoices').hidden=rows.length<=mobileInvoiceListLimit;
 }
 function followStatus(f){ if(String(f.status || '') === 'Completado') return 'Completado'; const d = String(f.dueDate || ''); if(d && d < today()) return 'Vencida'; if(d && d <= plusDays(14)) return 'Próximo'; return f.status || 'Programado'; }
 function followupRows(){ return [...state.followups].sort((a,b) => String(a.dueDate || '').localeCompare(String(b.dueDate || ''))); }
@@ -440,6 +456,7 @@ function resetMobileInvoiceEditor(){
 }
 function editMobileInvoice(id){
   const inv=state.invoices.find(i=>i.id===id);if(!inv)return;
+  invoiceEditReturnView=document.querySelector('.mobile-view.active')?.id||'mInvoices';
   if(inv.status==='Cancelada')return alert('La factura está cancelada.');
   editingInvoiceId=id;
   const set=(id,value)=>{$(id).value=value??'';};
@@ -478,7 +495,7 @@ async function saveInvoice(forcedStatus){
     delete payload.createdAt;delete payload.sourceType;delete payload.terms;payload.number=existing.number;
     await updateDoc(docRef('invoices',existing.id),payload);
     const updated={...existing,...payload};state.invoices=state.invoices.map(i=>i.id===existing.id?updated:i);lastCreatedInvoiceId=existing.id;
-    resetMobileInvoiceEditor();renderAll();openInvoiceDoc(existing.id,updated);return;
+    const back=invoiceEditReturnView;resetMobileInvoiceEditor();renderAll();if(back)switchTab(back);openInvoiceDoc(existing.id,updated);return;
   }
   const ref = await addDoc(colRef('invoices'), payload);
   lastCreatedInvoiceId = ref.id;
@@ -1033,3 +1050,6 @@ $('mReceivableSearch')?.addEventListener('input',renderMobileTools);
 $('mFollowSearch')?.addEventListener('input',renderFollowups);
 for(const id of ['mCalcAmount','mCalcDiscount','mCalcTax'])$(id)?.addEventListener('input',calculateMobilePrice);
 calculateMobilePrice();
+
+$('mInvoicesSearch')?.addEventListener('input',()=>{mobileInvoiceListLimit=40;renderMobileInvoiceList();});
+$('mInvoicesStatus')?.addEventListener('change',()=>{mobileInvoiceListLimit=40;renderMobileInvoiceList();});

@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=63" />
   <link rel="apple-touch-icon" href="assets/logo.png" />
   <link rel="stylesheet" href="mobile.css?v=116" />
-  <link rel="stylesheet" href="mobile-field.css?v=126" />
+  <link rel="stylesheet" href="mobile-field.css?v=131" />
 <script>
 (()=>{const incoming=new URL(location.href);if(incoming.searchParams.has('access')||incoming.searchParams.has('token')){const portal=new URL('./portal/',incoming);portal.search=incoming.search;portal.hash=incoming.hash;location.replace(portal);}})();
 </script>
@@ -72,6 +72,7 @@
     <section id="mAgenda" class="mobile-view"><div class="field-heading"><span>PLANIFICA TU DÍA</span><h2>Agenda de trabajo</h2><p>Consulta servicios abiertos por fecha.</p></div><div class="segmented" role="group" aria-label="Periodo de agenda"><button data-agenda-filter="today" type="button">Hoy</button><button data-agenda-filter="next" type="button" class="active">Próximos 7 días</button><button data-agenda-filter="overdue" type="button">Atrasados</button></div><div id="mAgendaList" class="mobile-list"></div></section>
     <section id="mReceivable" class="mobile-view"><div class="field-heading"><span>COBROS</span><h2>Cuentas por cobrar</h2><p id="mReceivableTotal"></p></div><input id="mReceivableSearch" class="search" type="search" placeholder="Buscar cliente o factura" aria-label="Buscar balances"><div id="mReceivableList" class="mobile-list"></div></section>
     <section id="mCalculator" class="mobile-view"><div class="field-heading"><span>HERRAMIENTA RÁPIDA</span><h2>Calcula tu precio</h2><p>Una referencia rápida antes de preparar la factura.</p></div><div class="mobile-card mobile-form"><label>Importe antes de IVU<input id="mCalcAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label><div class="two-col"><label>Descuento %<input id="mCalcDiscount" type="number" inputmode="decimal" min="0" max="100" value="0"></label><label>IVU %<input id="mCalcTax" type="number" inputmode="decimal" min="0" max="100" value="11.5"></label></div><div id="mCalcResult" aria-live="polite"></div></div></section>
+    <section id="mInvoices" class="mobile-view"><div class="field-heading"><span>FACTURACIÓN</span><h2>Facturas</h2><p>Busca una factura para verla, editarla o compartirla.</p></div><div class="section-row"><span id="mInvoicesCount" class="muted"></span><button data-tab="mInvoice" type="button">Nueva factura</button></div><input id="mInvoicesSearch" class="search" type="search" placeholder="Buscar cliente, número o servicio" aria-label="Buscar facturas"><label>Estado<select id="mInvoicesStatus"><option value="all">Todas las facturas</option>Pendiente</option>Parcial</option>Vencida</option>Pagada</option>Borrador</option>Cancelada</select></label><div id="mAllInvoiceList" class="mobile-list"></div><button id="mLoadMoreInvoices" type="button" hidden>Ver más facturas</button></section>
     <section id="mInvoice" class="mobile-view">
       <div class="section-row"><h2 id="mInvoiceEditorTitle">Nueva factura</h2><button id="mCancelInvoiceEdit" type="button" hidden>Cancelar edición</button></div>
       <div class="step-bar">
@@ -132,7 +133,7 @@
       </form>
 
       <div class="mobile-card">
-        <div class="section-row"><h3>Facturas recientes</h3><button id="mRefreshInvoices" type="button">Sync</button></div>
+        <div class="section-row"><h3>Facturas recientes</h3><button data-tab="mInvoices" type="button">Ver todas</button><button id="mRefreshInvoices" type="button">Sync</button></div>
         <div id="mInvoiceList" class="mobile-list"></div>
       </div>
     </section>
@@ -222,14 +223,14 @@
     <nav class="mobile-tabs" aria-label="Navegación móvil">
       <button class="active" data-tab="mDashboard" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 3l9 7v10H3z M9 20v-7h6v7"/></svg>Inicio</button>
       <button data-tab="mServices" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v14H3z M8 7V3h8v4 M3 12h18 M10 12v3h4v-3"/></svg>Trabajos</button>
-      <button data-tab="mInvoice" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16 M4 12h16"/></svg>Facturar</button>
+      <button data-tab="mInvoices" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2z M8 7h8 M8 11h8 M8 15h5"/></svg>Facturas</button><button data-tab="mInvoice" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16 M4 12h16"/></svg>Nueva</button>
       <button data-tab="mClients" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M18 8a3 3 0 0 1 0 6 M22 21v-2a4 4 0 0 0-3-4"/></svg>Clientes</button>
       <button data-tab="mMore" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>Más</button>
     </nav>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="mobile.js?v=130-invoice-edit"></script>
+  <script type="module" src="mobile.js?v=131-invoice-list"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=126').catch(()=>{}));
