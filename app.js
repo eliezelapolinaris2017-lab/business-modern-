@@ -1,3 +1,4 @@
+import { buildCashLedger, cashLedgerSummary, cashDate } from './cash-ledger.js?v=127';
 import { createWhatsappTab } from './whatsapp-tab.js?v=125';
 import { createViewMemory } from './ui-context.js?v=124';
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
@@ -197,10 +198,11 @@ function financialSummary(){
   const invoiced=sum(state.invoices,'total');
   const receivable=state.invoices.reduce((a,inv)=>a+invoiceBalance(inv),0);
   const overdue=state.invoices.filter(inv=>invoiceStatus(inv)==='Vencida').reduce((a,inv)=>a+invoiceBalance(inv),0);
-  const expenses=sum(state.payroll,'net')+sum(state.supplierPayments,'amount')+state.cashflow.filter(x=>x.type==='Gasto' && !String(x.concept||'').startsWith('Nómina ') && !String(x.concept||'').startsWith('Pago suplidor ')).reduce((a,x)=>a+Number(x.amount||0),0);
-  const monthIncome=state.payments.filter(p=>String(p.date||'').startsWith(startMonth)).reduce((a,p)=>a+Number(p.amount||0),0);
-  const monthExpenses=state.cashflow.filter(x=>String(x.date||'').startsWith(startMonth) && x.type==='Gasto').reduce((a,x)=>a+Number(x.amount||0),0);
-  return {paid,invoiced,receivable,overdue,expenses,net:paid-expenses,monthIncome,monthExpenses,monthNet:monthIncome-monthExpenses};
+  const ledger=buildCashLedger(state).rows.filter(x=>x.date), now=cashDate(new Date());
+  const totals=cashLedgerSummary(ledger,'0000-01-01',now,now);
+  const month=cashLedgerSummary(ledger,startMonth+'-01',now,now);
+  const expenses=totals.expenses,monthIncome=month.income,monthExpenses=month.expenses;
+  return {paid,invoiced,receivable,overdue,expenses,net:totals.current,monthIncome,monthExpenses,monthNet:month.net};
 }
 function teamCommission(tid){const t=teamBy(tid);return state.services.filter(s=>s.teamId===tid).reduce((a,s)=>a+(serviceAmount(s)*Number(t.rate||0)/100),0);}
 function teamRetention(tid){const t=teamBy(tid);return state.services.filter(s=>s.teamId===tid).reduce((a,s)=>a+(serviceAmount(s)*Number(t.retention||0)/100),0);}
@@ -1319,7 +1321,7 @@ function kpis(){
     {a:'Servicios hoy',b:todayServices,view:'services'},
     {a:'Cotizaciones abiertas',b:q.open,view:'quotes'},
     {a:'Por cobrar',b:money(balances),view:'billing',filter:'receivable'},
-    {a:'Caja neta',b:money(collected-expenses),view:'cashflow'}
+    {a:'Caja neta',b:money(cashCurrentBalance()),view:'cashflow'}
   ];
   $('kpis').innerHTML=kpiCards.map(x=>`<button type="button" class="kpi kpi-action" data-kpi-view="${esc(x.view)}" data-kpi-filter="${esc(x.filter||'')}"><span>${T(x.a)}</span><strong>${x.b}</strong><small>Ver acción</small></button>`).join('')+`<button type="button" class="kpi kpi-action calendar-kpi" id="dashboardCalendarBtn"><span>Calendario</span><strong>${esc(configuredCalendarLabel())}</strong><small>Ver calendario configurado</small></button>`;
   document.querySelectorAll('[data-kpi-view]').forEach(b=>b.onclick=()=>openDashboardAction(b.dataset.kpiView,b.dataset.kpiFilter||''));
@@ -1948,7 +1950,7 @@ async function markRetentionPaid(id){
   if(!confirm(`¿Marcar esta retención como pagada?\n${retentionLabel(r)}\n${money(r.amount)}`)) return;
   const paidAt=today();
   await updateDoc(docPath('payrollRetentions',id),{status:'Pagada',paidAt,updatedAt:serverTimestamp()});
-  await add('cashflow',{date:paidAt,type:'Gasto',concept:`Pago retención ${r.type||''} · ${r.destination||''}`,amount:Number(r.amount||0),note:`Empleado: ${r.teamName||''} · Nómina: ${r.payrollId||''}`});
+  await add('cashflow',{sourceModule:'payrollRetentions',sourceId:r.id,date:paidAt,type:'Gasto',concept:`Pago retención ${r.type||''} · ${r.destination||''}`,amount:Number(r.amount||0),note:`Empleado: ${r.teamName||''} · Nómina: ${r.payrollId||''}`});
 }
 
 async function remove(c,id){if(confirm('¿Borrar registro?'))await deleteDoc(docPath(c,id));}
@@ -2623,15 +2625,16 @@ function bindForms(){
     if(pu.id&&pu.supplierId!==s.id)return alert('La compra seleccionada pertenece a otro suplidor.');
     const amount=Number($('spAmount').value||0);if(!(amount>0))return alert('Escribe un monto válido.');
     const allocations=pu.id?[]:allocationsForGeneralPayment(s.id,amount);
-    await add('supplierPayments',{supplierId:s.id,supplierName:s.name,purchaseId:pu.id||'',purchaseNumber:pu.number||pu.reference||'',allocations,date:$('spDate').value,method:$('spMethod').value,amount,note:$('spNote').value});
-    await add('cashflow',{date:$('spDate').value,type:'Gasto',concept:`Pago suplidor ${s.name}${pu.id?' · '+(pu.number||pu.concept):''}`,amount});
+    const supplierPaymentRef=await add('supplierPayments',{supplierId:s.id,supplierName:s.name,purchaseId:pu.id||'',purchaseNumber:pu.number||pu.reference||'',allocations,date:$('spDate').value,method:$('spMethod').value,amount,note:$('spNote').value});
+    if(!supplierPaymentRef)return;
+    await add('cashflow',{sourceModule:'supplierPayments',sourceId:supplierPaymentRef?.id||'',date:$('spDate').value,type:'Gasto',concept:`Pago suplidor ${s.name}${pu.id?' · '+(pu.number||pu.concept):''}`,amount});
     e.target.reset();
     if(!pu.id&&allocations.length){alert(`Pago registrado. ${money(allocations.reduce((a,x)=>a+Number(x.amount||0),0))} aplicado automáticamente a ${allocations.length} compra(s) pendiente(s).`);}
   };
-  $('payrollForm').onsubmit=async e=>{e.preventDefault();const t=teamBy($('prTeam').value);if(!t.id)return alert('Selecciona empleado/equipo.');const gross=Number($('prGross').value||0),bonus=Number($('prBonus')?.value||0),retention=Number($('prRetention')?.value||0),ded=Number($('prDeductions').value||0),adv=Number($('prAdvance')?.value||0),retType=$('prRetentionType')?.value||'Hacienda',retDest=$('prRetentionDest')?.value||'Departamento de Hacienda',retDue=$('prRetentionDue')?.value||plusDays(15),net=Math.max(0,gross+bonus-retention-ded-adv);const payrollRef=await add('payroll',{teamId:t.id,teamName:t.name,date:$('prDate').value,period:$('prPeriod').value,hours:Number($('prHours')?.value||0),overtime:Number($('prOvertime')?.value||0),gross,bonus,retention,retentionType:retType,retentionDestination:retDest,retentionDueDate:retDue,advance:adv,deductions:ded,totalDeductions:retention+ded+adv,net,method:$('prMethod').value,note:$('prNote').value});const payrollId=payrollRef?.id||'';if(retention>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:retType,destination:retDest,amount:retention,status:'Pendiente',dueDate:retDue,note:$('prNote').value});}if(adv>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:'Adelanto al empleado',destination:t.name,amount:adv,status:'Aplicada',dueDate:$('prDate').value,paidAt:$('prDate').value,note:'Adelanto descontado en nómina'});}if(ded>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:'Descuento interno',destination:'Empresa',amount:ded,status:'Aplicada',dueDate:$('prDate').value,paidAt:$('prDate').value,note:'Descuento aplicado en nómina'});}await add('cashflow',{date:$('prDate').value,type:'Gasto',concept:`Nómina ${t.name}`,amount:net,note:`Bruto ${money(gross)} · Bonos ${money(bonus)} · Retenciones ${money(retention)} → ${retDest} · Adelantos ${money(adv)} · Otros descuentos ${money(ded)} · Neto ${money(net)}`});e.target.reset();};
+  $('payrollForm').onsubmit=async e=>{e.preventDefault();const t=teamBy($('prTeam').value);if(!t.id)return alert('Selecciona empleado/equipo.');const gross=Number($('prGross').value||0),bonus=Number($('prBonus')?.value||0),retention=Number($('prRetention')?.value||0),ded=Number($('prDeductions').value||0),adv=Number($('prAdvance')?.value||0),retType=$('prRetentionType')?.value||'Hacienda',retDest=$('prRetentionDest')?.value||'Departamento de Hacienda',retDue=$('prRetentionDue')?.value||plusDays(15),net=Math.max(0,gross+bonus-retention-ded-adv);const payrollRef=await add('payroll',{teamId:t.id,teamName:t.name,date:$('prDate').value,period:$('prPeriod').value,hours:Number($('prHours')?.value||0),overtime:Number($('prOvertime')?.value||0),gross,bonus,retention,retentionType:retType,retentionDestination:retDest,retentionDueDate:retDue,advance:adv,deductions:ded,totalDeductions:retention+ded+adv,net,method:$('prMethod').value,note:$('prNote').value});const payrollId=payrollRef?.id||'';if(!payrollId)return;if(retention>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:retType,destination:retDest,amount:retention,status:'Pendiente',dueDate:retDue,note:$('prNote').value});}if(adv>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:'Adelanto al empleado',destination:t.name,amount:adv,status:'Aplicada',dueDate:$('prDate').value,paidAt:$('prDate').value,note:'Adelanto descontado en nómina'});}if(ded>0){await add('payrollRetentions',{payrollId,teamId:t.id,teamName:t.name,date:$('prDate').value,type:'Descuento interno',destination:'Empresa',amount:ded,status:'Aplicada',dueDate:$('prDate').value,paidAt:$('prDate').value,note:'Descuento aplicado en nómina'});}await add('cashflow',{sourceModule:'payroll',sourceId:payrollId,date:$('prDate').value,type:'Gasto',concept:`Nómina ${t.name}`,amount:net,note:`Bruto ${money(gross)} · Bonos ${money(bonus)} · Retenciones ${money(retention)} → ${retDest} · Adelantos ${money(adv)} · Otros descuentos ${money(ded)} · Neto ${money(net)}`});e.target.reset();};
   $('purchaseForm').onsubmit=e=>{e.preventDefault();const s=supplierBy($('puSupplier').value);if(!s.id)return alert('Selecciona suplidor.');const subtotal=Number($('puSubtotal').value||0),tax=Number($('puTax').value||0),total=subtotal+tax;add('purchases',{supplierId:s.id,supplierName:s.name,date:$('puDate').value,dueDate:$('puDue').value,concept:$('puConcept').value,reference:$('puRef').value,number:$('puRef').value||('PO-'+String(Date.now()).slice(-6)),subtotal,tax,total,status:$('puStatus').value,note:$('puNote').value});e.target.reset();};
-  $('paymentForm').onsubmit=async e=>{e.preventDefault();const inv=state.invoices.find(x=>x.id===$('pInvoice').value);if(!inv)return alert('Selecciona factura.');if(invoiceStatus(inv)==='Cancelada')return alert('No se puede cobrar una factura cancelada.');const amount=Number($('pAmount').value||0);if(amount<=0)return alert('Monto inválido.');const bal=invoiceBalance(inv);if(amount>bal+0.01 && !confirm('El cobro excede el balance. ¿Registrar de todos modos?')) return;const selectedMethod=$('pMethod').value;await add('payments',{invoiceId:inv.id,invoiceNumber:inv.number,date:$('pDate').value,method:selectedMethod,amount,note:$('pNote').value});await add('cashflow',{date:$('pDate').value,type:'Ingreso',concept:`Cobro ${inv.number}`,amount});const newBal=Math.max(0,bal-amount);await updateDoc(docPath('invoices',inv.id),{status:newBal<=0?'Pagada':amount>0?'Parcial':invoiceStatus(inv),paymentMethod:selectedMethod,updatedAt:serverTimestamp()});e.target.reset();};
-  $('cashForm').onsubmit=e=>{e.preventDefault();add('cashflow',{date:$('xDate').value,type:$('xType').value,concept:$('xConcept').value,amount:Number($('xAmount').value||0)});e.target.reset();};
+  $('paymentForm').onsubmit=async e=>{e.preventDefault();const inv=state.invoices.find(x=>x.id===$('pInvoice').value);if(!inv)return alert('Selecciona factura.');if(invoiceStatus(inv)==='Cancelada')return alert('No se puede cobrar una factura cancelada.');const amount=Number($('pAmount').value||0);if(amount<=0)return alert('Monto inválido.');const bal=invoiceBalance(inv);if(amount>bal+0.01 && !confirm('El cobro excede el balance. ¿Registrar de todos modos?')) return;const selectedMethod=$('pMethod').value;const paymentRef=await add('payments',{invoiceId:inv.id,invoiceNumber:inv.number,date:$('pDate').value,method:selectedMethod,amount,note:$('pNote').value});if(!paymentRef)return;await add('cashflow',{sourceModule:'payments',sourceId:paymentRef?.id||'',date:$('pDate').value,type:'Ingreso',concept:`Cobro ${inv.number}`,amount});const newBal=Math.max(0,bal-amount);await updateDoc(docPath('invoices',inv.id),{status:newBal<=0?'Pagada':amount>0?'Parcial':invoiceStatus(inv),paymentMethod:selectedMethod,updatedAt:serverTimestamp()});e.target.reset();};
+  $('cashForm').onsubmit=e=>{e.preventDefault();add('cashflow',{origin:'manual',date:$('xDate').value,type:$('xType').value,concept:$('xConcept').value,amount:Number($('xAmount').value||0)});e.target.reset();};
   $('saveSettings').onclick=saveSettings;$('invoiceFromService').onclick=()=>{const s=state.services.find(s=>s.status==='Completado'&&!serviceInvoice(s));if(s)createInvoice(s.id);else alert('No hay servicios completados pendientes de facturar.');};
   document.querySelectorAll('.report-option').forEach(b=>b.onclick=()=>selectReport(b.dataset.reportType));
   if($('reportViewBtn')) $('reportViewBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());};
@@ -2952,7 +2955,7 @@ function v66SearchText(row,module){
   const base = [
     row.number,row.reference,row.invoiceNumber,row.quoteNumber,row.clientName,row.name,row.title,row.concept,row.serviceTitle,
     row.serviceType,row.assetName,row.teamName,row.supplierName,row.phone,row.whatsapp,row.altPhone,row.email,row.altEmail,row.city,row.address,row.status,
-    row.note,row.notes,row.terms,row.method,row.category,row.location,row.role,row.personalId,row.driverLicense,row.serial,row.vin,row.plate,row.expirationDate,row.warranty
+    row.note,row.notes,row.terms,row.method,row.amount,row.category,row.location,row.role,row.personalId,row.driverLicense,row.serial,row.vin,row.plate,row.expirationDate,row.warranty
   ];
   if(Array.isArray(row.tags)) base.push(row.tags.join(' '));
   if(Array.isArray(row.fields)) base.push(row.fields.map(f=>typeof f==='object'?Object.values(f).join(' '):f).join(' '));
@@ -3119,51 +3122,56 @@ function cashWeekBounds(reference=new Date()){
   return {start:iso(start),end:iso(end),startDate:start,endDate:end};
 }
 function cashSigned(x){return (String(x.type||'').toLowerCase()==='gasto'?-1:1)*Number(x.amount||0);}
-function cashCurrentBalance(){return state.cashflow.reduce((a,x)=>a+cashSigned(x),0);}
+function cashCurrentBalance(){return cashLedgerSummary(buildCashLedger(state).rows,'0000-01-01','9999-12-31',cashDate(new Date())).current;}
 function cashWeekData(){
-  const b=cashWeekBounds();
-  const inRange=x=>String(x.date||'')>=b.start&&String(x.date||'')<=b.end;
-  const moves=state.cashflow.filter(inRange);
-  const income=moves.filter(x=>String(x.type||'').toLowerCase()!=='gasto').reduce((a,x)=>a+Number(x.amount||0),0);
-  const expenses=moves.filter(x=>String(x.type||'').toLowerCase()==='gasto').reduce((a,x)=>a+Number(x.amount||0),0);
-  const purchases=state.purchases.filter(inRange).reduce((a,x)=>a+Number(x.total||0),0);
-  const collected=state.payments.filter(inRange).reduce((a,x)=>a+Number(x.amount||0),0);
-  const prior=state.cashflow.filter(x=>String(x.date||'')<b.start).reduce((a,x)=>a+cashSigned(x),0);
+  const f=v66Filter('cashflow'), b=cashWeekBounds(new Date(cashDate(new Date())+'T12:00:00'));
+  const start=f.from||b.start,end=f.to||b.end;
+  const ledger=buildCashLedger(state), summary=cashLedgerSummary(ledger.rows,start,end,cashDate(new Date()));
   const days=[];
-  for(let i=0;i<7;i++){
-    const d=new Date(b.startDate); d.setDate(d.getDate()+i);
-    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const dm=moves.filter(x=>String(x.date||'')===key);
-    const di=dm.filter(x=>String(x.type||'').toLowerCase()!=='gasto').reduce((a,x)=>a+Number(x.amount||0),0);
-    const de=dm.filter(x=>String(x.type||'').toLowerCase()==='gasto').reduce((a,x)=>a+Number(x.amount||0),0);
-    const dc=state.payments.filter(x=>String(x.date||'')===key).reduce((a,x)=>a+Number(x.amount||0),0);
-    const dp=state.purchases.filter(x=>String(x.date||'')===key).reduce((a,x)=>a+Number(x.total||0),0);
-    days.push({date:key,label:d.toLocaleDateString('es-PR',{weekday:'short',day:'numeric'}),income:di,expenses:de,collected:dc,purchases:dp,net:di-de});
+  const first=new Date(start+'T12:00:00Z'),last=new Date(end+'T12:00:00Z');
+  // Keep custom long periods readable; the ledger below retains every movement.
+  for(let d=new Date(first);d<=last&&days.length<366;d.setUTCDate(d.getUTCDate()+1)){
+    const key=d.toISOString().slice(0,10), ds=cashLedgerSummary(ledger.rows,key,key,key);
+    days.push({date:key,label:d.toLocaleDateString('es-PR',{timeZone:'UTC',weekday:'short',day:'numeric'}),...ds});
   }
-  return {...b,moves,income,expenses,purchases,collected,prior,weekNet:income-expenses,current:cashCurrentBalance(),days};
+  const sumMoney=rows=>Math.round(rows.reduce((a,x)=>a+Math.round(Number(x.amount||0)*100),0))/100;
+  const collected=sumMoney(summary.period.filter(x=>x.sourceModule==='payments'));
+  const receivable=state.invoices.filter(x=>invoiceStatus(x)!=='Cancelada').reduce((a,x)=>a+invoiceBalance(x),0);
+  const payable=state.suppliers.reduce((a,x)=>a+Math.max(0,Number(x.openingBalance||0)+supplierPurchasesTotal(x.id)-supplierPaid(x.id)),0);
+  return {...summary,start,end,days,collected,ledger,receivable,payable,retentions:retentionPendingAmount()};
 }
 function renderCashflowModule(){
   const box=$('cashTable'); if(!box)return;
   const w=cashWeekData();
-  const filtered=v66ApplyModuleFilter(state.cashflow,'cashflow');
-  const sorted=sortedHistory(filtered);
-  let running=cashCurrentBalance();
-  const rowMap=new Map(sorted.map(x=>{const row={...x,running};running-=cashSigned(x);return [x.id,row];}));
-  const dayRows=w.days.map(d=>`<tr><td><b>${esc(d.label)}</b><br><span class="muted">${esc(d.date)}</span></td><td>${money(d.collected)}</td><td>${money(d.purchases)}</td><td>${money(d.expenses)}</td><td><b class="${d.net<0?'cash-negative':'cash-positive'}">${money(d.net)}</b></td></tr>`);
+  if(w.start>w.end){box.innerHTML=v66Toolbar('cashflow','Selecciona un período válido','Buscar...',w.ledger.rows,{dates:true,status:true})+'<p role="alert">La fecha inicial debe ser anterior o igual a la fecha final.</p>';v66BindToolbar('cashflow');return;}
+  const rows=v66ApplyModuleFilter(w.ledger.rows.filter(x=>x.date&&x.date>=w.start&&x.date<=w.end),'cashflow');
+  const origin={payments:'Cobros',supplierPayments:'Pagos suplidores',payroll:'Nómina',payrollRetentions:'Retenciones',cashflow:'Manual / histórico'};
+  const metric=(label,value,note)=>`<div class="metric-card"><span>${label}</span><b class="viz-stat-value">${money(value)}</b><small>${note}</small></div>`;
+  const dayRows=w.days.map(d=>`<tr><td><b>${esc(d.label)}</b><br><small>${esc(d.date)}</small></td><td>${money(d.prior)}</td><td class="cash-positive">${money(d.income)}</td><td>${money(d.expenses)}</td><td class="${d.net<0?'cash-negative':'cash-positive'}">${money(d.net)}</td><td><b>${money(d.closing)}</b></td></tr>`);
   box.innerHTML=`
-    <div class="cash-week-header"><div><h3>Balance semanal de caja</h3><p>${esc(w.start)} al ${esc(w.end)}</p></div><span class="cash-current-badge">Disponible ahora: <b>${money(w.current)}</b></span></div>
-    <div class="cash-metrics">
-      <div class="metric-card"><span>Cobrado esta semana</span><b class="viz-stat-value">${money(w.collected)}</b><small>Pagos realmente registrados</small></div>
-      <div class="metric-card"><span>Entradas a caja</span><b class="viz-stat-value">${money(w.income)}</b><small>Ingresos efectivos</small></div>
-      <div class="metric-card"><span>Salidas de caja</span><b class="viz-stat-value">${money(w.expenses)}</b><small>Compras y pagos efectuados</small></div>
-      <div class="metric-card"><span>Neto semanal</span><b class="viz-stat-value ${w.weekNet<0?'cash-negative':'cash-positive'}">${money(w.weekNet)}</b><small>Entradas menos salidas</small></div>
-      <div class="metric-card"><span>Compras registradas</span><b class="viz-stat-value">${money(w.purchases)}</b><small>Incluye compras aún no pagadas</small></div>
-      <div class="metric-card"><span>Balance al iniciar semana</span><b class="viz-stat-value">${money(w.prior)}</b><small>Saldo acumulado anterior</small></div>
+    <div class="cash-week-header"><div><h3>Tu caja, en números claros</h3><p>${esc(w.start)} al ${esc(w.end)} · movimientos registrados</p></div><div class="cash-current-badge">Saldo registrado a hoy <b>${money(w.current)}</b><small>No es un balance bancario verificado</small></div></div>
+    ${v66Toolbar('cashflow','Historial de movimientos','Concepto, factura, método o monto...',w.ledger.rows,{dates:true,status:true})}
+    <div class="cash-metrics cash-primary">
+      ${metric('Saldo inicial',w.prior,'Antes del primer día del período')}
+      ${metric('+ Entradas',w.income,'Por fecha del cobro, incluyendo facturas viejas')}
+      ${metric('− Salidas',w.expenses,'Pagos efectuados y gastos manuales')}
+      ${metric('= Saldo al cierre',w.closing,'Saldo inicial + entradas − salidas')}
     </div>
-    <div class="cash-daily"><div class="section-head"><h3>Movimiento diario</h3><span class="limit-chip">Semana actual</span></div>${table(['Día','Cobrado','Compras registradas','Salidas reales','Neto real'],dayRows)}</div>
-    ${v66Toolbar('cashflow','Buscar flujo de caja','Concepto, tipo, fecha, monto...',state.cashflow,{dates:true,status:true})}
-    ${table(['Fecha','Tipo','Concepto','Monto','Balance luego del movimiento','Acción'],sorted.map(x=>{const r=rowMap.get(x.id)||x;return `<tr><td>${esc(x.date)}</td><td>${statusChip(x.type||'Ingreso')}</td><td>${esc(x.concept)}</td><td>${money(x.amount)}</td><td><b>${money(r.running)}</b></td><td>${action('cashflow',x.id)}</td></tr>`;}))}`;
+    <p class="cash-equation">${money(w.prior)} + ${money(w.income)} − ${money(w.expenses)} = <b>${money(w.closing)}</b> <span> · Neto del período: <b>${money(w.net)}</b></span></p>
+    <p class="muted">Los saldos usan todas las entradas y salidas de las fechas seleccionadas. La búsqueda y el tipo filtran solamente el historial.</p>
+    <div class="cash-metrics">
+      ${metric('Cobros de clientes',w.collected,'Incluidos por fecha del pago, aunque la factura esté vencida')}
+      ${metric('Otros ingresos',Math.round((w.income-w.collected)*100)/100,'Entradas fuera del módulo Cobros')}
+      ${metric('Facturas por cobrar',w.receivable,'Pendiente actual · todavía no entra en caja')}
+      ${metric('Suplidores por pagar',w.payable,'Pendiente actual · todavía no sale de caja')}
+      ${metric('Retenciones pendientes',w.retentions,'Pendiente actual · todavía no sale de caja')}
+    </div>
+    <details class="cash-review"><summary>Revisión de registros (${w.ledger.issues.length})</summary><p>Los movimientos históricos sin coincidencia se conservan en caja. Revisa su origen antes de corregirlos. Los vinculados sin origen y los que no tienen fecha válida se excluyen.</p>${w.ledger.issues.length?table(['Fecha','Concepto','Monto','Revisión'],w.ledger.issues.map(x=>`<tr><td>${esc(x.date||'Sin fecha')}</td><td>${esc(x.concept)}</td><td>${money(x.amount)}</td><td>${esc(x.reason)}</td></tr>`)):'<p>Sin movimientos pendientes de revisión.</p>'}</details>
+    <div class="cash-daily"><h3>Cuadre diario</h3>${table(['Día','Saldo inicial','Entradas','Salidas','Neto','Saldo al cierre'],dayRows)}${w.days.length===366?'<p>Se muestran hasta 366 días; el resumen incluye el período completo.</p>':''}</div>
+    <h3>Detalle de entradas y salidas</h3>
+    ${table(['Fecha','Origen','Concepto / método','Entrada','Salida','Saldo acumulado','Acción'],rows.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(origin[x.origin]||x.origin)}</td><td><b>${esc(x.concept)}</b><br><small>${esc(x.method||'')}</small></td><td class="cash-positive">${x.type!=='Gasto'?money(x.amount):'—'}</td><td>${x.type==='Gasto'?money(x.amount):'—'}</td><td><b>${money(x.running)}</b></td><td>${x.derived?`<button type="button" data-cash-origin="${esc(x.sourceModule)}">Ver origen</button>`:action('cashflow',x.id)}</td></tr>`))}`;
   v66BindToolbar('cashflow');
+  box.querySelectorAll('[data-cash-origin]').forEach(b=>b.onclick=()=>show(b.dataset.cashOrigin==='payrollRetentions'?'payroll':b.dataset.cashOrigin));
 }
 function v66RenderSimpleTables(){
   const render=(boxId,module,label,placeholder,head,rowFn,rows,opts)=>{const box=$(boxId); if(!box)return; const filtered=v66ApplyModuleFilter(rows,module); box.innerHTML=v66Toolbar(module,label,placeholder,rows,opts)+table(head,filtered.map(rowFn)); v66BindToolbar(module);};
