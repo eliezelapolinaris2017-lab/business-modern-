@@ -1,0 +1,25 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const ctx={Intl,Date};vm.createContext(ctx);vm.runInContext(fs.readFileSync('cash-ledger.js','utf8').replaceAll('export function','function'),ctx);
+const data={payments:[{id:'p1',invoiceNumber:'F1',date:'2026-11-10',amount:450},{id:'p2',invoiceNumber:'F2',date:'2026-11-11',amount:2035.78}],cashflow:[{id:'opening',date:'2026-11-08',type:'Ingreso',concept:'Saldo inicial',amount:32216.45},{id:'mirror',date:'2026-11-11',type:'Ingreso',concept:'Cobro F2',amount:2035.78},{id:'out',date:'2026-11-11',type:'Gasto',concept:'Materiales',amount:1318.07}]};
+let ledger=ctx.buildCashLedger(data),summary=ctx.cashLedgerSummary(ledger.rows,'2026-11-09','2026-11-15','2026-11-11');
+assert.equal(summary.income,2485.78);assert.equal(summary.expenses,1318.07);assert.equal(summary.net,1167.71);assert.equal(summary.closing,33384.16);assert.equal(summary.current,33384.16);assert.equal(summary.prior,32216.45);
+assert.equal(ledger.rows.length,4,'A missing mirror cannot hide a payment, and an existing mirror cannot double it');
+assert.equal(ctx.cashLedgerSummary(ledger.rows,'2026-11-10','2026-11-10','2026-11-11').net,450);
+const row=ledger.rows.find(r=>r.sourceId==='p1');assert.equal(row.running,32666.45,'Running balance includes all earlier rows, regardless of search');
+data.payments.push({id:'p3',invoiceNumber:'F1',date:'2026-11-10',amount:450});
+assert.equal(ctx.cashLedgerSummary(ctx.buildCashLedger(data).rows,'2026-11-09','2026-11-15','2026-11-11').income,2935.78,'Two real equal payments must both count');
+const linked={payments:[{id:'p',date:'2026-11-10',amount:50,invoiceNumber:'X'}],cashflow:[{id:'m',sourceModule:'payments',sourceId:'p',date:'2026-11-09',amount:100,type:'Ingreso'},{id:'duplicate',sourceModule:'payments',sourceId:'p',date:'2026-11-09',amount:100,type:'Ingreso'}]};
+assert.equal(ctx.buildCashLedger(linked).rows.length,1,'Edited sources override stale and duplicate linked mirrors');linked.payments=[];assert.equal(ctx.buildCashLedger(linked).rows.length,0,'Deleted source has no ghost income');
+const expenses={supplierPayments:[{id:'s',date:'2026-11-11',supplierName:'ABC',amount:100}],payroll:[{id:'n',date:'2026-11-11',teamName:'A',gross:200,retention:20,advance:10}],payrollRetentions:[{id:'r',date:'2026-11-01',paidAt:'2026-11-11',status:'Pagada',amount:20},{id:'pending',date:'2026-11-11',status:'Pendiente',amount:80}],purchases:[{date:'2026-11-11',total:999}],cashflow:[{id:'sm',date:'2026-11-11',type:'Gasto',concept:'Pago suplidor ABC',amount:100}]};
+assert.equal(ctx.cashLedgerSummary(ctx.buildCashLedger(expenses).rows,'2026-11-09','2026-11-15','2026-11-11').expenses,290,'Unpaid purchases and pending retentions do not reduce cash');
+const dates=ctx.buildCashLedger({cashflow:[{id:'future',date:'2026-11-20',type:'Ingreso',amount:100},{id:'missing',date:'',type:'Ingreso',amount:500}]});
+assert.equal(ctx.cashLedgerSummary(dates.rows,'2026-11-01','2026-11-30','2026-11-11').current,0);assert.equal(dates.issues.length,1);
+assert.equal(ctx.cashDate('11/10/2026'),'2026-11-10');assert.equal(ctx.cashDate('2026-11-12T02:00:00Z'),'2026-11-11');
+console.log('PASS cash flow: missing $450, deduplication, source edits/deletes, expenses, pending purchases, running balances, future and PR dates');
+
+const oldInvoice={invoices:[{id:'old',date:'2026-08-01',dueDate:'2026-08-15',status:'Vencida',total:900}],payments:[{id:'old-paid',invoiceId:'old',invoiceNumber:'F-OLD',date:'2026-11-11',amount:450},{id:'installment',invoiceId:'old',invoiceNumber:'F-OLD',date:'2026-11-18',amount:450}]};
+const oldRows=ctx.buildCashLedger(oldInvoice).rows;
+assert.equal(ctx.cashLedgerSummary(oldRows,'2026-11-09','2026-11-15','2026-11-11').income,450,'An overdue old invoice enters cash in the week its payment is received');
+assert.equal(ctx.cashLedgerSummary(oldRows,'2026-08-01','2026-08-31','2026-11-11').income,0,'Invoice issuance and due date never set cash receipt date');
+assert.equal(ctx.cashLedgerSummary(oldRows,'2026-11-16','2026-11-22','2026-11-18').income,450,'Installments enter their respective payment weeks');
+console.log('PASS overdue invoice paid this week and installments in different weeks');

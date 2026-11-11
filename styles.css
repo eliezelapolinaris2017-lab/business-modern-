@@ -1067,3 +1067,17 @@ html.nexus-desktop-pwa .main{min-width:0!important;}
 .work-order-paper footer{margin-top:24px;text-align:center;color:#64748b;font-size:11px}
 @media(max-width:600px){.service-command-dialog{padding:14px}.work-order-paper{padding:16px}}
 .employee-pin{font-size:28px;letter-spacing:5px}.employee-link{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;color:#172033;background:#fff}.employee-error{color:#b91c1c!important}.employee-issue{background:#fff7ed;border-left:3px solid #f97316;padding:8px;max-width:280px;overflow-wrap:anywhere}.employee-report{white-space:pre-wrap;overflow-wrap:anywhere}.employee-evidence{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.employee-evidence img{width:100%;border-radius:12px}#employeeSyncStatus{font-size:12px;color:#64748b;margin-bottom:0}
+
+/* Cash flow: one equation and explicit pending balances. */
+.cash-primary{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:20px}
+.cash-metrics .metric-card{display:flex;flex-direction:column;gap:10px;padding:22px;min-width:0}
+.cash-metrics .metric-card>span{color:#334155;font-weight:600}
+.cash-metrics .metric-card>b{font-size:clamp(22px,2.2vw,32px);line-height:1.2;overflow-wrap:anywhere}
+.cash-metrics .metric-card>small,.cash-current-badge small{display:block;color:#526277;line-height:1.5}
+.cash-current-badge b{display:block;font-size:28px;margin:7px 0}
+.cash-equation{padding:20px;border:1px solid #cbd5e1;border-radius:14px;background:#f1f5f9;font-size:20px;color:#0f172a;line-height:1.7}
+.cash-review{border:1px solid #cbd5e1;border-radius:12px;padding:18px;margin:22px 0;color:#334155}
+.cash-review summary{cursor:pointer;font-weight:700}
+.cash-daily{margin:28px 0}.cash-daily td{white-space:nowrap}
+@media(max-width:1000px){.cash-primary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.cash-primary{grid-template-columns:1fr}.cash-equation{font-size:17px}.cash-week-header{align-items:stretch;flex-direction:column}}
