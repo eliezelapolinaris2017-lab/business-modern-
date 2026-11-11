@@ -3146,31 +3146,27 @@ function renderCashflowModule(){
   if(w.start>w.end){box.innerHTML=v66Toolbar('cashflow','Selecciona un período válido','Buscar...',w.ledger.rows,{dates:true,status:true})+'<p role="alert">La fecha inicial debe ser anterior o igual a la fecha final.</p>';v66BindToolbar('cashflow');return;}
   const rows=v66ApplyModuleFilter(w.ledger.rows.filter(x=>x.date&&x.date>=w.start&&x.date<=w.end),'cashflow');
   const origin={payments:'Cobros',supplierPayments:'Pagos suplidores',payroll:'Nómina',payrollRetentions:'Retenciones',cashflow:'Manual / histórico'};
-  const metric=(label,value,note)=>`<div class="metric-card"><span>${label}</span><b class="viz-stat-value">${money(value)}</b><small>${note}</small></div>`;
-  const dayRows=w.days.map(d=>`<tr><td><b>${esc(d.label)}</b><br><small>${esc(d.date)}</small></td><td>${money(d.prior)}</td><td class="cash-positive">${money(d.income)}</td><td>${money(d.expenses)}</td><td class="${d.net<0?'cash-negative':'cash-positive'}">${money(d.net)}</td><td><b>${money(d.closing)}</b></td></tr>`);
-  box.innerHTML=`
-    <div class="cash-week-header"><div><h3>Tu caja, en números claros</h3><p>${esc(w.start)} al ${esc(w.end)} · movimientos registrados</p></div><div class="cash-current-badge">Saldo registrado a hoy <b>${money(w.current)}</b><small>No es un balance bancario verificado</small></div></div>
-    ${v66Toolbar('cashflow','Historial de movimientos','Concepto, factura, método o monto...',w.ledger.rows,{dates:true,status:true})}
-    <div class="cash-metrics cash-primary">
-      ${metric('Saldo inicial',w.prior,'Antes del primer día del período')}
-      ${metric('+ Entradas',w.income,'Por fecha del cobro, incluyendo facturas viejas')}
-      ${metric('− Salidas',w.expenses,'Pagos efectuados y gastos manuales')}
-      ${metric('= Saldo al cierre',w.closing,'Saldo inicial + entradas − salidas')}
+  const metric=(label,value,note,tone='')=>`<article class="cf-stat ${tone}"><span>${label}</span><strong>${money(value)}</strong><small>${note}</small></article>`;
+  const dayRows=w.days.map(d=>`<tr><td><b>${esc(d.label)}</b><small>${esc(d.date)}</small></td><td>${money(d.prior)}</td><td class="cf-in">${money(d.income)}</td><td>${money(d.expenses)}</td><td class="${d.net<0?'cf-out':'cf-in'}">${money(d.net)}</td><td><b>${money(d.closing)}</b></td></tr>`);
+  const f=v66Filter('cashflow');
+  const oldBalance=state.cashflow.filter(x=>cashDate(x.date)&&cashDate(x.date)<=cashDate(new Date())).reduce((a,x)=>a+Math.round(cashSigned(x)*100),0)/100;
+  box.innerHTML=`<div class="cf-workspace">
+    <header class="cf-heading"><div><span class="cf-eyebrow">CONTROL FINANCIERO</span><h3>Resumen de caja</h3><p>Del ${esc(w.start)} al ${esc(w.end)}</p></div><div class="cf-period-actions"><button type="button" data-cash-period="week">Esta semana</button><button type="button" data-cash-period="month">Este mes</button></div></header>
+    <div class="cf-overview">
+      <article class="cf-result"><span>Flujo neto del período</span><strong>${money(w.net)}</strong><p>Entradas menos salidas</p><div class="cf-result-foot"><span>Cobros de clientes <b>${money(w.collected)}</b></span><span>Otros ingresos <b>${money(Math.round((w.income-w.collected)*100)/100)}</b></span></div></article>
+      <div class="cf-stats">${metric('Entradas del período',w.income,'Por fecha del cobro','cf-income')}${metric('Salidas del período',w.expenses,'Pagos y gastos registrados','cf-expense')}${metric('Saldo inicial',w.prior,'Acumulado anterior')}${metric('Saldo al cierre',w.closing,'Inicial + entradas − salidas','cf-closing')}</div>
     </div>
-    <p class="cash-equation">${money(w.prior)} + ${money(w.income)} − ${money(w.expenses)} = <b>${money(w.closing)}</b> <span> · Neto del período: <b>${money(w.net)}</b></span></p>
-    <p class="muted">Los saldos usan todas las entradas y salidas de las fechas seleccionadas. La búsqueda y el tipo filtran solamente el historial.</p>
-    <div class="cash-metrics">
-      ${metric('Cobros de clientes',w.collected,'Incluidos por fecha del pago, aunque la factura esté vencida')}
-      ${metric('Otros ingresos',Math.round((w.income-w.collected)*100)/100,'Entradas fuera del módulo Cobros')}
-      ${metric('Facturas por cobrar',w.receivable,'Pendiente actual · todavía no entra en caja')}
-      ${metric('Suplidores por pagar',w.payable,'Pendiente actual · todavía no sale de caja')}
-      ${metric('Retenciones pendientes',w.retentions,'Pendiente actual · todavía no sale de caja')}
-    </div>
-    <details class="cash-review"><summary>Revisión de registros (${w.ledger.issues.length})</summary><p>Los movimientos históricos sin coincidencia se conservan en caja. Revisa su origen antes de corregirlos. Los vinculados sin origen y los que no tienen fecha válida se excluyen.</p>${w.ledger.issues.length?table(['Fecha','Concepto','Monto','Revisión'],w.ledger.issues.map(x=>`<tr><td>${esc(x.date||'Sin fecha')}</td><td>${esc(x.concept)}</td><td>${money(x.amount)}</td><td>${esc(x.reason)}</td></tr>`)):'<p>Sin movimientos pendientes de revisión.</p>'}</details>
-    <div class="cash-daily"><h3>Cuadre diario</h3>${table(['Día','Saldo inicial','Entradas','Salidas','Neto','Saldo al cierre'],dayRows)}${w.days.length===366?'<p>Se muestran hasta 366 días; el resumen incluye el período completo.</p>':''}</div>
-    <h3>Detalle de entradas y salidas</h3>
-    ${table(['Fecha','Origen','Concepto / método','Entrada','Salida','Saldo acumulado','Acción'],rows.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(origin[x.origin]||x.origin)}</td><td><b>${esc(x.concept)}</b><br><small>${esc(x.method||'')}</small></td><td class="cash-positive">${x.type!=='Gasto'?money(x.amount):'—'}</td><td>${x.type==='Gasto'?money(x.amount):'—'}</td><td><b>${money(x.running)}</b></td><td>${x.derived?`<button type="button" data-cash-origin="${esc(x.sourceModule)}">Ver origen</button>`:action('cashflow',x.id)}</td></tr>`))}`;
+    <section class="cf-pending"><div><h4>Cuentas pendientes</h4><p>Balances actuales, fuera del flujo del período</p></div><article><span>Por cobrar</span><b>${money(w.receivable)}</b></article><article><span>Por pagar a suplidores</span><b>${money(w.payable)}</b></article><article><span>Retenciones</span><b>${money(w.retentions)}</b></article></section>
+    <section class="cf-panel"><div class="cf-panel-heading"><div><h4>Movimientos del período</h4><p>Cada ingreso y gasto con su origen</p></div><span class="cf-count">${rows.length} movimientos</span></div>
+      <div class="cf-filters" data-module-search="cashflow"><label class="cf-search">Buscar movimiento<input id="cashflowSearch" type="search" value="${esc(f.q||'')}" placeholder="Concepto, factura o método"></label><label>Desde<input id="cashflowFrom" type="date" value="${esc(w.start)}"></label><label>Hasta<input id="cashflowTo" type="date" value="${esc(w.end)}"></label><label>Tipo<select id="cashflowStatus"><option value="all">Todos</option><option value="Ingreso" ${f.status==='Ingreso'?'selected':''}>Entradas</option><option value="Gasto" ${f.status==='Gasto'?'selected':''}>Salidas</option></select></label><button type="button" data-clear-module-filter="cashflow">Restablecer</button></div>
+      ${table(['Fecha','Origen','Concepto / método','Entrada','Salida','Saldo acumulado','Acción'],rows.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="cf-origin">${esc(origin[x.origin]||x.origin)}</span></td><td><b>${esc(x.concept)}</b><small>${esc(x.method||'')}</small></td><td class="cf-in">${x.type!=='Gasto'?money(x.amount):'—'}</td><td>${x.type==='Gasto'?money(x.amount):'—'}</td><td><b>${money(x.running)}</b></td><td>${x.derived?`<button type="button" data-cash-origin="${esc(x.sourceModule)}">Ver origen</button>`:action('cashflow',x.id)}</td></tr>`))}
+      <footer class="cf-table-note">Los filtros de búsqueda y tipo aplican al detalle. El resumen conserva los totales del período.</footer>
+    </section>
+    <details class="cf-panel cf-daily"><summary>Cuadre diario <span>${w.days.length} días</span></summary>${table(['Día','Saldo inicial','Entradas','Salidas','Neto','Saldo al cierre'],dayRows)}${w.days.length===366?'<p>Vista limitada a 366 días. El resumen incluye todo el período.</p>':''}</details>
+    <details class="cf-panel cf-audit"><summary>Conciliación del historial <span>${w.ledger.issues.length?`${w.ledger.issues.length} por revisar`:'Sin incidencias detectadas'}</span></summary><div class="cf-audit-body"><p>El saldo es contable según los registros de la aplicación; requiere conciliación con las cuentas bancarias.</p><div class="cf-audit-totals">${metric('Registro anterior de caja',oldBalance,'Saldo hasta hoy')}${metric('Saldo por registros de origen',w.current,'Cobros, pagos y movimientos manuales')}${metric('Diferencia de conciliación',Math.round((w.current-oldBalance)*100)/100,'Revisar movimientos históricos')}</div>${w.ledger.issues.length?table(['Fecha','Concepto','Monto','Revisión'],w.ledger.issues.map(x=>`<tr><td>${esc(x.date||'Sin fecha')}</td><td>${esc(x.concept)}</td><td>${money(x.amount)}</td><td>${esc(x.reason)}</td></tr>`)):'<p>No se detectaron movimientos sin coincidencia.</p>'}<p>Los históricos sin coincidencia permanecen incluidos. Los vinculados sin origen y sin fecha válida se excluyen.</p></div></details>
+  </div>`;
   v66BindToolbar('cashflow');
+  box.querySelectorAll('[data-cash-period]').forEach(button=>button.onclick=()=>{const f=v66Filter('cashflow'),now=cashDate(new Date()),week=cashWeekBounds(new Date(now+'T12:00:00'));f.from=button.dataset.cashPeriod==='month'?now.slice(0,7)+'-01':week.start;f.to=button.dataset.cashPeriod==='month'?now:week.end;tables();});
   box.querySelectorAll('[data-cash-origin]').forEach(b=>b.onclick=()=>show(b.dataset.cashOrigin==='payrollRetentions'?'payroll':b.dataset.cashOrigin));
 }
 function v66RenderSimpleTables(){
