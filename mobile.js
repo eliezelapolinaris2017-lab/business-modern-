@@ -7,13 +7,15 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v126';
+const APP_VERSION = 'v130';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
 let currentDocId = null;
 let invoiceLines = [];
 let lastCreatedInvoiceId = null;
+let editingInvoiceId = null;
+let invoiceSaving = false;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -32,7 +34,7 @@ function uid(){ return auth.currentUser?.uid || ''; }
 function colRef(c){ return collection(db, 'users', uid(), c); }
 function docRef(c, id){ return doc(db, 'users', uid(), c, id); }
 function clientBy(id){ return state.clients.find(c => c.id === id) || {}; }
-function taxRate(){ return Number(state.profile?.tax || 11.5) / 100; }
+function taxRate(){ const inv=state.invoices.find(i=>i.id===editingInvoiceId);return Number(inv?.taxPercent ?? state.profile?.tax ?? 11.5)/100; }
 function invoicePaid(inv){ return state.payments.filter(p => p.invoiceId === inv.id).reduce((a, p) => a + Number(p.amount || 0), 0); }
 function invoicePaymentMethods(inv){ return [...new Set(state.payments.filter(p => p.invoiceId === inv.id).map(p => String(p.method || '').trim()).filter(Boolean))]; }
 function invoicePaymentTerms(inv, fallback='Pago según acuerdo.'){ const methods=invoicePaymentMethods(inv); if(!methods.length) return fallback; return `${methods.length>1?'Métodos de pago':'Método de pago'}: ${methods.join(', ')}.`; }
@@ -119,6 +121,8 @@ document.addEventListener('click', async e => {
   const f = e.target.closest('[data-follow-filter]'); if(f){ currentFilter = f.dataset.followFilter; document.querySelectorAll('[data-follow-filter]').forEach(b => b.classList.toggle('active', b === f)); renderFollowups(); return; }
   const complete = e.target.closest('[data-complete-follow]'); if(complete){ await completeFollowup(complete.dataset.completeFollow); return; }
   const del = e.target.closest('[data-delete-follow]'); if(del && confirm('¿Borrar seguimiento?')){ await deleteDoc(docRef('followups', del.dataset.deleteFollow)); return; }
+  const editInv=e.target.closest('[data-edit-invoice]');if(editInv){editMobileInvoice(editInv.dataset.editInvoice);return;}
+  if(e.target.closest('#mCancelInvoiceEdit')){resetMobileInvoiceEditor();return;}
   const shareInv = e.target.closest('[data-share-invoice]'); if(shareInv){ shareInvoice(shareInv.dataset.shareInvoice); return; }
   const pay = e.target.closest('[data-mark-paid]'); if(pay){ await markInvoicePaid(pay.dataset.markPaid); return; }
   const view = e.target.closest('[data-view-invoice]'); if(view){ openInvoiceDoc(view.dataset.viewInvoice); return; }
@@ -280,6 +284,7 @@ async function saveMobileClient(e){
   finally{if(button)button.disabled=false;}
 }
 function startInvoiceForClient(clientId){
+  if(editingInvoiceId)resetMobileInvoiceEditor();
   switchTab('mInvoice');
   const sel = $('mInvClient');
   if(sel)chooseMobileClient('mInvClient',clientId||'');
@@ -324,7 +329,7 @@ function renderSummary(){
   if($('mInvTotal')) $('mInvTotal').textContent = money(c.total);
   const status = $('mInvStatus')?.value || 'Pendiente';
   if($('mInvStatusText')) $('mInvStatusText').textContent = status;
-  if($('mInvBalanceText')) $('mInvBalanceText').textContent = `Balance: ${status === 'Pagada' ? money(0) : money(c.total)}`;
+  if($('mInvBalanceText')) $('mInvBalanceText').textContent = `Balance: ${money(Math.max(0,c.total-(editingInvoiceId?invoicePaid(state.invoices.find(i=>i.id===editingInvoiceId)||{}):status==='Pagada'?c.total:0)))}`;
 }
 function renderDashboard(){
   const month = today().slice(0,7);
@@ -352,7 +357,7 @@ function renderInvoices(){
   const rows = sorted(state.invoices, 'date').slice(0,30);
   $('mInvoiceList').innerHTML = rows.length ? rows.map(inv => {
     const c = clientBy(inv.clientId);
-    return `<div class="row-card"><div class="top"><div><h4>${esc(inv.number || 'Factura')}</h4><p>${esc(inv.clientName || c.name || 'Cliente')} · ${esc(inv.serviceTitle || inv.invoiceType || 'Servicio')}</p></div>${statusBadge(invoiceStatus(inv))}</div><p>Total ${money(inv.total)} · Balance ${money(invoiceBalance(inv))}</p><p>${inv.printedAt ? 'Impresa' : 'Sin impresión registrada'}</p><div class="actions"><button data-view-invoice="${esc(inv.id)}" type="button">Ver documento</button><button data-share-invoice="${esc(inv.id)}" type="button">Compartir</button>${invoiceBalance(inv) > 0 ? `<button data-mark-paid="${esc(inv.id)}" type="button">Marcar pagada</button>` : ''}</div></div>`;
+    return `<div class="row-card"><div class="top"><div><h4>${esc(inv.number || 'Factura')}</h4><p>${esc(inv.clientName || c.name || 'Cliente')} · ${esc(inv.serviceTitle || inv.invoiceType || 'Servicio')}</p></div>${statusBadge(invoiceStatus(inv))}</div><p>Total ${money(inv.total)} · Balance ${money(invoiceBalance(inv))}</p><p>${inv.printedAt ? 'Impresa' : 'Sin impresión registrada'}</p><div class="actions"><button data-edit-invoice="${esc(inv.id)}" type="button">Editar factura</button><button data-view-invoice="${esc(inv.id)}" type="button">Ver documento</button><button data-share-invoice="${esc(inv.id)}" type="button">Compartir</button>${invoiceBalance(inv) > 0 ? `<button data-mark-paid="${esc(inv.id)}" type="button">Marcar pagada</button>` : ''}</div></div>`;
   }).join('') : '<div class="empty">No hay facturas.</div>';
 }
 function followStatus(f){ if(String(f.status || '') === 'Completado') return 'Completado'; const d = String(f.dueDate || ''); if(d && d < today()) return 'Vencida'; if(d && d <= plusDays(14)) return 'Próximo'; return f.status || 'Programado'; }
@@ -408,12 +413,12 @@ function renderClients(){
 function renderHistory(){
   const q = String($('mHistorySearch')?.value || '').toLowerCase();
   const items = [];
-  state.invoices.forEach(i => items.push({ date:i.date, type:'Factura', title:i.number, client:i.clientName, detail:`${i.serviceTitle || i.invoiceType || 'Servicio'} · ${money(i.total)} · ${invoiceStatus(i)}` }));
+  state.invoices.forEach(i => items.push({ invoiceId:i.id,date:i.date, type:'Factura', title:i.number, client:i.clientName, detail:`${i.serviceTitle || i.invoiceType || 'Servicio'} · ${money(i.total)} · ${invoiceStatus(i)}` }));
   state.payments.forEach(p => items.push({ date:p.date, type:'Cobro', title:p.invoiceNumber, client:'', detail:`${p.method || 'Pago'} · ${money(p.amount)}` }));
   state.followups.forEach(f => items.push({ date:f.dueDate, type:'Seguimiento', title:f.title || f.type, client:f.clientName, detail:`${followStatus(f)} · ${f.type || ''}` }));
   state.services.forEach(s => items.push({ date:s.date, type:'Servicio', title:s.title || s.serviceType || 'Servicio', client:s.clientName, detail:`${s.status || ''} · ${money(s.amount)}` }));
   const rows = items.filter(x => [x.title,x.client,x.detail,x.type].join(' ').toLowerCase().includes(q)).sort((a,b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0,80);
-  $('mHistoryList').innerHTML = rows.length ? rows.map(x => `<div class="timeline-item"><div><h4>${esc(x.date || '—')} · ${esc(x.type)}</h4><p><b>${esc(x.client || '')}</b> ${esc(x.title || '')}</p><p>${esc(x.detail || '')}</p></div></div>`).join('') : '<div class="empty">Sin historial.</div>';
+  $('mHistoryList').innerHTML = rows.length ? rows.map(x => `<div class="timeline-item"><div><h4>${esc(x.date || '—')} · ${esc(x.type)}</h4><p><b>${esc(x.client || '')}</b> ${esc(x.title || '')}</p><p>${esc(x.detail || '')}</p>${x.invoiceId?`<div class="actions"><button type="button" data-edit-invoice="${esc(x.invoiceId)}">Editar factura</button></div>`:''}</div></div>`).join('') : '<div class="empty">Sin historial.</div>';
 }
 function renderSyncDetails(){
   const installBox = $('mInstallBox');
@@ -422,22 +427,68 @@ function renderSyncDetails(){
   const standalone = isStandalone() ? 'App instalada' : 'Navegador';
   $('mSyncDetails').innerHTML = [['Versión', APP_VERSION], ['Estado', online], ['Modo', standalone], ['Clientes', state.clients.length], ['Facturas', state.invoices.length], ['Cobros', state.payments.length], ['Seguimientos', state.followups.length], ['Cotizaciones', state.quotes.length], ['Servicios', state.services.length]].map(x => `<div class="metric"><small>${x[0]}</small><b>${x[1]}</b></div>`).join('');
 }
+function resetMobileInvoiceEditor(){
+  editingInvoiceId=null;
+  $('mInvoiceForm').reset();
+  invoiceLines=[newLine('Mantenimiento preventivo 6 meses',1,75)];
+  $('mInvoiceEditorTitle').textContent='Nueva factura';
+  $('mCancelInvoiceEdit').hidden=true;
+  $('mSaveInvoice').textContent='Guardar factura';
+  $('mSaveDraft').hidden=false;
+  $('mInvNumber').readOnly=false;
+  renderSelects();chooseMobileClient('mInvClient','');renderInvoiceLines();setInvoiceStatus('Pendiente');
+}
+function editMobileInvoice(id){
+  const inv=state.invoices.find(i=>i.id===id);if(!inv)return;
+  if(inv.status==='Cancelada')return alert('La factura está cancelada.');
+  editingInvoiceId=id;
+  const set=(id,value)=>{$(id).value=value??'';};
+  switchTab('mInvoice');
+  if(!state.clients.some(c=>c.id===inv.clientId))state.clients.push({id:inv.clientId,name:inv.clientName||'Cliente'});
+  renderSelects();chooseMobileClient('mInvClient',inv.clientId);
+  set('mInvNumber',inv.number);set('mInvDate',inv.date);set('mInvDue',inv.dueDate||inv.date);
+  for(const [id,value] of [['mInvType',inv.invoiceType||'Servicio'],['mInvPaymentMethod',inv.paymentMethod||'']]){
+    const select=$(id);if(value&&!Array.from(select.options).some(o=>o.value===value))select.add(new Option(value,value));set(id,value);
+  }
+  set('mInvNotes',inv.notes||'');
+  const items=inv.items?.length?inv.items:[{description:inv.serviceTitle||inv.serviceType||'Servicio',qty:1,price:inv.subtotal??inv.total??0,taxable:Number(inv.ivu||inv.tax||0)>0}];
+  invoiceLines=items.map(l=>newLine(l.description||l.desc||'',l.qty??l.quantity??1,l.price??l.unitPrice??0,l.discount||0,l.taxable!==false));
+  $('mInvoiceEditorTitle').textContent='Editar factura '+(inv.number||'');
+  $('mSaveInvoice').textContent='Guardar cambios';$('mCancelInvoiceEdit').hidden=false;$('mSaveDraft').hidden=true;
+  $('mInvNumber').readOnly=true;
+  renderInvoiceLines();setInvoiceStatus(invoicePaid(inv)>0?'Pendiente':inv.status||'Pendiente');
+  $('mInvoiceEditorTitle').scrollIntoView({block:'start'});
+}
 async function saveInvoice(forcedStatus){
+  if(invoiceSaving)return;
+  const existing=editingInvoiceId?state.invoices.find(i=>i.id===editingInvoiceId):null;
+  if(editingInvoiceId&&!existing)return alert('No se encuentra la factura. Vuelve a abrirla.');
   const c = clientBy($('mInvClient').value); if(!c.id) return alert('Selecciona cliente.');
   ensureLines();
   const validLines = invoiceLines.filter(l => String(l.description || '').trim() && Number(l.qty || 0) > 0);
   if(!validLines.length) return alert('Añade al menos una línea con descripción y cantidad.');
   const calc = invoiceCalc();
-  const status = forcedStatus || $('mInvStatus').value || 'Pendiente';
+  let status = forcedStatus || $('mInvStatus').value || 'Pendiente';
+  if(existing){const paid=invoicePaid(existing);if(existing.status==='Pagada'&&paid===0){if(Math.abs(calc.total-Number(existing.total))>0.005)return alert('Esta factura figura pagada sin cobros vinculados. Revisa sus cobros antes de cambiar el total.');status='Pagada';}if(calc.total+0.005<paid)return alert('El total no puede ser menor al importe ya cobrado.');if(status==='Pagada'&&existing.status!=='Pagada'&&calc.total-paid>0.005)return alert('Guarda los cambios como pendiente y registra el pago desde Saldar factura.');status=paid>0?(calc.total-paid<=0.005?'Pagada':'Parcial'):(existing.status==='Pagada'?'Pagada':status==='Borrador'?'Borrador':'Pendiente');}
   const number = $('mInvNumber').value || 'INV-M-' + String(Date.now()).slice(-7);
-  const payload = { number, date:$('mInvDate').value, dueDate:$('mInvDue').value, clientId:c.id, clientName:c.name || '', invoiceType:$('mInvType').value, serviceTitle:validLines[0]?.description || $('mInvType').value, items:validLines.map(l => ({ description:l.description, qty:Number(l.qty||1), price:Number(l.price||0), discount:Number(l.discount||0), taxable:l.taxable !== false, total:lineNet(l) })), subtotal:calc.subtotal, discount:calc.discount, ivu:calc.ivu, tax:calc.ivu, taxPercent:Number(state.profile?.tax || 11.5), total:calc.total, status, notes:$('mInvNotes').value, terms:'Pago según acuerdo.', sourceType:'mobile-v62', paymentMethod:$('mInvPaymentMethod').value || '', updatedAt:serverTimestamp(), createdAt:serverTimestamp() };
+  const payload = { number, date:$('mInvDate').value, dueDate:$('mInvDue').value, clientId:c.id, clientName:c.name || '', invoiceType:$('mInvType').value, serviceTitle:validLines[0]?.description || $('mInvType').value, items:validLines.map(l => ({ description:l.description, qty:Number(l.qty||1), price:Number(l.price||0), discount:Number(l.discount||0), taxable:l.taxable !== false, total:lineNet(l) })), subtotal:calc.subtotal, discount:calc.discount, ivu:calc.ivu, tax:calc.ivu, taxPercent:taxRate()*100, total:calc.total, status, notes:$('mInvNotes').value, terms:'Pago según acuerdo.', sourceType:'mobile-v62', paymentMethod:$('mInvPaymentMethod').value || '', updatedAt:serverTimestamp(), createdAt:serverTimestamp() };
+  invoiceSaving=true;const button=$('mSaveInvoice');if(button)button.disabled=true;
+  try{
+  if(existing){
+    delete payload.createdAt;delete payload.sourceType;delete payload.terms;payload.number=existing.number;
+    await updateDoc(docRef('invoices',existing.id),payload);
+    const updated={...existing,...payload};state.invoices=state.invoices.map(i=>i.id===existing.id?updated:i);lastCreatedInvoiceId=existing.id;
+    resetMobileInvoiceEditor();renderAll();openInvoiceDoc(existing.id,updated);return;
+  }
   const ref = await addDoc(colRef('invoices'), payload);
   lastCreatedInvoiceId = ref.id;
   if(status === 'Pagada'){
     await addDoc(colRef('payments'), { invoiceId:ref.id, invoiceNumber:number, date:$('mInvDate').value || today(), method:$('mInvPaymentMethod').value || 'Móvil', amount:calc.total, note:'Pago registrado al crear factura móvil', createdAt:serverTimestamp() });
   }
   await createAutoFollowupFromInvoice(ref.id, payload).catch(err => console.warn('No se pudo crear seguimiento automático:', err));
-  $('mInvoiceForm').reset(); invoiceLines = [newLine('Mantenimiento preventivo 6 meses', 1, 75)]; renderSelects(); renderInvoiceLines(); setInvoiceStatus('Pendiente'); openInvoiceDoc(null, { id:ref.id, ...payload });
+  resetMobileInvoiceEditor();openInvoiceDoc(null, { id:ref.id, ...payload });
+  }catch(error){alert('No se pudo guardar la factura: '+(error.message||error));}
+  finally{invoiceSaving=false;if(button)button.disabled=false;}
 }
 async function createAutoFollowupFromInvoice(invoiceId, inv){
   const type = String(inv.invoiceType || inv.type || '').toLowerCase();
@@ -822,7 +873,7 @@ async function buildInvoicePdfFileFallback(inv, filename){
 function invoiceShareText(inv){ return `${state.profile?.businessName || 'Nexus Business'}\nFactura: ${inv.number}\nCliente: ${inv.clientName}\nTotal: ${money(inv.total)}\nEstado: ${invoiceStatus(inv)}\nBalance: ${money(invoiceBalance(inv))}`; }
 function buildInvoicePreviewObject(number='Vista previa'){
   const c = clientBy($('mInvClient')?.value); const calc = invoiceCalc();
-  return { number, date:$('mInvDate')?.value || today(), dueDate:$('mInvDue')?.value || plusDays(15), clientName:c.name || 'Cliente', invoiceType:$('mInvType')?.value || 'Servicio', items:invoiceLines.map(l => ({ description:l.description, qty:l.qty, price:l.price, discount:l.discount, taxable:l.taxable, total:lineNet(l) })), subtotal:calc.subtotal, discount:calc.discount, ivu:calc.ivu, taxPercent:Number(state.profile?.tax || 11.5), total:calc.total, status:$('mInvStatus')?.value || 'Pendiente', notes:$('mInvNotes')?.value || '' };
+  return { number, date:$('mInvDate')?.value || today(), dueDate:$('mInvDue')?.value || plusDays(15), clientName:c.name || 'Cliente', invoiceType:$('mInvType')?.value || 'Servicio', items:invoiceLines.map(l => ({ description:l.description, qty:l.qty, price:l.price, discount:l.discount, taxable:l.taxable, total:lineNet(l) })), subtotal:calc.subtotal, discount:calc.discount, ivu:calc.ivu, taxPercent:taxRate()*100, total:calc.total, status:$('mInvStatus')?.value || 'Pendiente', notes:$('mInvNotes')?.value || '' };
 }
 
 function niceDate(v){
@@ -971,7 +1022,7 @@ function renderMobileTools(){
   const invoices=sorted(state.invoices).filter(i=>!['Cancelada','Borrador'].includes(invoiceStatus(i))&&invoiceBalance(i)>0);
   $('mReceivableTotal').textContent=money(invoices.reduce((a,i)=>a+invoiceBalance(i),0))+' pendiente · '+invoices.length+' facturas';
   const filtered=invoices.filter(i=>normalizeClientSearch([i.number,i.clientName,clientBy(i.clientId).name].join(' ')).includes(q));
-  $('mReceivableList').innerHTML=filtered.length?filtered.map(i=>`<article class="row-card"><div class="top"><div><h4>${esc(i.clientName||clientBy(i.clientId).name||'Cliente')}</h4><p>${esc(i.number||'Factura')} · Vence ${esc(i.dueDate||'Sin fecha')}</p></div>${statusBadge(invoiceStatus(i))}</div><p>Balance <b>${money(invoiceBalance(i))}</b></p><div class="actions"><button data-view-invoice="${esc(i.id)}" type="button">Ver factura</button><button data-share-invoice="${esc(i.id)}" type="button">Compartir</button><button data-mark-paid="${esc(i.id)}" type="button">Saldar factura</button></div></article>`).join(''):'<div class="empty">No hay balances para esta búsqueda.</div>';
+  $('mReceivableList').innerHTML=filtered.length?filtered.map(i=>`<article class="row-card"><div class="top"><div><h4>${esc(i.clientName||clientBy(i.clientId).name||'Cliente')}</h4><p>${esc(i.number||'Factura')} · Vence ${esc(i.dueDate||'Sin fecha')}</p></div>${statusBadge(invoiceStatus(i))}</div><p>Balance <b>${money(invoiceBalance(i))}</b></p><div class="actions"><button data-edit-invoice="${esc(i.id)}" type="button">Editar factura</button><button data-view-invoice="${esc(i.id)}" type="button">Ver factura</button><button data-share-invoice="${esc(i.id)}" type="button">Compartir</button><button data-mark-paid="${esc(i.id)}" type="button">Saldar factura</button></div></article>`).join(''):'<div class="empty">No hay balances para esta búsqueda.</div>';
 }
 function calculateMobilePrice(){
   const amount=Math.max(0,Number($('mCalcAmount').value)||0),discount=Math.min(100,Math.max(0,Number($('mCalcDiscount').value)||0)),rate=Math.min(100,Math.max(0,Number($('mCalcTax').value)||0));
