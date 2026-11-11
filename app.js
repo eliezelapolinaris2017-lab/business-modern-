@@ -1,4 +1,4 @@
-import { buildCashLedger, cashLedgerSummary, cashDate } from './cash-ledger.js?v=127';
+import { buildCashLedger, cashLedgerSummary, cashDate } from './cash-ledger.js?v=129';
 import { createWhatsappTab } from './whatsapp-tab.js?v=125';
 import { createViewMemory } from './ui-context.js?v=124';
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
@@ -3125,7 +3125,8 @@ function cashSigned(x){return (String(x.type||'').toLowerCase()==='gasto'?-1:1)*
 function cashCurrentBalance(){return cashLedgerSummary(buildCashLedger(state).rows,'0000-01-01','9999-12-31',cashDate(new Date())).current;}
 function cashWeekData(){
   const f=v66Filter('cashflow'), b=cashWeekBounds(new Date(cashDate(new Date())+'T12:00:00'));
-  const start=f.from||b.start,end=f.to||b.end;
+  const year=cashDate(new Date()).slice(0,4),yearStart=year+'-01-01',yearEnd=year+'-12-31';
+  const start=(f.from||b.start)<yearStart?yearStart:(f.from||b.start),end=(f.to||b.end)>yearEnd?yearEnd:(f.to||b.end);
   const ledger=buildCashLedger(state), summary=cashLedgerSummary(ledger.rows,start,end,cashDate(new Date()));
   const days=[];
   const first=new Date(start+'T12:00:00Z'),last=new Date(end+'T12:00:00Z');
@@ -3149,16 +3150,16 @@ function renderCashflowModule(){
   const metric=(label,value,note,tone='')=>`<article class="cf-stat ${tone}"><span>${label}</span><strong>${money(value)}</strong><small>${note}</small></article>`;
   const dayRows=w.days.map(d=>`<tr><td><b>${esc(d.label)}</b><small>${esc(d.date)}</small></td><td>${money(d.prior)}</td><td class="cf-in">${money(d.income)}</td><td>${money(d.expenses)}</td><td class="${d.net<0?'cf-out':'cf-in'}">${money(d.net)}</td><td><b>${money(d.closing)}</b></td></tr>`);
   const f=v66Filter('cashflow');
-  const oldBalance=state.cashflow.filter(x=>cashDate(x.date)&&cashDate(x.date)<=cashDate(new Date())).reduce((a,x)=>a+Math.round(cashSigned(x)*100),0)/100;
+  const oldBalance=state.cashflow.filter(x=>cashDate(x.date)>=cashDate(new Date()).slice(0,4)+'-01-01'&&cashDate(x.date)<=cashDate(new Date())).reduce((a,x)=>a+Math.round(cashSigned(x)*100),0)/100;
   box.innerHTML=`<div class="cf-workspace">
-    <header class="cf-heading"><div><span class="cf-eyebrow">CONTROL FINANCIERO</span><h3>Resumen de caja</h3><p>Del ${esc(w.start)} al ${esc(w.end)}</p></div><div class="cf-period-actions"><button type="button" data-cash-period="week">Esta semana</button><button type="button" data-cash-period="month">Este mes</button></div></header>
+    <header class="cf-heading"><div><span class="cf-eyebrow">CONTROL FINANCIERO</span><h3>Resumen de caja</h3><p>Del ${esc(w.start)} al ${esc(w.end)} · Año ${esc(cashDate(new Date()).slice(0,4))}</p></div><div class="cf-period-actions"><button type="button" data-cash-period="week">Esta semana</button><button type="button" data-cash-period="month">Este mes</button></div></header>
     <div class="cf-overview">
       <article class="cf-result"><span>Flujo neto del período</span><strong>${money(w.net)}</strong><p>Entradas menos salidas</p><div class="cf-result-foot"><span>Cobros de clientes <b>${money(w.collected)}</b></span><span>Otros ingresos <b>${money(Math.round((w.income-w.collected)*100)/100)}</b></span></div></article>
-      <div class="cf-stats">${metric('Entradas del período',w.income,'Por fecha del cobro','cf-income')}${metric('Salidas del período',w.expenses,'Pagos y gastos registrados','cf-expense')}${metric('Saldo inicial',w.prior,'Acumulado anterior')}${metric('Saldo al cierre',w.closing,'Inicial + entradas − salidas','cf-closing')}</div>
+      <div class="cf-stats">${metric('Entradas del período',w.income,'Por fecha del cobro','cf-income')}${metric('Salidas del período',w.expenses,'Pagos y gastos registrados','cf-expense')}${metric('Saldo inicial',w.prior,'Acumulado del año en curso')}${metric('Saldo al cierre',w.closing,'Inicial + entradas − salidas','cf-closing')}</div>
     </div>
     <section class="cf-pending"><div><h4>Cuentas pendientes</h4><p>Balances actuales, fuera del flujo del período</p></div><article><span>Por cobrar</span><b>${money(w.receivable)}</b></article><article><span>Por pagar a suplidores</span><b>${money(w.payable)}</b></article><article><span>Retenciones</span><b>${money(w.retentions)}</b></article></section>
     <section class="cf-panel"><div class="cf-panel-heading"><div><h4>Movimientos del período</h4><p>Cada ingreso y gasto con su origen</p></div><span class="cf-count">${rows.length} movimientos</span></div>
-      <div class="cf-filters" data-module-search="cashflow"><label class="cf-search">Buscar movimiento<input id="cashflowSearch" type="search" value="${esc(f.q||'')}" placeholder="Concepto, factura o método"></label><label>Desde<input id="cashflowFrom" type="date" value="${esc(w.start)}"></label><label>Hasta<input id="cashflowTo" type="date" value="${esc(w.end)}"></label><label>Tipo<select id="cashflowStatus"><option value="all">Todos</option><option value="Ingreso" ${f.status==='Ingreso'?'selected':''}>Entradas</option><option value="Gasto" ${f.status==='Gasto'?'selected':''}>Salidas</option></select></label><button type="button" data-clear-module-filter="cashflow">Restablecer</button></div>
+      <div class="cf-filters" data-module-search="cashflow"><label class="cf-search">Buscar movimiento<input id="cashflowSearch" type="search" value="${esc(f.q||'')}" placeholder="Concepto, factura o método"></label><label>Desde<input id="cashflowFrom" type="date" min="${cashDate(new Date()).slice(0,4)}-01-01" max="${cashDate(new Date()).slice(0,4)}-12-31" value="${esc(w.start)}"></label><label>Hasta<input id="cashflowTo" type="date" min="${cashDate(new Date()).slice(0,4)}-01-01" max="${cashDate(new Date()).slice(0,4)}-12-31" value="${esc(w.end)}"></label><label>Tipo<select id="cashflowStatus"><option value="all">Todos</option><option value="Ingreso" ${f.status==='Ingreso'?'selected':''}>Entradas</option><option value="Gasto" ${f.status==='Gasto'?'selected':''}>Salidas</option></select></label><button type="button" data-clear-module-filter="cashflow">Restablecer</button></div>
       ${table(['Fecha','Origen','Concepto / método','Entrada','Salida','Saldo acumulado','Acción'],rows.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="cf-origin">${esc(origin[x.origin]||x.origin)}</span></td><td><b>${esc(x.concept)}</b><small>${esc(x.method||'')}</small></td><td class="cf-in">${x.type!=='Gasto'?money(x.amount):'—'}</td><td>${x.type==='Gasto'?money(x.amount):'—'}</td><td><b>${money(x.running)}</b></td><td>${x.derived?`<button type="button" data-cash-origin="${esc(x.sourceModule)}">Ver origen</button>`:action('cashflow',x.id)}</td></tr>`))}
       <footer class="cf-table-note">Los filtros de búsqueda y tipo aplican al detalle. El resumen conserva los totales del período.</footer>
     </section>
