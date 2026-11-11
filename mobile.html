@@ -73,6 +73,7 @@
     <section id="mReceivable" class="mobile-view"><div class="field-heading"><span>COBROS</span><h2>Cuentas por cobrar</h2><p id="mReceivableTotal"></p></div><input id="mReceivableSearch" class="search" type="search" placeholder="Buscar cliente o factura" aria-label="Buscar balances"><div id="mReceivableList" class="mobile-list"></div></section>
     <section id="mCalculator" class="mobile-view"><div class="field-heading"><span>HERRAMIENTA RÁPIDA</span><h2>Calcula tu precio</h2><p>Una referencia rápida antes de preparar la factura.</p></div><div class="mobile-card mobile-form"><label>Importe antes de IVU<input id="mCalcAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label><div class="two-col"><label>Descuento %<input id="mCalcDiscount" type="number" inputmode="decimal" min="0" max="100" value="0"></label><label>IVU %<input id="mCalcTax" type="number" inputmode="decimal" min="0" max="100" value="11.5"></label></div><div id="mCalcResult" aria-live="polite"></div></div></section>
     <section id="mInvoice" class="mobile-view">
+      <div class="section-row"><h2 id="mInvoiceEditorTitle">Nueva factura</h2><button id="mCancelInvoiceEdit" type="button" hidden>Cancelar edición</button></div>
       <div class="step-bar">
         <span class="active">1 Información</span><span>2 Líneas</span><span>3 Resumen</span><span>4 Guardar</span>
       </div>
@@ -127,7 +128,7 @@
           <button id="mPreviewInvoice" type="button">Vista previa</button>
           <button id="mViewLastDoc" type="button">Ver documento</button>
         </div>
-        <button class="primary big-save" type="submit">Guardar factura</button>
+        <button id="mSaveInvoice" class="primary big-save" type="submit">Guardar factura</button>
       </form>
 
       <div class="mobile-card">
@@ -228,7 +229,7 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="mobile.js?v=126-mobile-premium"></script>
+  <script type="module" src="mobile.js?v=130-invoice-edit"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=126').catch(()=>{}));
