@@ -23,3 +23,10 @@ assert.equal(ctx.cashLedgerSummary(oldRows,'2026-11-09','2026-11-15','2026-11-11
 assert.equal(ctx.cashLedgerSummary(oldRows,'2026-08-01','2026-08-31','2026-11-11').income,0,'Invoice issuance and due date never set cash receipt date');
 assert.equal(ctx.cashLedgerSummary(oldRows,'2026-11-16','2026-11-22','2026-11-18').income,450,'Installments enter their respective payment weeks');
 console.log('PASS overdue invoice paid this week and installments in different weeks');
+
+const annual=ctx.buildCashLedger({cashflow:[{id:'old',date:'2025-12-31',type:'Ingreso',amount:9000},{id:'new',date:'2026-01-01',type:'Ingreso',amount:100},{id:'expense',date:'2026-11-10',type:'Gasto',amount:25},{id:'future-year',date:'2027-01-01',type:'Ingreso',amount:7000}]},'2026-11-11');
+assert.equal(annual.rows.length,2);assert.equal(annual.rows[1].running,75);
+const annualSummary=ctx.cashLedgerSummary(annual.rows,'2026-11-09','2026-11-15','2026-11-11');
+assert.equal(annualSummary.prior,100);assert.equal(annualSummary.current,75);assert.equal(annualSummary.closing,75);
+assert.equal(ctx.buildCashLedger({cashflow:[{id:'reset',date:'2026-12-31',type:'Ingreso',amount:100}]},'2027-01-01').rows.length,0,'New year automatically excludes prior accumulated balance');
+console.log('PASS current year only: initial, running, closing balances and automatic January reset');

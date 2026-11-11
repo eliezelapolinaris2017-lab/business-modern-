@@ -11,7 +11,8 @@ export function cashDate(value){
   if(!Number.isFinite(date.getTime()))return '';
   return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Puerto_Rico',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
 }
-export function buildCashLedger(data){
+export function buildCashLedger(data,reference=new Date()){
+  const year=cashDate(reference).slice(0,4),yearStart=year+'-01-01',yearEnd=year+'-12-31';
   const sources=[];
   const push=(module,row,type,concept,amount,date=row.date)=>sources.push({...row,id:`${module}:${row.id}`,sourceId:row.id,sourceModule:module,type,concept,amount:cents(amount)/100,date:cashDate(date),origin:module,derived:true});
   (data.payments||[]).forEach(p=>push('payments',p,'Ingreso',`Cobro ${p.invoiceNumber||''}`,p.amount));
@@ -35,14 +36,15 @@ export function buildCashLedger(data){
     if(/^(Cobro |Pago suplidor |Nómina |Pago retención )/.test(concept))issues.push({...row,reason:'Movimiento histórico sin coincidencia; incluido hasta revisar'});
     manual.push(row);
   }
-  const rows=[...sources,...manual].sort((a,b)=>a.date.localeCompare(b.date)||String(a.id).localeCompare(String(b.id)));
+  const rows=[...sources,...manual].filter(r=>!r.date||(r.date>=yearStart&&r.date<=yearEnd)).sort((a,b)=>a.date.localeCompare(b.date)||String(a.id).localeCompare(String(b.id)));
   let running=0;
   for(const row of rows){row.signedCents=(row.type==='Gasto'?-1:1)*cents(row.amount);if(row.date)running+=row.signedCents;row.running=running/100;}
   for(const row of rows)if(!row.date)issues.push({...row,reason:'Sin fecha válida; excluido de los saldos'});
-  return {rows,issues};
+  return {rows,issues:issues.filter(r=>!r.date||(r.date>=yearStart&&r.date<=yearEnd))};
 }
 export function cashLedgerSummary(rows,from,to,asOf){
-  const valid=rows.filter(r=>r.date);
+  const year=asOf.slice(0,4);
+  const valid=rows.filter(r=>r.date&&r.date>=year+'-01-01'&&r.date<=year+'-12-31');
   const total=list=>list.reduce((sum,r)=>sum+r.signedCents,0)/100;
   const period=valid.filter(r=>r.date>=from&&r.date<=to);
   const prior=total(valid.filter(r=>r.date<from));
