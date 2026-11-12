@@ -40,7 +40,7 @@ export function mountClientAccount({app,db,openPortal}){
   host.querySelector('.brand-mark')?.after(panel);
   const params=new URLSearchParams(location.search);
   let saved={};try{saved=JSON.parse(sessionStorage.getItem('oasisAccountProgress')||'{}');}catch{}
-  let invitation=params.get('access')||params.get('token')||saved.invitation||'';
+  let invitation=params.get('access')||params.get('token')||decodeURIComponent((location.hash||'').slice(1).split('/')[0]||'')||saved.invitation||'';
   if(!invitation){try{invitation=localStorage.getItem('nexusPortalAccess')||'';}catch{}}
   let email=saved.email||'',phone=saved.phone||'',stage='loading',busy=false,confirmation=null,verifier=null,notice='',failure=false,disposed=false;
   let linking=false;

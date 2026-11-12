@@ -1,3 +1,5 @@
+import { shortDocumentLink } from './document-links.js?v=132';
+import { nextInvoiceNumber } from './invoice-number.js?v=132';
 import { buildCashLedger, cashLedgerSummary, cashDate } from './cash-ledger.js?v=129';
 import { createWhatsappTab } from './whatsapp-tab.js?v=125';
 import { createViewMemory } from './ui-context.js?v=124';
@@ -1917,7 +1919,7 @@ tables=function(){__v90Tables();renderContractsTable();};
 
 function render(){return viewMemory.preserve(()=>renderContent());}
 function renderContent(){document.body.dataset.industry=profile().industry;setVisuals();nav();forms();bindSearchableClientFields();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(industryTitle(state.activeView));$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
-async function add(c,data){if(!canCreate(c)){alert(`Límite alcanzado en plan ${plan().name}. Mejora tu plan.`);show('plans');return null;}return await addDoc(colPath(c),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});}
+async function add(c,data){if(!canCreate(c)){alert(`Límite alcanzado en plan ${plan().name}. Mejora tu plan.`);show('plans');return null;}if(c==='invoices')data={...data,number:await nextInvoiceNumber(db,uid(),state.invoices,data.date)};return await addDoc(colPath(c),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});}
 
 function showClientSummary(id){
   const c=clientBy(id); if(!c.id) return;
@@ -2293,6 +2295,7 @@ async function createInvoice(serviceId){
   if(!canCreate('invoices')){alert('Límite de facturas alcanzado.');show('plans');return;}
   try{
     const invoiceId='service-'+s.id;
+    const number=await nextInvoiceNumber(db,uid(),state.invoices,today());
     await runTransaction(db,async tx=>{
       const sr=docPath('services',s.id),ir=docPath('invoices',invoiceId);
       const [serviceSnap,invoiceSnap]=await Promise.all([tx.get(sr),tx.get(ir)]);
@@ -2302,7 +2305,7 @@ async function createInvoice(serviceId){
       if(fresh.invoiceId)throw new Error('Este servicio ya tiene factura. Recarga el listado.');
       if(fresh.status!=='Completado')throw new Error('Completa el servicio antes de facturarlo.');
       const totals=invoiceTotalsFromService(fresh);
-      tx.set(ir,{number:'INV-'+s.id.toUpperCase(),date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items:fresh.items?.length?fresh.items:[{description:serviceTitle(fresh),qty:1,price:serviceSubtotal(fresh)}],fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+      tx.set(ir,{number,date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items:fresh.items?.length?fresh.items:[{description:serviceTitle(fresh),qty:1,price:serviceSubtotal(fresh)}],fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
       tx.update(sr,{status:'Facturado',invoiceId,invoicedAt:serverTimestamp(),updatedAt:serverTimestamp()});
     });
     show('billing');
@@ -2377,9 +2380,9 @@ async function sendPreviewWhatsapp(printAlso=false){
     const portalLink=await syncClientPortal(c.id,{openAfter:false,copyLink:false,notify:false});
     const portalToken=new URL(portalLink).searchParams.get('access');
     await updateDoc(doc(db,'clientPortals',portalToken),{sharedDocument:{type,id:row.id},printHtml:html});
-    const link=portalLink+'&document='+encodeURIComponent(type+':'+row.id);
+    const link=await shortDocumentLink(portalLink,type,row.id,/oasis/i.test(p.businessName||'')?'https://oasisservicepr.com/f/':undefined);
     const label=type==='invoice'?'factura':'cotización';
-    const message=`Hola ${row.clientName||c.name||''}, le compartimos su ${label} ${row.number||''} de ${p.businessName||'nuestro negocio'}. Puede consultar el PDF, su historial y próximos servicios aquí: ${link}`;
+    const message=`Hola ${row.clientName||c.name||''}, su ${label} de ${p.businessName||'nuestro negocio'} está disponible.\n\nPuede verla y descargarla aquí:\n${link}\n\nGracias por confiar en nosotros.`;
     request.send('https://wa.me/'+phone+'?text='+encodeURIComponent(message));
     if(printAlso){
       if(state.previewHtml===html) $('printPreview').onclick({printWindow:printTab,html});

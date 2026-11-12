@@ -1,5 +1,7 @@
+import { incomingPortalLink, resolveDocumentReference } from './document-links.js?v=132';
+const incomingLink=incomingPortalLink(location);
 import { portalPaymentActions } from './portal-payments.js?v=123';
-import { mountClientAccount } from './portal-account.js?v=119-onboarding';
+import { mountClientAccount } from './portal-account.js?v=132-links';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getFirestore,doc,getDoc,onSnapshot,writeBatch,serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
@@ -7,6 +9,7 @@ const firebaseApp=initializeApp(firebaseConfig,'mi-oasis-client');
 const db=getFirestore(firebaseApp);
 window.addEventListener('DOMContentLoaded',()=>mountClientAccount({app:firebaseApp,db,openPortal}));
 const $=id=>document.getElementById(id);
+let selectedDocument='';
 let data=null,active='overview',accessToken='',stopPortal=null;
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v||0));
@@ -108,7 +111,7 @@ function renderTab(){
   if(active==='overview'){
     const pending=(data.invoices||[]).filter(x=>x.balance>0&&x.status!=='Cancelada');
     const agenda=portalAgenda(),next=agenda.filter(x=>!closedStatus(x.status)).slice(0,3);
-    const selected=new URLSearchParams(location.search).get('document')||'';
+    const selected=selectedDocument||new URLSearchParams(location.search).get('document')||'';
     const [kind,id]=selected.split(':');
     const highlighted=({invoice:data.invoices,quote:data.quotes}[kind]||[]).find(x=>String(x.id)===id);
     const recent=(data.services||[]).slice(0,3);
@@ -189,12 +192,13 @@ async function openPortal(token){
       unsubscribe();
       fail('La conexión está tardando. Comprueba tu internet y vuelve a intentar.',Object.assign(new Error('La conexión está tardando. Vuelve a intentar.'),{code:'portal/timeout'}));
     },12000);
-    unsubscribe=onSnapshot(doc(db,'clientPortals',token),snap=>{
+    unsubscribe=onSnapshot(doc(db,'clientPortals',token),async snap=>{
       if(accessToken!==token)return;
       if(!snap.exists()||snap.data().enabled===false){
         fail('Este acceso ya no está disponible. Solicita una invitación nueva al negocio.',new Error('Invitación no disponible.'));return;
       }
       data=snap.data();
+      if(incomingLink.reference){const current=data;selectedDocument=await resolveDocumentReference(current,incomingLink.reference);if(accessToken!==token||data!==current)return;}
       (data.quotes||[]).forEach(q=>q.responseUnavailable=true);
       if(!data.sharedDocument||data.client?.id){try{localStorage.setItem('nexusPortalAccess',token);}catch(_){}}
       $('loginMsg').textContent='';
@@ -210,7 +214,8 @@ async function openPortal(token){
 $('accessForm').onsubmit=e=>{e.preventDefault();const token=$('accessCode').value.trim();if(token)void openPortal(token).catch(()=>{});};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;renderTab()});
 $('exitBtn').onclick=async()=>{if(stopPortal)stopPortal();localStorage.removeItem('nexusPortalAccess');await window.portalSignOut?.();location.href='./'};
-const params=new URLSearchParams(location.search);let remembered='';try{remembered=localStorage.getItem('nexusPortalAccess')||'';}catch(_){}const initial=params.get('access')||params.get('token')||remembered;if(initial){$('accessCode').value=initial;if(params.has('document'))void openPortal(initial).catch(()=>{});}
+selectedDocument=incomingLink.document;
+const params=new URLSearchParams(location.search);let remembered='';try{remembered=localStorage.getItem('nexusPortalAccess')||'';}catch(_){}const initial=incomingLink.token||remembered;if(initial){$('accessCode').value=initial;if(params.has('document')||incomingLink.reference)void openPortal(initial).catch(()=>{});}
 
 
 // PWA Portal del Cliente

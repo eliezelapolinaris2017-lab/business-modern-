@@ -1,3 +1,5 @@
+import { shortDocumentLink } from './document-links.js?v=132';
+import { nextInvoiceNumber } from './invoice-number.js?v=132';
 import { searchClients, normalizeClientSearch } from './client-search.js?v=126';
 import { createViewMemory } from './ui-context.js?v=124';
 import { createPortalSyncScheduler } from './portal-sync.js?v=121';
@@ -7,7 +9,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v131';
+const APP_VERSION = 'v132';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
@@ -497,10 +499,11 @@ async function saveInvoice(forcedStatus){
     const updated={...existing,...payload};state.invoices=state.invoices.map(i=>i.id===existing.id?updated:i);lastCreatedInvoiceId=existing.id;
     const back=invoiceEditReturnView;resetMobileInvoiceEditor();renderAll();if(back)switchTab(back);openInvoiceDoc(existing.id,updated);return;
   }
+  payload.number=await nextInvoiceNumber(db,uid(),state.invoices,payload.date);
   const ref = await addDoc(colRef('invoices'), payload);
   lastCreatedInvoiceId = ref.id;
   if(status === 'Pagada'){
-    await addDoc(colRef('payments'), { invoiceId:ref.id, invoiceNumber:number, date:$('mInvDate').value || today(), method:$('mInvPaymentMethod').value || 'Móvil', amount:calc.total, note:'Pago registrado al crear factura móvil', createdAt:serverTimestamp() });
+    await addDoc(colRef('payments'), { invoiceId:ref.id, invoiceNumber:payload.number, date:$('mInvDate').value || today(), method:$('mInvPaymentMethod').value || 'Móvil', amount:calc.total, note:'Pago registrado al crear factura móvil', createdAt:serverTimestamp() });
   }
   await createAutoFollowupFromInvoice(ref.id, payload).catch(err => console.warn('No se pudo crear seguimiento automático:', err));
   resetMobileInvoiceEditor();openInvoiceDoc(null, { id:ref.id, ...payload });
@@ -778,11 +781,12 @@ async function shareInvoice(id){
     if(btn){ btn.disabled = true; btn.textContent = 'Generando PDF…'; }
     await sleep(30);
     const portalLink=await syncMobilePortal(inv.clientId);
+    const documentLink=await shortDocumentLink(portalLink,'invoice',inv.id,/oasis/i.test(state.profile?.businessName||'')?'https://oasisservicepr.com/f/':undefined);
     const file = await buildInvoicePdfFile(inv, filename);
     if(!file || file.size < 10000) throw new Error('PDF vacío o inválido.');
     if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
       if(btn) btn.textContent = 'Compartiendo…';
-      await navigator.share({ title:`Factura ${inv.number || ''}`, text:'Factura adjunta en PDF. Consulte su historial y próximos servicios: '+portalLink+'&document='+encodeURIComponent('invoice:'+inv.id), files:[file] });
+      await navigator.share({ title:`Factura ${inv.number || ''}`, text:'Factura adjunta en PDF. Consulte su historial y próximos servicios: '+documentLink, files:[file] });
       closeDoc();
       return;
     }
