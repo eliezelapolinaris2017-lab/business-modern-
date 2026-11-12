@@ -1,0 +1,25 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm');
+(async()=>{
+ const links=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync('document-links.js')).toString('base64'));
+ const old='https://suite.nexustoolspr.com/portal/?access=ABCD-EFGH-2345';
+ const first=await links.shortDocumentLink(old,'invoice','service-FirstInvoice');
+ const branded=await links.shortDocumentLink(old,'invoice','service-FirstInvoice','https://oasisservicepr.com/f/');
+ assert.equal(new URL(branded).origin,'https://oasisservicepr.com');assert.equal(new URL(branded).hash,new URL(first).hash);
+ const second=await links.shortDocumentLink(old,'invoice','service-SecondInvoice');
+ assert.equal(new URL(first).pathname,'/f/');assert.ok(first.length<old.length+45);assert.notEqual(first,second);
+ const incoming=links.incomingPortalLink(new URL(first));assert.equal(incoming.token,'ABCD-EFGH-2345');
+ const data={invoices:[{id:'service-FirstInvoice'},{id:'service-SecondInvoice'}]};
+ assert.equal(await links.resolveDocumentReference(data,incoming.reference),'invoice:service-FirstInvoice');
+ data.invoices.reverse();assert.equal(await links.resolveDocumentReference(data,incoming.reference),'invoice:service-FirstInvoice');
+ assert.equal(await links.resolveDocumentReference({invoices:[]},incoming.reference),'');
+ assert.equal(links.incomingPortalLink(new URL(old+'&document=quote%3AQ1')).document,'quote:Q1');
+ assert.equal(links.portalTokenFromLink(first),'ABCD-EFGH-2345');
+ let record={invoiceSequences:{2025:7}},queue=Promise.resolve();
+ const ctx={doc:()=> 'owner',runTransaction:(_,fn)=>{const result=queue.then(()=>fn({get:async()=>({data:()=>record}),set:(_,v)=>record={...record,...v}}));queue=result;return result;},db:{}};
+ vm.createContext(ctx);vm.runInContext(fs.readFileSync('invoice-number.js','utf8').replace(/^import .*\n/,'').replace('export async function','async function'),ctx);
+ const existing=[{number:'FAC-2026-0010'},{number:'INV-LEGACY'}];
+ const results=await Promise.all(Array.from({length:20},()=>ctx.nextInvoiceNumber({},'owner',existing,'2026-11-12')));
+ assert.equal(new Set(results).size,20);assert.equal(results[0],'FAC-2026-0011');assert.equal(results[19],'FAC-2026-0030');
+ assert.equal(await ctx.nextInvoiceNumber({},'owner',existing,'2027-01-01'),'FAC-2027-0001');assert.equal(record.invoiceSequences[2025],7);assert.equal(existing[1].number,'INV-LEGACY');
+ console.log('PASS short link round trip, legacy URLs, stable exact document selection, deleted document, concurrent annual invoice numbering and preserved historical invoices.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

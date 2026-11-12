@@ -3,7 +3,7 @@ const source=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'u
 const block=(a,b)=>source.slice(source.indexOf(a),source.indexOf(b,source.indexOf(a)));
 const fixtures={services:[{id:'ABC123',clientId:'c1',clientName:'Cliente',title:'Mantenimiento',teamId:'t1',teamName:'Empleado',date:'2026-10-06',status:'Pendiente',amount:150,items:[{description:'Limpieza',qty:2,price:75}],fields:[]}],invoices:[]};
 const records=new Map([['services/ABC123',{...fixtures.services[0]}]]),alerts=[];let writes=0,queue=Promise.resolve();
-const ctx={state:fixtures,db:{},alert:m=>alerts.push(m),show:()=>{},previewInvoice:()=>{},canCreate:()=>true,docPath:(c,id)=>c+'/'+id,serverTimestamp:()=>123,today:()=> '2026-10-06',plusDays:()=> '2026-10-21',profile:()=>({tax:'11.5'}),industry:()=>({service:'Servicio',serviceFields:[]}),clientBy:()=>({phone:'7870000000',address:'Trujillo Alto'}),assetBy:()=>({}),runTransaction:(_,callback)=>{
+const ctx={document:{addEventListener(){}},nextInvoiceNumber:async()=> 'FAC-2026-0001',uid:()=> 'owner',state:fixtures,db:{},alert:m=>alerts.push(m),show:()=>{},previewInvoice:()=>{},canCreate:()=>true,docPath:(c,id)=>c+'/'+id,serverTimestamp:()=>123,today:()=> '2026-10-06',plusDays:()=> '2026-10-21',profile:()=>({tax:'11.5'}),industry:()=>({service:'Servicio',serviceFields:[]}),clientBy:()=>({phone:'7870000000',address:'Trujillo Alto'}),assetBy:()=>({}),runTransaction:(_,callback)=>{
   const pending=queue.then(()=>callback({get:async ref=>({exists:()=>records.has(ref),data:()=>records.get(ref)}),set:(ref,data)=>{writes++;records.set(ref,data);},update:(ref,data)=>records.set(ref,{...records.get(ref),...data})}));queue=pending.catch(()=>{});return pending;
 }};
 vm.createContext(ctx);
