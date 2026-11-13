@@ -69,7 +69,8 @@ function firebaseMessage(err){
 
 function newLine(description='', qty=1, price=0, discount=0, taxable=true){ return { id:'ln_' + Date.now() + '_' + Math.random().toString(16).slice(2), description, qty:Number(qty||1), price:Number(price||0), discount:Number(discount||0), taxable }; }
 function ensureLines(){ if(!invoiceLines.length) invoiceLines = [newLine('Mantenimiento preventivo 6 meses', 1, 75)]; }
-function lineNet(l){ return Math.max(0, (Number(l.qty||0) * Number(l.price||0)) - Number(l.discount||0)); }
+function isDiscountLine(l){ return Number(l.price) === 0 && l.taxable === false; }
+function lineNet(l){ if(isDiscountLine(l)) return -Math.max(0, Number(l.discount)||0); return Math.max(0, (Number(l.qty||0) * Number(l.price||0)) - Number(l.discount||0)); }
 function invoiceCalc(){ const subtotal = invoiceLines.reduce((a,l)=>a + Number(l.qty||0)*Number(l.price||0), 0); const discount = invoiceLines.reduce((a,l)=>a + Number(l.discount||0), 0); const taxableBase = invoiceLines.filter(l=>l.taxable !== false).reduce((a,l)=>a + lineNet(l), 0); const ivu = taxableBase * taxRate(); const total = Math.max(0, subtotal - discount + ivu); return { subtotal, discount, ivu, total }; }
 function cleanPayload(obj){
   return Object.fromEntries(Object.entries(obj).filter(([,v]) => v !== undefined));
@@ -132,6 +133,7 @@ document.addEventListener('click', async e => {
   const pay = e.target.closest('[data-mark-paid]'); if(pay){ await markInvoicePaid(pay.dataset.markPaid); return; }
   const view = e.target.closest('[data-view-invoice]'); if(view){ openInvoiceDoc(view.dataset.viewInvoice); return; }
   const st = e.target.closest('[data-invoice-status]'); if(st){ setInvoiceStatus(st.dataset.invoiceStatus); return; }
+  if(e.target.closest('#mAddDiscount')){ invoiceLines.push(newLine('Descuento',1,0,0,false)); renderInvoiceLines(); $('mInvoiceLines')?.lastElementChild?.scrollIntoView({block:'center',behavior:'smooth'}); return; }
   const add = e.target.closest('#mAddLine,#mAddLineTop'); if(add){ invoiceLines.push(newLine('',1,0)); renderInvoiceLines(); return; }
   const rm = e.target.closest('[data-remove-line]'); if(rm){ invoiceLines = invoiceLines.filter(l => l.id !== rm.dataset.removeLine); ensureLines(); renderInvoiceLines(); return; }
   const draft = e.target.closest('#mSaveDraft'); if(draft){ await saveInvoice('Borrador'); return; }
@@ -305,14 +307,14 @@ function renderInvoiceLines(){
   const box = $('mInvoiceLines'); if(!box) return;
   box.innerHTML = invoiceLines.map((l, idx) => `
     <div class="invoice-line" data-line-row="${esc(l.id)}">
-      <div class="line-head"><span>Línea ${idx + 1}</span><button class="danger" data-remove-line="${esc(l.id)}" type="button">Borrar</button></div>
+      <div class="line-head"><span>${isDiscountLine(l) ? 'Descuento' : 'Línea ' + (idx + 1)}</span><button class="danger" data-remove-line="${esc(l.id)}" type="button">Borrar</button></div>
       <label>Descripción *<textarea data-line-field="description" rows="2" maxlength="220" placeholder="Ej. Mantenimiento preventivo 6 meses" required>${esc(l.description)}</textarea></label>
-      <div class="three-col">
+      ${isDiscountLine(l) ? `<label>Importe a descontar ($)<input data-line-field="discount" type="number" min="0" step="0.01" value="${esc(l.discount)}" /></label><small>Se resta del total. No lo añadas si el depósito ya está registrado como pago.</small>` : `<div class="three-col">
         <label>Cant.<input data-line-field="qty" type="number" min="1" step="1" value="${esc(l.qty)}" /></label>
         <label>Precio<input data-line-field="price" type="number" min="0" step="0.01" value="${esc(l.price)}" /></label>
         <label>Desc.<input data-line-field="discount" type="number" min="0" step="0.01" value="${esc(l.discount)}" /></label>
-      </div>
-      <div class="line-footer"><label class="tax-check"><input data-line-field="taxable" type="checkbox" ${l.taxable === false ? '' : 'checked'} /> Aplica IVU</label><b>${money(lineNet(l) + (l.taxable === false ? 0 : lineNet(l) * taxRate()))}</b></div>
+      </div>`}
+      <div class="line-footer">${isDiscountLine(l) ? '<span>Se resta del total</span>' : `<label class="tax-check"><input data-line-field="taxable" type="checkbox" ${l.taxable === false ? '' : 'checked'} /> Aplica IVU</label>`}<b>${money(lineNet(l) + (l.taxable === false ? 0 : lineNet(l) * taxRate()))}</b></div>
     </div>`).join('');
   renderSummary();
 }
@@ -701,7 +703,7 @@ async function buildInvoicePdfFile(inv, filename){
     const qty = Number(it.qty || 1);
     const price = Number(it.price || 0);
     const discount = Number(it.discount || 0);
-    const total = Math.max(0, (qty * price) - discount);
+    const total = lineNet(it);
     const lines = wrap(desc, colDescW-18);
     const rowH = Math.max(42, 18 + lines.length * 12);
     if(y + rowH > 628){ newPage(); drawItemsHeader(); }
@@ -879,7 +881,7 @@ async function buildInvoicePdfFileFallback(inv, filename){
     docp.text(desc, 42, y, { maxWidth:260 });
     docp.text(String(it.qty || 1), 340, y, { align:'right' });
     docp.text(money(it.price || 0), 455, y, { align:'right' });
-    docp.text(money(Number(it.qty || 1) * Number(it.price || 0)), 552, y, { align:'right' });
+    docp.text(money(lineNet(it)), 552, y, { align:'right' });
     y += Math.max(20, Math.ceil(desc.length/38)*14);
     if(y > 720){ docp.addPage(); y = 42; }
   });
@@ -929,7 +931,7 @@ function buildDesktopInvoiceDocument(inv){
   const status = existing ? invoiceStatus(existing) : (bal <= 0 || String(inv.status || '') === 'Pagada' ? 'Pagada' : (String(inv.status || '') || 'Pendiente'));
   const logo = p.logoPdf || p.logoDashboard;
   const itemList = Array.isArray(inv.items) && inv.items.length ? inv.items : [{ description:inv.serviceTitle || inv.invoiceType || 'Servicio', qty:1, price:totals.subtotal }];
-  const rows = itemList.map(it => `<tr><td>${esc(it.description || 'Servicio')}</td><td>${esc(it.qty || 1)}</td><td>${money(it.price || 0)}</td><td>${money(Number(it.qty || 1) * Number(it.price || 0))}</td></tr>`).join('');
+  const rows = itemList.map(it => `<tr><td>${esc(it.description || 'Servicio')}</td><td>${esc(it.qty || 1)}</td><td>${money(it.price || 0)}</td><td>${money(lineNet(it))}</td></tr>`).join('');
   const note = esc(inv.notes || 'Gracias por confiar en nuestros servicios.');
   const terms = esc(invoicePaymentTerms(inv, inv.terms || inv.conditions || 'Pago a través del método acordado.'));
   return `<div class="doc-page invoice-pro"><div class="doc-body"><div class="invoice-top"><div class="invoice-brand">${logo ? `<img class="invoice-logo" src="${logo}">` : ''}<div><h1>${esc(p.businessName || 'Empresa')}</h1>${p.email ? `<p>${esc(p.email)}</p>` : ''}</div></div><div class="invoice-contact"><p>${esc(p.address || '')}</p>${p.phone ? `<p>${esc(p.phone)}</p>` : ''}${p.email ? `<p>${esc(p.email)}</p>` : ''}${p.web ? `<p>${esc(p.web)}</p>` : ''}</div></div><div class="invoice-title-row"><div class="invoice-number"><p><b>No. de Factura:</b> ${esc(inv.number || 'Factura')}</p><p><b>Fecha:</b> ${esc(niceDate(inv.date))}</p><p><b>Vence:</b> ${esc(inv.dueDate ? niceDate(inv.dueDate) : '—')}</p></div><h2>FACTURA</h2><div class="status-card"><b>ESTADO</b><span>${esc(status).toUpperCase()}</span></div></div><div class="invoice-rule"></div><div class="invoice-client-grid"><div class="invoice-box"><b>CLIENTE</b><p>${esc(inv.clientName || c.name || '')}</p></div><div class="invoice-box"><p><b>Teléfono:</b> ${esc(c.phone || '—')}</p><p><b>Dirección:</b> ${esc(c.address || c.city || '—')}</p></div></div><table class="doc-table invoice-items"><tr><th>Descripción</th><th>Cant.</th><th>Precio Unit.</th><th>Total</th></tr>${rows}</table><div class="invoice-lower"><div><div class="invoice-box note-box"><b>NOTAS</b><p>${note}</p></div><div class="invoice-box note-box"><b>CONDICIONES</b><p>${terms}</p></div>${p.signature ? `<div class="invoice-sign"><img src="${p.signature}"><br>Firma autorizada</div>` : ''}</div><div class="invoice-totals"><div><b>SUBTOTAL</b><span>${money(totals.subtotal)}</span></div><div><b>IVU (${totals.taxPercent}%)</b><span>${money(totals.ivu)}</span></div><div class="total-row"><b>TOTAL</b><span>${money(totals.total)}</span></div><div><b>PAGADO</b><span>${money(paid)}</span></div><div class="balance-row"><b>BALANCE</b><span>${money(bal)}</span></div></div></div>` + invoiceDocFooter();

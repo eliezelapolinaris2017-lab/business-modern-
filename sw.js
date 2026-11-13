@@ -1,5 +1,5 @@
-const CACHE='nexus-business-mobile-v133';
-const ASSETS=['./document-links.js?v=132','./invoice-number.js?v=132','./client-search.js?v=126','./whatsapp-tab.js?v=125','./ui-context.js?v=124','./mobile.html','./mobile.css','./mobile-field.css?v=131','./mobile.js?v=133-clients-az','./portal-sync.js?v=121','./client-portal-data.js?v=118','./firebase-config.js','./manifest.webmanifest','./assets/logo.png'];
+const CACHE='nexus-business-mobile-v134';
+const ASSETS=['./document-links.js?v=132','./invoice-number.js?v=132','./client-search.js?v=126','./whatsapp-tab.js?v=125','./ui-context.js?v=124','./mobile.html','./mobile.css','./mobile-field.css?v=131','./mobile.js?v=134-discount','./portal-sync.js?v=121','./client-portal-data.js?v=118','./firebase-config.js','./manifest.webmanifest','./assets/logo.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS).catch(()=>{})));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('nexus-business-')&&k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('message',event=>{if(event.data&&event.data.type==='SKIP_WAITING') self.skipWaiting();});

@@ -106,7 +106,7 @@
         <div class="mobile-card">
           <div class="section-row"><h3>Líneas de factura</h3><button id="mAddLineTop" type="button">+ Línea</button></div>
           <div id="mInvoiceLines" class="invoice-lines"></div>
-          <button id="mAddLine" class="ghost-btn" type="button">+ Añadir línea</button>
+          <div class="two-col"><button id="mAddLine" class="ghost-btn" type="button">+ Añadir servicio</button><button id="mAddDiscount" class="ghost-btn" type="button">− Añadir descuento</button></div>
         </div>
 
         <div class="mobile-card summary-card">
@@ -230,7 +230,7 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="mobile.js?v=133-clients-az"></script>
+  <script type="module" src="mobile.js?v=134-discount"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=126').catch(()=>{}));
