@@ -1584,7 +1584,7 @@ function collectInvoice(id){
 function clientSearchNormalize(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function filteredClients(){
   const q=clientSearchNormalize(state.clientsSearch||'');
-  const rows=[...(state.clients||[])];
+  const rows=[...(state.clients||[])].sort((a,b)=>String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'es',{sensitivity:'base'}));
   if(!q) return rows;
   const parts=q.split(' ').filter(Boolean);
   return rows.filter(c=>{
@@ -3069,7 +3069,7 @@ function v66BindToolbar(module){
 }
 function v66RenderClients(){
   const box=$('clientsTable'); if(!box) return;
-  const rows=v66ApplyModuleFilter(state.clients,'clients');
+  const rows=v66ApplyModuleFilter(state.clients,'clients').slice().sort((a,b)=>String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'es',{sensitivity:'base'}));
   box.innerHTML=v66Toolbar('clients','Buscar clientes','Nombre, teléfono, email, dirección, ciudad o etiqueta...',state.clients,{dates:false,status:false})+
     table(['Cliente','Contacto','Etiquetas','Historial','Acción'],rows.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span></td><td><div class="actions"><button data-client-summary="${c.id}" type="button">Ver historial</button><button data-client-portal="${c.id}" type="button">Portal</button>${action('clients',c.id)}</div></td></tr>`;}));
   v66BindToolbar('clients');

@@ -424,7 +424,7 @@ function renderFollowups(){
 }
 function renderClients(){
   const q = String($('mClientSearch')?.value || '').toLowerCase();
-  const rows = state.clients.filter(c => [c.name,c.phone,c.email,c.address].join(' ').toLowerCase().includes(q)).slice(0,60);
+  const rows = state.clients.filter(c => [c.name,c.phone,c.email,c.address].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'es',{sensitivity:'base'}));
   $('mClientCount').textContent = `${state.clients.length} clientes`;
   $('mClientList').innerHTML = rows.length ? rows.map(c => { const invs = state.invoices.filter(i => i.clientId === c.id), fol = state.followups.filter(f => f.clientId === c.id); return `<div class="row-card"><div class="top"><div><h4>${esc(c.name || 'Cliente')}</h4><p>${esc(c.phone || '')} ${c.email ? '· ' + esc(c.email) : ''}</p></div><span class="badge">${invs.length} fac.</span></div><p>${esc(c.address || c.city || '')}</p><div class="actions"><button data-new-invoice-client="${esc(c.id)}" type="button">Facturar</button><button data-client-history="${esc(c.id)}" type="button">Historial</button>${phoneLink(c) ? `<a href="${phoneLink(c)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<span class="badge">${fol.length} seg.</span></div></div>`; }).join('') : '<div class="empty">Sin clientes.</div>';
 }
