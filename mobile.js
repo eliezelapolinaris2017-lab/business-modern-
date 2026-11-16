@@ -388,6 +388,16 @@ function mobileIsQuoteFollowup(f){
   const title=String(f?.title||'').toLowerCase();
   return type.includes('cotiz') || source==='quote' || title.includes('cotiz');
 }
+function maintenanceHistorySentence(f){
+  const services=(state.services||[]).filter(s=>s.clientId===f.clientId && (!f.assetId||s.assetId===f.assetId) && ['Completado','Facturado'].includes(s.status) && /manten|limpieza/i.test([s.type,s.title,s.serviceType,s.serviceTitle,...(s.items||[]).map(i=>i.description||i.name||'')].join(' ')) && /^\d{4}-\d{2}-\d{2}$/.test(String(s.date||''))).sort((a,b)=>b.date.localeCompare(a.date));
+  const source=(state.services||[]).find(s=>f.sourceType==='service'&&s.id===f.sourceId&&['Completado','Facturado'].includes(s.status)&&/manten|limpieza/i.test([s.type,s.title,s.serviceType,s.serviceTitle].join(' ')));
+  const date=services[0]?.date||source?.date;
+  if(!date) return '';
+  const parsed=new Date(String(date).slice(0,10)+'T12:00:00');
+  if(Number.isNaN(parsed.getTime())) return '';
+  const month=parsed.toLocaleDateString('es-PR',{month:'long',year:'numeric'});
+  return 'Según nuestro registro, el último mantenimiento de tu aire fue en '+month+'. ';
+}
 function mobileFollowupMessage(f,c){
   const name=String(f.clientName||c.name||'').trim();
   if(mobileIsQuoteFollowup(f)){
@@ -402,16 +412,7 @@ Quedamos atentos para ayudarle y coordinar los próximos pasos.
 
 Gracias por considerar a Oasis Air Cleaner Services LLC.`;
   }
-  return `Hola${name?', '+name:''}. 👋
-
-Solo queríamos darle seguimiento desde nuestra última visita para asegurarnos de que su aire acondicionado continúe funcionando correctamente.
-
-Si desea programar su próximo mantenimiento o necesita asistencia, estaremos encantados de ayudarle.
-
-📅 Agende su cita cuando le sea más conveniente:
-https://confirmafy.com/oasis-services-pr
-
-Gracias por confiar en Oasis Air Cleaner Services LLC.`;
+  return `Hola${name?', '+name:''}, soy Eliezel de Oasis. ${maintenanceHistorySentence(f)}Quería saber cómo está funcionando: ¿enfría bien, tiene algún olor o has notado algo diferente? Si todavía no has coordinado el mantenimiento, puedo ayudarte con una fecha.`;
 }
 function followCard(f){ const c = clientBy(f.clientId); const phone = phoneLink(c); const text=mobileFollowupMessage(f,c); return `<div class="row-card"><div class="top"><div><h4>${esc(f.title || f.type || 'Seguimiento')}</h4><p>${esc(f.clientName || c.name || 'Cliente')} · ${esc(f.dueDate || 'Sin fecha')}</p></div>${statusBadge(followStatus(f))}</div><p>${esc(f.type || '')} · cada ${esc(f.intervalMonths || 6)} meses</p><div class="actions">${phone ? `<a href="${phone}?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}<button data-complete-follow="${esc(f.id)}" type="button">Completar</button><button class="danger" data-delete-follow="${esc(f.id)}" type="button">Borrar</button></div></div>`; }
 

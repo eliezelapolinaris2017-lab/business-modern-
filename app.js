@@ -2709,6 +2709,16 @@ function isQuoteFollowup(f){
   const title=String(f?.title||'').toLowerCase();
   return type.includes('cotiz') || source==='quote' || title.includes('cotiz');
 }
+function maintenanceHistorySentence(f){
+  const services=(state.services||[]).filter(s=>s.clientId===f.clientId && (!f.assetId||s.assetId===f.assetId) && ['Completado','Facturado'].includes(s.status) && /manten|limpieza/i.test([s.type,s.title,s.serviceType,s.serviceTitle,...(s.items||[]).map(i=>i.description||i.name||'')].join(' ')) && /^\d{4}-\d{2}-\d{2}$/.test(String(s.date||''))).sort((a,b)=>b.date.localeCompare(a.date));
+  const source=(state.services||[]).find(s=>f.sourceType==='service'&&s.id===f.sourceId&&['Completado','Facturado'].includes(s.status)&&/manten|limpieza/i.test([s.type,s.title,s.serviceType,s.serviceTitle].join(' ')));
+  const date=services[0]?.date||source?.date;
+  if(!date) return '';
+  const parsed=new Date(String(date).slice(0,10)+'T12:00:00');
+  if(Number.isNaN(parsed.getTime())) return '';
+  const month=parsed.toLocaleDateString('es-PR',{month:'long',year:'numeric'});
+  return 'Según nuestro registro, el último mantenimiento de tu aire fue en '+month+'. ';
+}
 function followupMessage(f){
   const c=clientBy(f.clientId||'');
   const name=String(f.clientName||c.name||'').trim();
@@ -2734,16 +2744,7 @@ Quedamos atentos para ayudarle y coordinar los próximos pasos.
 
 Gracias por considerar a Oasis Air Cleaner Services LLC.`;
   }
-  return `Hola${name?', '+name:''}. 👋
-
-Solo queríamos darle seguimiento desde nuestra última visita para asegurarnos de que su aire acondicionado continúe funcionando correctamente.
-
-Si desea programar su próximo mantenimiento o necesita asistencia, estaremos encantados de ayudarle.
-
-📅 Agende su cita cuando le sea más conveniente:
-${configuredCalendarUrl()}
-
-Gracias por confiar en Oasis Air Cleaner Services LLC.`;
+  return `Hola${name?', '+name:''}, soy Eliezel de Oasis. ${maintenanceHistorySentence(f)}Quería saber cómo está funcionando: ¿enfría bien, tiene algún olor o has notado algo diferente? Si todavía no has coordinado el mantenimiento, puedo ayudarte con una fecha.`;
 }
 function followupWhatsappUrl(f){
   const c=clientBy(f.clientId||'');
