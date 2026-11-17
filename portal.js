@@ -24,7 +24,7 @@ function bindPdfButtons(){
 }
 function printPortalDocument(key){
   const [type,id]=String(key||'').split(':');
-  const row=({invoice:data.invoices,quote:data.quotes,contract:data.contracts,payment:data.payments}[type]||[]).find(x=>String(x.id)===id);
+  const row=({invoice:data.invoices,quote:data.quotes,contract:data.contracts,payment:data.payments,asset:data.assets}[type]||[]).find(x=>String(x.id)===id);
   if(!row){alert('Documento no disponible.');return;}
   const original=data.sharedDocument?.type===type&&String(data.sharedDocument.id)===id&&data.printHtml;
   const html=(original||documentHtml(type,row))+(type==='quote'?decisionReceipt(row.clientDecision):'');
@@ -146,11 +146,19 @@ function renderTab(){
     const rows=(data.services||[]).map(x=>`<tr><td>${esc(x.date)}</td><td><b>${esc(x.title)}</b><br><small>${esc(x.assetName)}</small>${x.location?`<p>${esc(x.location)}</p>`:''}${x.report?`<details><summary>Trabajo realizado</summary><p>${esc(x.report)}</p></details>`:''}</td><td>${chip(x.status)}</td><td>${money(x.amount)}</td></tr>`);
     box.innerHTML=`<h3>Historial de servicios</h3>${rows.length?table(['Fecha','Servicio','Estado','Monto'],rows):empty('No hay servicios registrados.')}`;return;
   }
-  const rows=(data.assets||[]).map(x=>`<tr><td><b>${esc(x.name)}</b><br><small>${esc([x.brand,x.model].filter(Boolean).join(' · '))}</small></td><td>${esc(x.serial||'—')}</td><td>${esc(x.location||'—')}</td><td>${chip(x.status)}</td><td>${esc(x.warrantyExpiration||'—')}</td><td>${esc(x.nextMaintenance||'—')}</td></tr>`);
-  box.innerHTML=`<h3>Equipos registrados</h3>${rows.length?table(['Equipo','Serial','Ubicación','Estado','Garantía','Próximo mantenimiento'],rows):empty('No hay equipos registrados.')}`;
+  const assets=data.assets||[];
+  box.innerHTML=`<div class="equipment-heading"><div><h3>Mis equipos</h3><p>Consulta los detalles y la ficha de cada equipo.</p></div><span class="equipment-count">${assets.length}</span></div>${assets.length?`<div class="equipment-grid">${assets.map(x=>`<article class="equipment-card"><div class="equipment-card-top"><span class="equipment-icon" aria-hidden="true">❄</span>${chip(x.status||'Registrado')}</div><h4>${esc(x.name||'Equipo')}</h4><p class="equipment-brand">${esc(x.brand||'Marca sin registrar')}</p><dl class="equipment-summary"><div><dt>Ubicación</dt><dd>${esc(x.location||'Sin registrar')}</dd></div><div><dt>Modelo</dt><dd>${esc(x.model||'Sin registrar')}</dd></div></dl><div class="equipment-next"><span>Próximo mantenimiento</span><strong>${esc(x.nextMaintenance||'Sin programar')}</strong></div><details class="equipment-details"><summary>Ver detalles</summary><dl>${equipmentFields(x).map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value||'Sin registrar')}</dd></div>`).join('')}</dl></details><button type="button" class="equipment-pdf" data-print-document="asset:${esc(x.id)}">Ver ficha / PDF</button><small class="equipment-help">Ficha informativa del equipo. No sustituye un certificado de garantía.</small></article>`).join('')}</div>`:empty('No hay equipos registrados.')}`;
+  bindPdfButtons();
+}
+function equipmentFields(x){
+  return [['Marca',x.brand],['Modelo',x.model],['Serial(es)',x.serial],['Ubicación',x.location],['Estado',x.status],['Fecha de compra',x.purchaseDate],['Garantía registrada',x.warranty],['Vencimiento de garantía',x.warrantyExpiration],['Próximo mantenimiento',x.nextMaintenance]];
+
 }
 function documentHtml(type,docData){
   const b=data.business||{},c=data.client||{};
+  if(type==='asset'){
+    return `<article class="portal-pdf equipment-sheet"><div class="pdf-head"><div><h1>FICHA DEL EQUIPO</h1><p>${esc(docData.name||'Equipo')}</p></div><div class="pdf-business"><b>${esc(b.name||'')}</b><span>${esc(b.phone||'')}</span></div></div><p>Cliente: <b>${esc(c.name||'')}</b></p><dl>${equipmentFields(docData).map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value||'Sin registrar')}</dd></div>`).join('')}</dl><footer>Ficha informativa con los datos registrados del equipo. No sustituye un certificado de garantía.</footer></article>`;
+  }
   if(type==='contract'||type==='payment'){
     const contract=type==='contract';
     return `<article class="portal-pdf"><div class="pdf-head"><h1>${contract?'CONTRATO':'COMPROBANTE DE PAGO'}</h1><div class="pdf-business"><b>${esc(b.name)}</b><span>${esc(b.phone)}</span></div></div><p>Cliente: <b>${esc(c.name)}</b></p><p>Fecha: ${esc(docData.date)}</p>${contract?`<h2>${esc(docData.number)} · ${esc(docData.title)}</h2><p class="contract-body" style="white-space:pre-wrap">${esc(docData.body||'Solicite al negocio el documento completo.')}</p>`:`<p>Factura: ${esc(docData.invoiceNumber)}</p><p>Método: ${esc(docData.method)}</p><h2>Pagado: ${money(docData.amount)}</h2>`}</article>`;

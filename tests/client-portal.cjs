@@ -18,6 +18,10 @@ vm.runInContext("printPortalDocument('quote:q1')",context);assert.match(printed,
 vm.runInContext("active='payments';renderTab();printPortalDocument('payment:p1')",context);assert.match(nodes.tabContent.innerHTML,/ATH/);assert.match(printed,/COMPROBANTE DE PAGO/);
 vm.runInContext("active='contracts';renderTab();printPortalDocument('contract:ct1')",context);assert.match(printed,/Contrato original/);
 vm.runInContext("data.services[0].title='<script>bad</script>';active='services';renderTab()",context);assert.match(nodes.tabContent.innerHTML,/&lt;script&gt;/);
+vm.runInContext("data.assets[0].serial='3K0044W006357 / 3K1075W001041';data.assets[0].model='AWGRE12-C2';data.assets[0].location='<script>bad</script>';active='assets';renderTab()",context);
+assert.match(nodes.tabContent.innerHTML,/equipment-card/);assert.doesNotMatch(nodes.tabContent.innerHTML,/<table/);assert.match(nodes.tabContent.innerHTML,/3K0044W006357 \/ 3K1075W001041/);assert.match(nodes.tabContent.innerHTML,/&lt;script&gt;/);assert.match(nodes.tabContent.innerHTML,/data-print-document="asset:e1"/);
+vm.runInContext("printPortalDocument('asset:e1')",context);assert.match(printed,/FICHA DEL EQUIPO/);assert.match(printed,/AWGRE12-C2/);assert.doesNotMatch(printed,/ORIGINAL-FAC-A|FAC-B/);
+vm.runInContext("data.assets=[];renderTab()",context);assert.match(nodes.tabContent.innerHTML,/No hay equipos registrados/);
 const mobile=fs.readFileSync('mobile.js','utf8');const mctx={state,Number,Math};vm.createContext(mctx);
 for(const [begin,end] of [['function invoicePaid(', 'function statusBadge('],['function mobilePortalInvoice(', 'async function shareInvoice('],['function invoiceTotalsDoc(', 'function invoiceDocFooter(']])vm.runInContext(mobile.slice(mobile.indexOf(begin),mobile.indexOf(end)),mctx);
 mctx.today=()=> '2026-10-24';mctx.lineNet=x=>Number(x.qty||1)*Number(x.price||0);mctx.inv=state.invoices[0];assert.equal(vm.runInContext('mobilePortalInvoice(inv).balance',mctx),70);

@@ -1,3 +1,4 @@
+import { clientRecoveryInfo, showRecoveryDialog, showPortalInviteDialog } from './client-outreach.js?v=138';
 import { numericPurchaseNumber, nextPurchaseSequence, purchaseOrderHtml } from './purchase-order.js?v=137';
 import { shortDocumentLink } from './document-links.js?v=132';
 import { nextInvoiceNumber } from './invoice-number.js?v=132';
@@ -1607,7 +1608,7 @@ function renderClientsTable(){
     <span class="client-search-count">${rows.length} de ${state.clients.length}</span>
     <button id="clientsSearchClear" type="button">Limpiar</button>
   </div>`+
-  table(['Cliente','Contacto','Etiquetas','Historial','Acción'],rows.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span></td><td><div class="actions v2-flow-actions"><button class="primary" data-client-quote="${c.id}" type="button">Cotizar</button><button data-client-service="${c.id}" type="button">Servicio</button><button data-client-summary="${c.id}" type="button">Historial</button><button data-client-portal="${c.id}" type="button">Portal</button>${action('clients',c.id)}</div></td></tr>`;}));
+  table(['Cliente','Contacto','Etiquetas','Historial','Acción'],rows.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span><br><span class="muted">${esc(clientRecoveryInfo(c,state.services).reason)}${c.lastRecoveryPreparedAt?' · Recordatorio preparado: '+esc(String(c.lastRecoveryPreparedAt).slice(0,10)):''}</span></td><td><div class="actions v2-flow-actions"><button class="primary" data-client-quote="${c.id}" type="button">Cotizar</button><button data-client-service="${c.id}" type="button">Servicio</button><button data-client-summary="${c.id}" type="button">Historial</button><button data-client-recovery="${c.id}" type="button">Recordar servicio</button><button data-client-portal="${c.id}" type="button">Compartir portal</button>${action('clients',c.id)}</div></td></tr>`;}));
 
   const input=$('clientsSearchInput');
   if(input){
@@ -3072,9 +3073,12 @@ function v66BindToolbar(module){
 }
 function v66RenderClients(){
   const box=$('clientsTable'); if(!box) return;
-  const rows=v66ApplyModuleFilter(state.clients,'clients').slice().sort((a,b)=>String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'es',{sensitivity:'base'}));
+  const rows=v66ApplyModuleFilter(state.clients,'clients').filter(c=>state.clientRecoveryFilter!=='recover'||clientRecoveryInfo(c,state.services).eligible).slice().sort((a,b)=>String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'es',{sensitivity:'base'}));
   box.innerHTML=v66Toolbar('clients','Buscar clientes','Nombre, teléfono, email, dirección, ciudad o etiqueta...',state.clients,{dates:false,status:false})+
-    table(['Cliente','Contacto','Etiquetas','Historial','Acción'],rows.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span></td><td><div class="actions"><button data-client-summary="${c.id}" type="button">Ver historial</button><button data-client-portal="${c.id}" type="button">Portal</button>${action('clients',c.id)}</div></td></tr>`;}));
+    table(['Cliente','Contacto','Etiquetas','Historial','Acción'],rows.map(c=>{const cs=clientSummary(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${esc(c.email)} · ${esc(c.city)}</span><br>${clientTagHtml(c)}</td><td>${esc(c.phone)}<br><span class="muted">${esc(c.altName||'')} ${c.altPhone?'· '+esc(c.altPhone):''}</span></td><td>${clientTagHtml(c)||'<span class="muted">Sin etiquetas</span>'}</td><td><b>${cs.assets}</b> activos · <b>${cs.services}</b> servicios<br><span class="muted">Balance ${money(cs.balance)}</span><br><span class="muted">${esc(clientRecoveryInfo(c,state.services).reason)}${c.lastRecoveryPreparedAt?' · Recordatorio preparado: '+esc(String(c.lastRecoveryPreparedAt).slice(0,10)):''}</span></td><td><div class="actions"><button data-client-summary="${c.id}" type="button">Ver historial</button><button data-client-recovery="${c.id}" type="button">Recordar servicio</button><button data-client-portal="${c.id}" type="button">Compartir portal</button>${action('clients',c.id)}</div></td></tr>`;}));
+  box.querySelector('.search-toolbar, .module-toolbar')?.classList.add('client-outreach-toolbar');
+  box.insertAdjacentHTML('afterbegin',`<div class="client-recovery-filter"><label>Mostrar <select id="clientRecoveryFilter"><option value="all" ${state.clientRecoveryFilter!=='recover'?'selected':''}>Todos los clientes</option><option value="recover" ${state.clientRecoveryFilter==='recover'?'selected':''}>Por recuperar</option></select></label><span class="muted">Inactivos, 6+ meses sin servicio o sin servicios completados · ${rows.length} clientes</span></div>`);
+  $('clientRecoveryFilter').onchange=e=>{state.clientRecoveryFilter=e.target.value;tables();};
   v66BindToolbar('clients');
 }
 function v66RenderServices(){
@@ -3415,9 +3419,13 @@ async function copyPortalLink(link){
   return false;
 }
 function bindClientPortalButtons(){
+  document.querySelectorAll('[data-client-recovery]').forEach(b=>b.onclick=()=>{
+    const c=clientBy(b.dataset.clientRecovery);if(!c.id)return;
+    showRecoveryDialog({client:c,services:state.services,business:profile(),dialog:serviceDialog,copy:copyPortalLink,whatsapp:whatsappTab,onPrepared:()=>updateDoc(docPath('clients',c.id),{lastRecoveryPreparedAt:new Date().toISOString(),updatedAt:serverTimestamp()})});
+  });
   document.querySelectorAll('[data-client-portal]').forEach(b=>b.onclick=async()=>{
     b.disabled=true; const old=b.textContent; b.textContent='Preparando…';
-    try{await syncClientPortal(b.dataset.clientPortal);}catch(e){console.error(e);alert('No se pudo crear el portal: '+(e.message||e));}
+    try{const c=clientBy(b.dataset.clientPortal);const link=await syncClientPortal(c.id,{openAfter:false,copyLink:false,notify:false});showPortalInviteDialog({client:c,business:profile(),link,dialog:serviceDialog,copy:copyPortalLink,whatsapp:whatsappTab});}catch(e){console.error(e);alert('No se pudo crear el portal: '+(e.message||e));}
     finally{b.disabled=false;b.textContent=old;}
   });
 }
