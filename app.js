@@ -1,3 +1,4 @@
+import { numericPurchaseNumber, nextPurchaseSequence, purchaseOrderHtml } from './purchase-order.js?v=137';
 import { shortDocumentLink } from './document-links.js?v=132';
 import { nextInvoiceNumber } from './invoice-number.js?v=132';
 import { buildCashLedger, cashLedgerSummary, cashDate } from './cash-ledger.js?v=129';
@@ -1256,7 +1257,7 @@ function forms(){const i=industry();
   $('supplierForm').innerHTML=input('Nombre suplidor','supName')+input('Teléfono','supPhone')+input('WhatsApp','supWhatsapp')+input('Email','supEmail')+input('Contacto','supContact')+input('Categoría','supCategory')+input('Límite crédito','supCredit','number','0')+input('Balance inicial / deuda','supOpening','number','0')+i.supplierFields.map((f,n)=>input(f,'supF'+n,'text','','wide')).join('')+'<button class="primary" type="submit">Guardar suplidor</button>';
   $('supplierPaymentForm').innerHTML=select('Suplidor','spSupplier',state.suppliers.map(s=>({value:s.id,label:`${s.name} · balance ${money(supplierBalance(s.id))}`})))+select('Compra relacionada','spPurchase',[{value:'',label:'Pago general · aplicar automáticamente a compras antiguas'}].concat(state.purchases.filter(p=>purchaseBalance(p)>0).map(p=>({value:p.id,label:`${p.number||p.concept} · ${p.supplierName} · ${money(purchaseBalance(p))}`}))))+input('Fecha','spDate','date',today())+select('Método','spMethod',['ATH Móvil','Stripe','PayPal','Transferencia','Cheque','Efectivo','Tarjeta'].map(x=>({value:x,label:x})))+input('Monto','spAmount','number')+input('Nota','spNote','text','','wide')+'<button class="primary" type="submit">Registrar pago</button><button id="reconcileSupplierPayments" type="button">Reconciliar pagos generales existentes</button>';
   $('payrollForm').innerHTML=select(i.team,'prTeam',state.team.map(t=>({value:t.id,label:`${t.name} · balance ${money(teamBalance(t.id))} · ret. ${money(teamRetention(t.id))}`})))+input('Fecha','prDate','date',today())+input('Periodo','prPeriod','text')+input('Horas','prHours','number','0')+input('Horas extra','prOvertime','number','0')+input('Bruto','prGross','number')+input('Bonos / comisiones','prBonus','number','0')+input('Retenciones','prRetention','number','0')+select('Tipo retención','prRetentionType',retentionTypeOptions().map(x=>({value:x,label:x})))+input('Entidad / destino retención','prRetentionDest','text','Departamento de Hacienda')+input('Fecha límite retención','prRetentionDue','date',plusDays(15))+input('Adelantos','prAdvance','number','0')+input('Otros descuentos','prDeductions','number','0')+select('Método','prMethod',['ATH Móvil','Transferencia','Cheque','Efectivo','Tarjeta'].map(x=>({value:x,label:x})))+input('Nota','prNote','text','','wide')+'<button class="primary" type="submit">Registrar pago de nómina</button>';
-  $('purchaseForm').innerHTML=select('Suplidor','puSupplier',state.suppliers.map(s=>({value:s.id,label:s.name})))+input('Fecha','puDate','date',today())+input('Vence','puDue','date',plusDays(15))+input('Concepto','puConcept')+input('Referencia / factura','puRef')+input('Subtotal','puSubtotal','number')+input('IVU / impuestos','puTax','number','0')+select('Estado','puStatus',['Pendiente','Parcial','Pagada','Vencida','Cancelada'].map(x=>({value:x,label:x})))+input('Notas','puNote','text','','wide')+'<button class="primary" type="submit">Registrar compra</button>';
+  $('purchaseForm').innerHTML=purchaseOrderBaseFields();
   $('paymentForm').innerHTML=select('Factura','pInvoice',state.invoices.filter(inv=>invoiceStatus(inv)!=='Cancelada' && invoiceBalance(inv)>0).map(inv=>({value:inv.id,label:`${inv.number} · ${inv.clientName} · balance ${money(invoiceBalance(inv))}`})))+input('Fecha','pDate','date',today())+select('Método','pMethod',['ATH Móvil','Stripe','PayPal','Transferencia','Cheque','Efectivo','Tarjeta'].map(x=>({value:x,label:x})))+input('Monto','pAmount','number')+input('Nota','pNote','text','','wide')+'<button class="primary" type="submit">Registrar cobro</button>';
   $('cashForm').innerHTML=input('Fecha','xDate','date',today())+select('Tipo','xType',[{value:'Ingreso',label:'Ingreso'},{value:'Gasto',label:'Gasto'}])+input('Concepto','xConcept')+input('Monto','xAmount','number')+'<button class="primary" type="submit">Guardar movimiento</button>';
   const p=profile();$('settingsForm').innerHTML=`<div><label>${T('Industria')}</label><select id="set_industry">${Object.entries(INDUSTRIES).map(([id,x])=>`<option value="${id}" ${p.industry===id?'selected':''}>${T(x.name)}</option>`).join('')}</select></div><div><label>${T('Idioma')}</label><select id="set_language"><option value="es" ${(p.language||'es')==='es'?'selected':''}>Español</option><option value="en" ${(p.language||'es')==='en'?'selected':''}>English</option></select></div><div><label>${T('Plan activo')}</label><input value="${esc(activePlanName())}" disabled></div><div><label>Estado</label><input value="${esc(planRequestStatusText())}" disabled></div><div class="wide"><label>Servicios de esta industria</label><textarea id="set_services" rows="5" placeholder="Un servicio por línea">${esc(serviceOptions().join('\n'))}</textarea></div>`+input('Nombre comercial','set_businessName','text',p.businessName)+input('Eslogan','set_slogan','text',p.slogan)+input('Teléfono','set_phone','text',p.phone)+input('WhatsApp','set_whatsapp','text',p.whatsapp)+input('Email','set_email','text',p.email)+input('Website','set_web','text',p.web)+input('Dirección','set_address','text',p.address,'wide')+input('Registro comerciante','set_merchant','text',p.merchant)+input('Representante','set_representative','text',p.representative)+input('IVU %','set_tax','number',p.tax)+input('Meta diaria','set_dailyGoal','number',p.dailyGoal||'1000')+(p.industry==='transport'?input('Tarifa por milla','set_transportRatePerMile','number',p.transportRatePerMile||'2.50')+input('Cargo base ruta','set_transportBaseCharge','number',p.transportBaseCharge||'0'):'')+input('Color primario','set_primaryColor','color',p.primaryColor)+input('Color secundario','set_secondaryColor','color',p.secondaryColor)+`<div><label>Logo Dashboard</label><input id="set_logoDashboard" type="file" accept="image/*"><small class="muted">Actual: ${p.logoDashboard?'cargado':'sin logo'}</small></div><div><label>Logo PDF</label><input id="set_logoPdf" type="file" accept="image/*"><small class="muted">Actual: ${p.logoPdf?'cargado':'sin logo'}</small></div><div><label>Favicon</label><input id="set_favicon" type="file" accept="image/*"><small class="muted">Actual: ${p.favicon?'cargado':'sin favicon'}</small></div><div><label>Firma digital</label><input id="set_signature" type="file" accept="image/*"><small class="muted">Actual: ${p.signature?'cargada':'sin firma'}</small></div><div class="wide data-settings calendar-settings"><h3>Calendario y agenda</h3><p class="muted">Selecciona el calendario activo. El Dashboard y los mensajes de Seguimiento usarán este enlace automáticamente.</p><div class="form-grid"><div><label>Proveedor activo</label><select id="set_calendarProvider"><option value="confirmafy" ${(p.calendarProvider||'confirmafy')==='confirmafy'?'selected':''}>Confirmafy</option><option value="google" ${(p.calendarProvider||'confirmafy')==='google'?'selected':''}>Google Calendar</option></select></div><div><label>Enlace de Confirmafy</label><input id="set_confirmafyCalendarUrl" type="url" value="${esc(p.confirmafyCalendarUrl||OASIS_BOOKING_URL)}" placeholder="https://confirmafy.com/..."></div><div class="wide"><label>Enlace de Google Calendar</label><input id="set_googleCalendarUrl" type="url" value="${esc(p.googleCalendarUrl||'')}" placeholder="https://calendar.google.com/..."></div><div class="wide"><button id="testCalendarBtn" type="button">Abrir calendario configurado</button></div></div></div><div class="wide data-settings"><h3>Importar / Exportar</h3><p class="muted">Herramientas de respaldo, importación y mantenimiento de data. No elimina funciones del sistema.</p><div class="demo-buttons"><button id="exportBackupBtn" type="button">Exportar backup JSON</button><label class="file-action">Importar JSON<input id="importDataFile" type="file" accept="application/json,.json" hidden></label></div><small id="importDataStatus" class="muted"></small></div><div class="wide danger-zone"><h3>Zona peligrosa</h3><p class="muted">Borra toda la data de esta cuenta en Firebase. No borra el código ni la app publicada.</p><button id="wipeAllDataBtn" type="button" class="danger">Borrar toda la data de la app</button></div><div class="wide demo-settings"><h3>Demo</h3><div class="demo-buttons"><button id="loadDemoBtn" type="button" class="primary">Cargar demo</button><button id="cleanDemoBtn" type="button" class="danger">Borrar demo</button></div></div>`;
@@ -3556,46 +3557,85 @@ document.addEventListener('click',e=>{
 });
 
 // One purchase record powers both accounts payable and its printable purchase order.
-function enhancePurchaseForm(record){
-  const form=$('purchaseForm'); if(!form)return;
+function purchaseOrderBaseFields(){return select('Suplidor','puSupplier',state.suppliers.map(s=>({value:s.id,label:s.name})))+input('Fecha','puDate','date',today())+input('Vence','puDue','date',plusDays(15))+input('Concepto','puConcept')+input('Referencia / factura','puRef')+input('Subtotal','puSubtotal','number')+input('IVU / impuestos','puTax','number','0')+select('Estado','puStatus',['Pendiente','Parcial','Pagada','Vencida','Cancelada'].map(x=>({value:x,label:x})))+input('Notas','puNote','text','','wide')+'<button class="primary" type="submit">Registrar compra</button>';}
+function purchaseField(form,id){return form.querySelector(`[data-purchase-field="${id}"]`)||form.querySelector('#'+id);}
+function enhancePurchaseForm(record,form=$('purchaseForm')){
+  if(!form)return;
   if(record){
     const fields={puSupplier:record.supplierId,puDate:record.date,puDue:record.dueDate,puConcept:record.concept,puRef:record.reference,puSubtotal:record.subtotal,puTax:record.tax,puStatus:record.status,puNote:record.note};
-    Object.entries(fields).forEach(([id,value])=>{if($(id))$(id).value=value??'';});
+    Object.entries(fields).forEach(([id,value])=>{const field=purchaseField(form,id);if(field)field.value=value??'';});
   }
-  const rows=record?.items?.length?record.items:[];
-  form.insertAdjacentHTML('beforeend',`<div class="wide"><h3>Detalle de la orden de compra</h3><p class="muted">Registra la compra una sola vez. Imprime esta orden y grapa la factura del suplidor para contabilidad.</p><div id="purchaseOrderLines"></div><button type="button" id="purchaseAddLine">+ Artículo</button><p id="purchaseOrderTotal" aria-live="polite"></p></div>`);
-  $('purchaseAddLine').onclick=()=>purchaseOrderLine();
-  rows.forEach(purchaseOrderLine);
+  form.insertAdjacentHTML('beforeend',`<div class="wide"><h3>Detalle de la orden de compra</h3><p class="muted">Edita el costo unitario y la cantidad de cada artículo. El subtotal y el total se calculan automáticamente. En compras sin artículos puedes editar el subtotal directamente.</p><div data-purchase-lines></div><button type="button" data-purchase-add>+ Artículo</button><p data-purchase-total aria-live="polite"></p></div>`);
+  form.querySelector('[data-purchase-add]').onclick=()=>purchaseOrderLine({},form);
+  (record?.items||[]).forEach(item=>purchaseOrderLine(item,form));
   form.dataset.purchaseId=record?.id||'';
-  const submit=form.querySelector('[type=submit]');submit.textContent=record?'Guardar cambios':'Guardar compra / orden';
-  if(record){const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancelar edición';cancel.onclick=()=>render();form.append(cancel);}
+  form.querySelector('[type=submit]').textContent=record?'Guardar cambios':'Guardar compra / orden';
+  purchaseField(form,'puSubtotal').oninput=()=>updatePurchaseOrderTotal(form);
+  purchaseField(form,'puTax').oninput=()=>updatePurchaseOrderTotal(form);
+  updatePurchaseOrderTotal(form);
 }
-function purchaseOrderLine(item={}){
+function purchaseOrderLine(item={},form=$('purchaseForm')){
   const row=document.createElement('div');row.className='form-grid';row.dataset.purchaseLine='';
   row.innerHTML=`<div><label>Artículo / descripción</label><input data-po-description required value="${esc(item.description||'')}"></div><div><label>Cantidad</label><input data-po-qty type="number" min="0.001" step="any" required value="${esc(item.qty??1)}"></div><div><label>Costo unitario</label><input data-po-price type="number" min="0" step="0.01" required value="${esc(item.price??0)}"></div><button type="button">Quitar</button>`;
-  row.querySelector('button').onclick=()=>{row.remove();updatePurchaseOrderTotal();};
-  row.oninput=updatePurchaseOrderTotal;$('purchaseOrderLines').append(row);updatePurchaseOrderTotal();
+  row.querySelector('button').onclick=()=>{row.remove();updatePurchaseOrderTotal(form);};
+  row.oninput=()=>updatePurchaseOrderTotal(form);form.querySelector('[data-purchase-lines]').append(row);updatePurchaseOrderTotal(form);
 }
-function readPurchaseOrderItems(){return [...document.querySelectorAll('[data-purchase-line]')].map(row=>({description:row.querySelector('[data-po-description]').value.trim(),qty:Number(row.querySelector('[data-po-qty]').value),price:Number(row.querySelector('[data-po-price]').value)}));}
-function updatePurchaseOrderTotal(){const items=readPurchaseOrderItems();if(items.length)$('puSubtotal').value=(Math.round(items.reduce((n,i)=>n+i.qty*i.price,0)*100)/100).toFixed(2);$('purchaseOrderTotal').textContent='Subtotal: '+money($('puSubtotal').value);}
-function editPurchaseOrder(id){const p=state.purchases.find(p=>p.id===id);if(!p)return;show('purchases');forms();enhancePurchaseForm(p);$('purchaseForm').scrollIntoView({behavior:'smooth',block:'start'});}
+function readPurchaseOrderItems(form=$('purchaseForm')){return [...form.querySelectorAll('[data-purchase-line]')].map(row=>({description:row.querySelector('[data-po-description]').value.trim(),qty:Number(row.querySelector('[data-po-qty]').value),price:Number(row.querySelector('[data-po-price]').value)}));}
+function updatePurchaseOrderTotal(form=$('purchaseForm')){
+  const items=readPurchaseOrderItems(form),subtotal=purchaseField(form,'puSubtotal');
+  subtotal.readOnly=items.length>0;
+  if(items.length)subtotal.value=(Math.round(items.reduce((n,i)=>n+i.qty*i.price,0)*100)/100).toFixed(2);
+  form.querySelector('[data-purchase-total]').textContent='Subtotal: '+money(subtotal.value)+' · IVU / impuestos: '+money(purchaseField(form,'puTax').value)+' · Total: '+money(Math.round((Number(subtotal.value||0)+Number(purchaseField(form,'puTax').value||0))*100)/100);
+}
+function editPurchaseOrder(id){
+  const p=state.purchases.find(p=>p.id===id);if(!p)return;
+  $('purchaseEditModal')?.remove();
+  const modal=document.createElement('div');modal.id='purchaseEditModal';modal.className='edit-modal';
+  modal.innerHTML=`<div class="edit-backdrop" data-purchase-close></div><div class="edit-panel card" role="dialog" aria-modal="true" aria-labelledby="purchaseEditTitle"><div class="edit-head"><h2 id="purchaseEditTitle">Editar compra ${numericPurchaseNumber(p.number)||''}</h2><button type="button" data-purchase-close aria-label="Cerrar">×</button></div><form class="form-grid edit-form"></form><button type="button" data-purchase-close>Cancelar</button></div>`;
+  document.body.append(modal);
+  const form=modal.querySelector('form');form.innerHTML=purchaseOrderBaseFields();
+  form.querySelectorAll('[id]').forEach(field=>{field.dataset.purchaseField=field.id;field.id='purchaseEdit_'+field.id;});
+  enhancePurchaseForm(p,form);
+  form.onsubmit=event=>{event.preventDefault();savePurchaseOrder(form);};
+  modal.querySelectorAll('[data-purchase-close]').forEach(button=>button.onclick=()=>modal.remove());
+  modal.addEventListener('keydown',event=>{if(event.key==='Escape')modal.remove();});
+  (form.querySelector('[data-po-price]')||purchaseField(form,'puSubtotal')).focus();
+}
 async function savePurchaseOrder(form){
-  const supplier=supplierBy($('puSupplier').value);if(!supplier.id)return alert('Selecciona suplidor.');
-  const items=readPurchaseOrderItems();if(items.some(i=>!i.description||!Number.isFinite(i.qty)||i.qty<=0||!Number.isFinite(i.price)||i.price<0))return alert('Verifica los artículos, cantidades y costos.');
-  const subtotal=items.length?Math.round(items.reduce((n,i)=>n+i.qty*i.price,0)*100)/100:Number($('puSubtotal').value),tax=Number($('puTax').value||0);
-  if(!Number.isFinite(subtotal)||subtotal<0||!Number.isFinite(tax)||tax<0||!$('puDate').value||!$('puConcept').value.trim())return alert('Completa fecha, concepto y montos válidos.');
-  const id=form.dataset.purchaseId;const existing=state.purchases.find(p=>p.id===id);
+  const supplier=supplierBy(purchaseField(form,'puSupplier').value);if(!supplier.id)return alert('Selecciona suplidor.');
+  const items=readPurchaseOrderItems(form);if(items.some(i=>!i.description||!Number.isFinite(i.qty)||i.qty<=0||!Number.isFinite(i.price)||i.price<0))return alert('Verifica los artículos, cantidades y costos.');
+  const subtotal=items.length?Math.round(items.reduce((n,i)=>n+i.qty*i.price,0)*100)/100:Number(purchaseField(form,'puSubtotal').value),tax=Number(purchaseField(form,'puTax').value||0);
+  if(!Number.isFinite(subtotal)||subtotal<0||!Number.isFinite(tax)||tax<0||!purchaseField(form,'puDate').value||!purchaseField(form,'puConcept').value.trim())return alert('Completa fecha, concepto y montos válidos.');
+  const id=form.dataset.purchaseId;
   const ref=id?docPath('purchases',id):doc(colPath('purchases'));
-  const data={supplierId:supplier.id,supplierName:supplier.name,supplierAddress:supplier.address||'',supplierPhone:supplier.phone||'',supplierEmail:supplier.email||'',date:$('puDate').value,dueDate:$('puDue').value,concept:$('puConcept').value.trim(),reference:$('puRef').value.trim(),number:existing?.number||('OC-'+$('puDate').value.slice(0,4)+'-'+ref.id.toUpperCase()),items,subtotal,tax,total:Math.round((subtotal+tax)*100)/100,status:$('puStatus').value,note:$('puNote').value,updatedAt:serverTimestamp()};
+  const data={supplierId:supplier.id,supplierName:supplier.name,supplierAddress:supplier.address||'',supplierPhone:supplier.phone||'',supplierEmail:supplier.email||'',date:purchaseField(form,'puDate').value,dueDate:purchaseField(form,'puDue').value,concept:purchaseField(form,'puConcept').value.trim(),reference:purchaseField(form,'puRef').value.trim(),items,subtotal,tax,total:Math.round((subtotal+tax)*100)/100,status:purchaseField(form,'puStatus').value,note:purchaseField(form,'puNote').value,updatedAt:serverTimestamp()};
   if(!id&&!canCreate('purchases'))return alert('Has alcanzado el límite de compras de tu plan.');
   const button=form.querySelector('[type=submit]');button.disabled=true;
-  try{if(id)await updateDoc(ref,data);else await setDoc(ref,{...data,createdAt:serverTimestamp()});if(form.isConnected)render();}catch(error){alert('No se guardó la orden: '+error.message);}finally{if(button.isConnected)button.disabled=false;}
+  try{await persistPurchaseOrder(ref,data);if(form.closest('#purchaseEditModal'))form.closest('#purchaseEditModal').remove();if(form.isConnected)form.reset();render();}catch(error){alert('No se guardó la orden: '+error.message);}finally{if(button.isConnected)button.disabled=false;}
 }
-function previewPurchaseOrder(id){
-  const p=state.purchases.find(p=>p.id===id);if(!p)return;
-  rememberPreviewOrigin();state.previewDocument=null;
-  const supplier=supplierBy(p.supplierId);const items=p.items?.length?p.items:[{description:p.concept||'Compra',qty:1,price:Number(p.subtotal||0)}];
-  const html=docHeader('ORDEN DE COMPRA')+`<p><b>${esc(p.number||p.reference||p.id)}</b> · Fecha: ${esc(p.date)} · Vence: ${esc(p.dueDate||'—')}</p><h3>Suplidor: ${esc(p.supplierName)}</h3><p>${esc(p.supplierAddress||supplier.address||'')}<br>${esc(p.supplierPhone||supplier.phone||'')} ${esc(p.supplierEmail||supplier.email||'')}</p><p><b>Concepto:</b> ${esc(p.concept)}<br><b>Factura del suplidor:</b> ${esc(p.reference||'________________________')}</p><table class="doc-table"><thead><tr><th>Descripción</th><th>Cantidad</th><th>Costo unitario</th><th>Importe</th></tr></thead><tbody>${items.map(i=>`<tr><td>${esc(i.description)}</td><td>${esc(i.qty)}</td><td>${money(i.price)}</td><td>${money(i.qty*i.price)}</td></tr>`).join('')}</tbody></table><p style="text-align:right">Subtotal: ${money(p.subtotal)}<br>IVU / impuestos: ${money(p.tax)}<br><b>Total: ${money(p.total)}</b></p><p>${esc(p.note||'')}</p><p style="margin-top:32px">Preparado por: ____________________ &nbsp; Recibido por: ____________________</p><p>Fecha de recibo: ____________________</p><p style="border-top:1px solid #bbb;padding-top:16px">Control contable: adjuntar la factura original del suplidor a esta orden.<br>Revisado por: ____________________ &nbsp; Fecha: ____________________</p>`+docFooter();
-  state.previewHtml=html;show('reports');$('reportPreview').innerHTML=html;closeReportWorkspace();
+async function persistPurchaseOrder(ref,data=null){
+  return runTransaction(db,async transaction=>{
+    const current=await transaction.get(ref),counter=await transaction.get(profRef());
+    if(!data&&!current.exists())throw Error('La compra ya no está disponible.');
+    const original=current.data()||{};
+    let number=numericPurchaseNumber(original.number);
+    if(!number){number=nextPurchaseSequence(counter.data()?.purchaseOrderSequence,state.purchases);transaction.set(profRef(),{purchaseOrderSequence:number},{merge:true});}
+    const change={...(data||{}),number:String(number),updatedAt:serverTimestamp()};
+    if(original.number&&!numericPurchaseNumber(original.number))change.originalPurchaseNumber=original.number;
+    if(!current.exists())change.createdAt=serverTimestamp();
+    transaction.set(ref,change,{merge:true});
+    return {...original,...change,id:ref.id};
+  });
 }
+async function previewPurchaseOrder(id){
+  const selected=state.purchases.find(p=>p.id===id);if(!selected)return;
+  try{
+    const p=numericPurchaseNumber(selected.number)?selected:await persistPurchaseOrder(docPath('purchases',id));
+    const index=state.purchases.findIndex(row=>row.id===id);if(index>=0)state.purchases[index]={...state.purchases[index],...p};
+    rememberPreviewOrigin();state.previewDocument=null;
+    const html=purchaseOrderHtml(p,profile(),supplierBy(p.supplierId));
+    state.previewHtml=html;show('reports');$('reportPreview').innerHTML=html;closeReportWorkspace();
+  }catch(error){alert('No se pudo preparar la orden: '+error.message);}
+}
+
 document.addEventListener('click',event=>{const button=event.target.closest('[data-purchase-print]');if(button)previewPurchaseOrder(button.dataset.purchasePrint);});
