@@ -1,4 +1,4 @@
-import { clientRecoveryInfo, showRecoveryDialog, showPortalInviteDialog } from './client-outreach.js?v=139';
+import { clientRecoveryInfo, showRecoveryDialog, showPortalInviteDialog } from './client-outreach.js?v=140';
 import { numericPurchaseNumber, nextPurchaseSequence, purchaseOrderHtml } from './purchase-order.js?v=137';
 import { shortDocumentLink } from './document-links.js?v=132';
 import { nextInvoiceNumber } from './invoice-number.js?v=132';
@@ -2747,7 +2747,7 @@ Quedamos atentos para ayudarle y coordinar los próximos pasos.
 
 Gracias por considerar a Oasis Air Cleaner Services LLC.`;
   }
-  return `Hola${name?', '+name:''}, soy Eliezel de Oasis. ${maintenanceHistorySentence(f)}Quería saber cómo está funcionando tu aire acondicionado: ¿enfría bien, tiene algún olor o has notado algo diferente? Si todavía no has coordinado el mantenimiento, puedo ayudarte con una fecha.`;
+  return `Hola${name?', '+name:''}, soy Eliezel de Oasis. ${maintenanceHistorySentence(f)}Quería saber cómo está funcionando tu aire acondicionado: ¿enfría bien, tiene algún olor o has notado algo diferente? Si todavía no has coordinado el mantenimiento, puedo ayudarte con una fecha.\n\n🔗 Coordina tu servicio aquí:\n${profile().confirmafyCalendarUrl||OASIS_BOOKING_URL}`;
 }
 function followupWhatsappUrl(f){
   const c=clientBy(f.clientId||'');
