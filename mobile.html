@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=63" />
   <link rel="apple-touch-icon" href="assets/logo.png" />
   <link rel="stylesheet" href="mobile.css?v=116" />
-  <link rel="stylesheet" href="mobile-field.css?v=131" />
+  <link rel="stylesheet" href="mobile-field.css?v=135" />
 <script>
 (()=>{const incoming=new URL(location.href);if(incoming.searchParams.has('access')||incoming.searchParams.has('token')){const portal=new URL('./portal/',incoming);portal.search=incoming.search;portal.hash=incoming.hash;location.replace(portal);}})();
 </script>
@@ -233,7 +233,7 @@
   <script type="module" src="mobile.js?v=134-discount"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=126').catch(()=>{}));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=135').catch(()=>{}));
     }
   </script>
 </body>
