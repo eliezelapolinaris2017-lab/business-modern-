@@ -6,8 +6,8 @@ export const laborCategories = Object.freeze({
   other: 'Otra labor'
 });
 
-export function laborOptions(selected) {
-  return '<option value="">Sin clasificar como labor</option>' +
+export function laborOptions(selected, placeholder = 'Sin clasificar como labor') {
+  return `<option value="">${placeholder}</option>` +
     Object.entries(laborCategories).map(([key, label]) =>
       `<option value="${key}"${selected === key ? ' selected' : ''}>${label}</option>`
     ).join('');

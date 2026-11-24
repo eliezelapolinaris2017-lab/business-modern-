@@ -1,4 +1,4 @@
-import { classifyInvoiceLabor, laborOptions, renderInvoiceLabor } from './invoice-labor.js?v=1';
+import { classifyInvoiceLabor, laborOptions, renderInvoiceLabor } from './invoice-labor.js?v=2';
 import { clientRecoveryInfo, showRecoveryDialog, showPortalInviteDialog } from './client-outreach.js?v=141';
 import { numericPurchaseNumber, nextPurchaseSequence, purchaseOrderHtml } from './purchase-order.js?v=137';
 import { shortDocumentLink } from './document-links.js?v=132';
@@ -2664,7 +2664,9 @@ function bindForms(){
   $('purchaseForm').onsubmit=e=>{e.preventDefault();savePurchaseOrder(e.target);};
   $('paymentForm').onsubmit=async e=>{e.preventDefault();const inv=state.invoices.find(x=>x.id===$('pInvoice').value);if(!inv)return alert('Selecciona factura.');if(invoiceStatus(inv)==='Cancelada')return alert('No se puede cobrar una factura cancelada.');const amount=Number($('pAmount').value||0);if(amount<=0)return alert('Monto inválido.');const bal=invoiceBalance(inv);if(amount>bal+0.01 && !confirm('El cobro excede el balance. ¿Registrar de todos modos?')) return;const selectedMethod=$('pMethod').value;const paymentRef=await add('payments',{invoiceId:inv.id,invoiceNumber:inv.number,date:$('pDate').value,method:selectedMethod,amount,note:$('pNote').value});if(!paymentRef)return;await add('cashflow',{sourceModule:'payments',sourceId:paymentRef?.id||'',date:$('pDate').value,type:'Ingreso',concept:`Cobro ${inv.number}`,amount});const newBal=Math.max(0,bal-amount);await updateDoc(docPath('invoices',inv.id),{status:newBal<=0?'Pagada':amount>0?'Parcial':invoiceStatus(inv),paymentMethod:selectedMethod,updatedAt:serverTimestamp()});e.target.reset();};
   $('cashForm').onsubmit=e=>{e.preventDefault();add('cashflow',{origin:'manual',date:$('xDate').value,type:$('xType').value,concept:$('xConcept').value,amount:Number($('xAmount').value||0)});e.target.reset();};
-  $('saveSettings').onclick=saveSettings;$('invoiceFromService').onclick=()=>{const s=state.services.find(s=>s.status==='Completado'&&!serviceInvoice(s));if(s)createInvoice(s.id);else alert('No hay servicios completados pendientes de facturar.');};
+  $('saveSettings').onclick=saveSettings;
+  $('newInvoice').onclick=()=>location.assign('mobile.html?abrir=factura');
+  $('invoiceFromService').onclick=()=>{const s=state.services.find(s=>s.status==='Completado'&&!serviceInvoice(s));if(s)createInvoice(s.id);else alert('No hay servicios completados pendientes de facturar.');};
   document.querySelectorAll('.report-option').forEach(b=>b.onclick=()=>selectReport(b.dataset.reportType));
   if($('reportViewBtn')) $('reportViewBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());};
   if($('reportPdfBtn')) $('reportPdfBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());setTimeout(downloadCurrentPreview,250);};

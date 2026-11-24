@@ -1,4 +1,4 @@
-import { laborOptions, renderInvoiceLabor } from './invoice-labor.js?v=1';
+import { laborOptions, renderInvoiceLabor } from './invoice-labor.js?v=2';
 import { shortDocumentLink } from './document-links.js?v=132';
 import { nextInvoiceNumber } from './invoice-number.js?v=132';
 import { searchClients, normalizeClientSearch } from './client-search.js?v=126';
@@ -10,7 +10,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v132';
+const APP_VERSION = 'v137';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
@@ -21,6 +21,7 @@ let editingInvoiceId = null;
 let invoiceSaving = false;
 let mobileInvoiceListLimit=40;
 let invoiceEditReturnView=null;
+let openInvoiceOnSignIn = new URLSearchParams(location.search).get('abrir') === 'factura';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -69,7 +70,7 @@ function firebaseMessage(err){
 }
 
 function newLine(description='', qty=1, price=0, discount=0, taxable=true){ return { id:'ln_' + Date.now() + '_' + Math.random().toString(16).slice(2), description, qty:Number(qty||1), price:Number(price||0), discount:Number(discount||0), taxable }; }
-function ensureLines(){ if(!invoiceLines.length) invoiceLines = [newLine('Mantenimiento preventivo 6 meses', 1, 75)]; }
+function ensureLines(){ if(!invoiceLines.length) invoiceLines = [newLine()]; }
 function isDiscountLine(l){ return Number(l.price) === 0 && l.taxable === false; }
 function lineNet(l){ if(isDiscountLine(l)) return -Math.max(0, Number(l.discount)||0); return Math.max(0, (Number(l.qty||0) * Number(l.price||0)) - Number(l.discount||0)); }
 function invoiceCalc(){ const subtotal = invoiceLines.reduce((a,l)=>a + Number(l.qty||0)*Number(l.price||0), 0); const discount = invoiceLines.reduce((a,l)=>a + Number(l.discount||0), 0); const taxableBase = invoiceLines.filter(l=>l.taxable !== false).reduce((a,l)=>a + lineNet(l), 0); const ivu = taxableBase * taxRate(); const total = Math.max(0, subtotal - discount + ivu); return { subtotal, discount, ivu, total }; }
@@ -135,7 +136,18 @@ document.addEventListener('click', async e => {
   const view = e.target.closest('[data-view-invoice]'); if(view){ openInvoiceDoc(view.dataset.viewInvoice); return; }
   const st = e.target.closest('[data-invoice-status]'); if(st){ setInvoiceStatus(st.dataset.invoiceStatus); return; }
   if(e.target.closest('#mAddDiscount')){ invoiceLines.push(newLine('Descuento',1,0,0,false)); renderInvoiceLines(); $('mInvoiceLines')?.lastElementChild?.scrollIntoView({block:'center',behavior:'smooth'}); return; }
-  const add = e.target.closest('#mAddLine,#mAddLineTop'); if(add){ invoiceLines.push(newLine('',1,0)); renderInvoiceLines(); return; }
+  if(e.target.closest('#mAddLabor')){
+    const lastLine = invoiceLines.at(-1);
+    const empty = lastLine && !lastLine.description.trim() && lastLine.price === 0 &&
+      lastLine.discount === 0 && lastLine.qty === 1 && lastLine.taxable && !lastLine.laborCategory;
+    const line = empty ? lastLine : newLine();
+    line.requiresLabor = true;
+    if(!empty) invoiceLines.push(line);
+    renderInvoiceLines();
+    $('mInvoiceLines').lastElementChild.querySelector('[data-line-field="laborCategory"]').focus();
+    return;
+  }
+  const add = e.target.closest('#mAddLine'); if(add){ invoiceLines.push(newLine('',1,0)); renderInvoiceLines(); return; }
   const rm = e.target.closest('[data-remove-line]'); if(rm){ invoiceLines = invoiceLines.filter(l => l.id !== rm.dataset.removeLine); ensureLines(); renderInvoiceLines(); return; }
   const draft = e.target.closest('#mSaveDraft'); if(draft){ await saveInvoice('Borrador'); return; }
   const preview = e.target.closest('#mPreviewInvoice'); if(preview){ openInvoiceDoc(null, buildInvoicePreviewObject('Vista previa')); return; }
@@ -239,6 +251,10 @@ onAuthStateChanged(auth, async user => {
   if(!user){ $('mobileAuth').classList.remove('hidden'); $('mobileApp').classList.add('hidden'); return; }
   $('mobileAuth').classList.add('hidden'); $('mobileApp').classList.remove('hidden');
   await loadProfile(); ensureLines(); renderInvoiceLines();
+  if(openInvoiceOnSignIn){
+    openInvoiceOnSignIn=false;
+    switchTab('mInvoice');
+  }
   COLS.forEach(c => unsub.push(onSnapshot(colRef(c), snap => { if(uid()!==user.uid)return;state[c] = snap.docs.map(d => ({ id:d.id, ...d.data() })); mobilePortalLoaded.add(c);mobilePortalPublisher.observe(c,state[c]);mobilePortalPublisher.flush();renderAll(); setSync('Sincronizado'); }, () => setSync('Error sync'))));
 });
 
@@ -309,8 +325,9 @@ function renderInvoiceLines(){
   box.innerHTML = invoiceLines.map((l, idx) => `
     <div class="invoice-line" data-line-row="${esc(l.id)}">
       <div class="line-head"><span>${isDiscountLine(l) ? 'Descuento' : 'Línea ' + (idx + 1)}</span><button class="danger" data-remove-line="${esc(l.id)}" type="button">Borrar</button></div>
+      ${isDiscountLine(l) ? '' : `<label>Tipo de labor${l.requiresLabor ? ' *' : ''}<select data-line-field="laborCategory" ${l.requiresLabor ? 'required' : ''}>${laborOptions(l.laborCategory, l.requiresLabor ? 'Selecciona el tipo de labor' : 'Materiales u otros cargos')}</select></label>`}
       <label>Descripción *<textarea data-line-field="description" rows="2" maxlength="220" placeholder="Ej. Mantenimiento preventivo 6 meses" required>${esc(l.description)}</textarea></label>
-      ${isDiscountLine(l) ? `<label>Importe a descontar ($)<input data-line-field="discount" type="number" min="0" step="0.01" value="${esc(l.discount)}" /></label><small>Se resta del total. No lo añadas si el depósito ya está registrado como pago.</small>` : `<label>Categoría de labor<select data-line-field="laborCategory">${laborOptions(l.laborCategory)}</select></label><div class="three-col">
+      ${isDiscountLine(l) ? `<label>Importe a descontar ($)<input data-line-field="discount" type="number" min="0" step="0.01" value="${esc(l.discount)}" /></label><small>Se resta del total. No lo añadas si el depósito ya está registrado como pago.</small>` : `<div class="three-col">
         <label>Cant.<input data-line-field="qty" type="number" min="1" step="1" value="${esc(l.qty)}" /></label>
         <label>Precio<input data-line-field="price" type="number" min="0" step="0.01" value="${esc(l.price)}" /></label>
         <label>Desc.<input data-line-field="discount" type="number" min="0" step="0.01" value="${esc(l.discount)}" /></label>
@@ -452,7 +469,7 @@ function renderSyncDetails(){
 function resetMobileInvoiceEditor(){
   editingInvoiceId=null;
   $('mInvoiceForm').reset();
-  invoiceLines=[newLine('Mantenimiento preventivo 6 meses',1,75)];
+  invoiceLines=[newLine()];
   $('mInvoiceEditorTitle').textContent='Nueva factura';
   $('mCancelInvoiceEdit').hidden=true;
   $('mSaveInvoice').textContent='Guardar factura';

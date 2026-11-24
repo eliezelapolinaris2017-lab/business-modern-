@@ -106,9 +106,9 @@
         </div>
 
         <div class="mobile-card">
-          <div class="section-row"><h3>Líneas de factura</h3><button id="mAddLineTop" type="button">+ Línea</button></div>
+          <div class="section-row"><h3>Partidas de la factura</h3><button id="mAddLabor" type="button">+ Añadir labor</button></div>
           <div id="mInvoiceLines" class="invoice-lines"></div>
-          <div class="two-col"><button id="mAddLine" class="ghost-btn" type="button">+ Añadir servicio</button><button id="mAddDiscount" class="ghost-btn" type="button">− Añadir descuento</button></div>
+          <div class="two-col"><button id="mAddLine" class="ghost-btn" type="button">+ Añadir partida</button><button id="mAddDiscount" class="ghost-btn" type="button">− Añadir descuento</button></div>
         </div>
 
         <div class="mobile-card summary-card">
@@ -232,10 +232,10 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="mobile.js?v=136-labor"></script>
+  <script type="module" src="mobile.js?v=137-labor"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=136').catch(()=>{}));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=137').catch(()=>{}));
     }
   </script>
 </body>
