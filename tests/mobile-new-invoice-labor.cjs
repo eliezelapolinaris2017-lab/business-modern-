@@ -9,7 +9,7 @@ const vm = require('node:vm');
   const editor = html.slice(html.indexOf('<form id="mInvoiceForm"'), html.indexOf('id="mInvoiceList"'));
   assert.match(editor, /id="mAddLabor"/);
   assert.match(fs.readFileSync('index.html', 'utf8'), /id="newInvoice"[^>]*>Nueva factura/);
-  assert.match(fs.readFileSync('app.js', 'utf8'), /location\.assign\('mobile\.html\?abrir=factura'\)/);
+  assert.match(fs.readFileSync('app.js', 'utf8'), /\$\('newInvoice'\)\.onclick=\(\)=>editInvoiceRecord\(\)/);
 
   const between = (start, end) => source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
   const date = '2026-11-24';

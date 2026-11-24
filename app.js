@@ -706,7 +706,7 @@ async function requestPlanChange(planId){
   alert(paymentUrl?'Solicitud registrada. Se abrió el enlace de pago. El plan se activa después de confirmarse el pago.':'Solicitud registrada. El dueño activará el plan después de confirmar el pago.');
 }
 function setVisuals(){const p=profile(), ind=industry(); if(p.plan!==currentPlanId()) p.plan=currentPlanId(); document.documentElement.style.setProperty('--brand',p.primaryColor||ind.color);document.documentElement.style.setProperty('--brand2',p.secondaryColor||'#0f172a');$('sideLogo').innerHTML=imgOrText(p.logoDashboard,ind.logo);$('dashboardLogo').innerHTML=imgOrText(p.logoDashboard,ind.logo);$('sideLogo').classList.toggle('has-logo',!!p.logoDashboard);$('dashboardLogo').classList.toggle('has-logo',!!p.logoDashboard);const authLogoEl=$('authLogo'); if(authLogoEl){authLogoEl.innerHTML='<img src="assets/logo.png" alt="Nexus Business PR">';}$('sideName').textContent=p.businessName||'Nexus Business';$('sideIndustry').textContent=ind.name;$('dashboardTitle').textContent=p.businessName||ind.name;$('dashboardText').textContent=p.slogan||'';$('faviconLink').href=p.favicon||$('faviconLink').href;$('planBadge').textContent=isTopPlan()?'👑 Plan Enterprise Activo':plan().name;$('sidePlan').innerHTML=isTopPlan()?'👑 Enterprise Activo':plan().name;$('sideQuota').textContent=isTopPlan()?'Funciones y registros ilimitados':`${state.clients.length}/${unlimited(limit('clients'))?'∞':limit('clients')} ${T('clientes')}`;const upgrade=$('sideUpgrade');if(upgrade){upgrade.hidden=isTopPlan();upgrade.disabled=isTopPlan();upgrade.setAttribute('aria-hidden',isTopPlan()?'true':'false');}}
-function nav(){const ind=industry();$('sideNav').innerHTML=ind.nav.flatMap(v=>v==='billing'?[v,'labor']:[v]).map(v=>`<button type="button" data-view="${v}" class="${state.activeView===v?'active':''} ${lockedModule(v)?'locked':''}">${T(industryTitle(v))}<span>${lockedModule(v)?'🔒':''}</span></button>`).join('');document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));}
+function nav(){const ind=industry();$('sideNav').innerHTML=ind.nav.filter(v=>v!=='services').flatMap(v=>v==='billing'?[v,'labor']:[v]).map(v=>`<button type="button" data-view="${v}" class="${state.activeView===v?'active':''} ${lockedModule(v)?'locked':''}">${T(industryTitle(v))}<span>${lockedModule(v)?'🔒':''}</span></button>`).join('');document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));}
 function input(label,id,type='text',val='',cls='',step=''){const extra=type==='number'?(step?` step="${step}" min="0"`:' step="0.01" min="0"'):'';return `<div class="${cls}"><label>${esc(label)}</label><input id="${id}" type="${type}" value="${esc(val)}" placeholder="${esc(label)}"${extra}></div>`;}
 function select(label,id,opts,val='',cls=''){return `<div class="${cls}"><label>${esc(label)}</label><select id="${id}">${opts.map(o=>`<option value="${esc(o.value)}" ${String(o.value)===String(val)?'selected':''}>${esc(o.label)}</option>`).join('')}</select></div>`;}
 
@@ -1997,7 +1997,17 @@ function ensureEditModal(){
   wrap.querySelectorAll('[data-close-edit]').forEach(b=>b.onclick=closeEditModal);
   return wrap;
 }
-function closeEditModal(){const m=$('editModal'); if(m)m.classList.add('hidden'); state.editing=null;}
+function closeEditModal(){
+  if(state.editing?.savingInvoice)return;
+  const modal=$('editModal');
+  if(modal){
+    modal.classList.add('hidden');
+    $('editForm').onsubmit=null;
+    $('editSave').textContent='Guardar cambios';
+    modal.querySelector('.edit-head .pill').textContent='Editar';
+  }
+  state.editing=null;
+}
 function editType(k,v){
   if(['weight','amount','subtotal','tax','total','ivu','taxPercent','salary','rate','retention','value','creditLimit','openingBalance','hours','overtime','gross','bonus','advance','deductions','net'].includes(k)) return 'number';
   if(String(k).toLowerCase().includes('date') || k==='date' || k==='dueDate' || k==='startDate') return 'date';
@@ -2188,7 +2198,7 @@ function readInvoiceEditorItems(){
     description:row.querySelector('.invoice-edit-desc')?.value.trim()||'',
     qty:Number(row.querySelector('.invoice-edit-qty')?.value||0),
     price:Number(row.querySelector('.invoice-edit-price')?.value||0)
-  })).filter(x=>x.description||x.qty||x.price);
+  })).filter(x=>x.description||x.qty||x.price||x.laborCategory);
 }
 function invoiceEditorTotals(items, taxPercent){
   const subtotal=items.reduce((sum,item)=>sum+item.qty*item.price,0);
@@ -2225,56 +2235,99 @@ function bindInvoiceEditor(){
     }
     bindInvoiceEditor(); recalcInvoiceEditor();
   });
+  document.querySelectorAll('[data-invoice-edit-line] .line-number').forEach((label, index)=>label.textContent=index+1);
   document.querySelectorAll('.invoice-edit-desc,.invoice-edit-qty,.invoice-edit-price').forEach(el=>el.oninput=recalcInvoiceEditor);
   if($('edit_invoice_taxPercent')) $('edit_invoice_taxPercent').oninput=recalcInvoiceEditor;
   recalcInvoiceEditor();
 }
-async function editInvoiceRecord(id){
-  const inv=state.invoices.find(x=>x.id===id); if(!inv)return;
-  const m=ensureEditModal(); state.editing={c:'invoices',id};
-  const paid=invoicePaid(inv);
+function editInvoiceRecord(id){
+  const creating=!id;
+  const inv=creating?{date:today(),dueDate:plusDays(15)}:state.invoices.find(x=>x.id===id);
+  if(!inv)return;
+  if(creating&&!canCreate('invoices')){alert('Límite de facturas alcanzado.');show('plans');return;}
+  const m=ensureEditModal();
+  const editing={c:'invoices',id};
+  state.editing=editing;
+  const paid=creating?0:invoicePaid(inv);
   const totals=invoiceTotals(inv);
-  const items=(Array.isArray(inv.items)&&inv.items.length)?inv.items:[{description:inv.serviceTitle||'Servicio',qty:1,price:totals.subtotal||inv.total||0}];
-  $('editTitle').textContent=`Editar factura ${inv.number||''}`;
+  const items=creating?[{description:'',qty:1,price:''}]:(Array.isArray(inv.items)&&inv.items.length)?inv.items:[{description:inv.serviceTitle||'Servicio',qty:1,price:totals.subtotal||inv.total||0}];
+  m.querySelector('.edit-head .pill').textContent=creating?'Facturación':'Editar';
+  $('editTitle').textContent=creating?'Nueva factura':`Editar factura ${inv.number||''}`;
+  const saveButton=$('editSave');
+  saveButton.textContent=creating?'Guardar factura':'Guardar cambios';
   $('editForm').innerHTML=`
-    <div class="wide paid-invoice-editor-note"><b>${paid>0?'Esta factura tiene pagos registrados.':'Edición completa de factura'}</b><span>Los cobros asociados no se eliminarán. Al cambiar el total, el balance y el estado se recalcularán automáticamente.</span></div>
-    ${input('Número de factura','edit_invoice_number','text',inv.number||'')}
+    ${creating?'':`<div class="wide paid-invoice-editor-note"><b>${paid>0?'Esta factura tiene pagos registrados.':'Edición completa de factura'}</b><span>Los cobros asociados no se eliminarán. Al cambiar el total, el balance y el estado se recalcularán automáticamente.</span></div>
+    ${input('Número de factura','edit_invoice_number','text',inv.number||'')}`}
     ${input('Fecha','edit_invoice_date','date',inv.date||today())}
     ${input('Vencimiento','edit_invoice_dueDate','date',inv.dueDate||'')}
-    ${editSelectHtml('Cliente','edit_invoice_clientId',state.clients.map(x=>({value:x.id,label:x.name})),inv.clientId||'')}
-    ${input('Servicio / título','edit_invoice_serviceTitle','text',inv.serviceTitle||inv.serviceType||'','wide')}
+    ${editSelectHtml('Cliente','edit_invoice_clientId',[{value:'',label:'Selecciona un cliente'},...state.clients.map(x=>({value:x.id,label:x.name}))],inv.clientId||'')}
+    ${input('Título de la factura','edit_invoice_serviceTitle','text',inv.serviceTitle||inv.serviceType||'','wide')}
     <div class="wide"><div class="invoice-edit-head"><label>Partidas de la factura</label><button id="edit_addInvoiceLine" type="button" class="ghost">+ Añadir partida</button></div><div id="editInvoiceItemsBox" class="service-lines">${invoiceEditorItemsHtml(items)}</div></div>
     ${input('IVU %','edit_invoice_taxPercent','number',Number(inv.taxPercent??profile().tax??0))}
     ${input('Subtotal','edit_invoice_subtotal','number',totals.subtotal,'','readonly')}
     ${input('IVU','edit_invoice_ivu','number',totals.ivu,'','readonly')}
     ${input('Total','edit_invoice_total','number',totals.total,'','readonly')}
-    <div><label>Pagado</label><div id="edit_invoice_paid" class="invoice-edit-money" data-value="${paid}">${money(paid)}</div></div>
+    ${creating?'':`<div><label>Pagado</label><div id="edit_invoice_paid" class="invoice-edit-money" data-value="${paid}">${money(paid)}</div></div>
     <div><label>Balance resultante</label><div id="edit_invoice_balance" class="invoice-edit-money">${money(invoiceBalance(inv))}</div></div>
-    <div><label>Estado resultante</label><div id="edit_invoice_result_status" class="invoice-edit-money">${invoiceStatus(inv)}</div></div>
+    <div><label>Estado resultante</label><div id="edit_invoice_result_status" class="invoice-edit-money">${invoiceStatus(inv)}</div></div>`}
     <div class="wide"><label>Notas</label><textarea id="edit_invoice_notes" rows="3">${esc(inv.notes||'')}</textarea></div>
     <div class="wide"><label>Términos y condiciones</label><textarea id="edit_invoice_terms" rows="3">${esc(inv.terms||inv.conditions||'Pago según acuerdo.')}</textarea></div>`;
   document.querySelectorAll('[data-invoice-edit-line]').forEach((row,index)=>{row.dataset.originalItem=JSON.stringify(items[index]);});
-  $('editSave').onclick=async()=>{
+  const save=async()=>{
+    if(editing.savingInvoice)return;
     try{
       const client=clientBy($('edit_invoice_clientId').value);
-      const newItems=readInvoiceEditorItems();
-      if(!newItems.length) throw new Error('Añade al menos una partida a la factura.');
+      const date=$('edit_invoice_date').value;
+      const dueDate=$('edit_invoice_dueDate').value;
       const taxPercent=Number($('edit_invoice_taxPercent').value||0);
+      let newItems=readInvoiceEditorItems();
+      if(creating){
+        if(!$('editForm').reportValidity())return;
+        if(!client.id)throw new Error('Selecciona un cliente.');
+        if(!date || !dueDate)throw new Error('Completa la fecha de factura y su vencimiento.');
+        if(dueDate<date)throw new Error('El vencimiento debe ser igual o posterior a la fecha de la factura.');
+        newItems=newItems.filter(item=>item.description||item.price||item.laborCategory);
+        if(newItems.some(item=>!item.description||item.qty<=0))throw new Error('Añade una descripción y una cantidad mayor de cero a cada partida.');
+      }
+      if(!newItems.length)throw new Error('Añade al menos una partida a la factura.');
       const calculated=invoiceEditorTotals(newItems,taxPercent);
-      const unchangedAmounts=taxPercent===totals.taxPercent && newItems.length===items.length &&
+      if(creating){
+        const round=value=>Math.round((value+Number.EPSILON)*100)/100;
+        calculated.subtotal=round(calculated.subtotal);
+        calculated.ivu=round(calculated.ivu);
+        calculated.total=round(calculated.subtotal+calculated.ivu);
+      }
+      const unchangedAmounts=!creating && taxPercent===totals.taxPercent && newItems.length===items.length &&
         newItems.every((item,index)=>item.qty===Number(items[index].qty??1) && item.price===Number(items[index].price??0));
       const {subtotal,discount,ivu,total}=unchangedAmounts
         ? {...totals,discount:Number(inv.discount||0)} : calculated;
-      const status=unchangedAmounts || ['Cancelada','Borrador'].includes(inv.status)
+      const status=creating?'Pendiente':unchangedAmounts || ['Cancelada','Borrador'].includes(inv.status)
         ? inv.status||'Pendiente' : (total<=paid?'Pagada':paid>0?'Parcial':'Pendiente');
-      await updateDoc(docPath('invoices',id),{
-        number:$('edit_invoice_number').value.trim(),date:$('edit_invoice_date').value,dueDate:$('edit_invoice_dueDate').value,
-        clientId:client.id||'',clientName:client.name||'',serviceTitle:$('edit_invoice_serviceTitle').value.trim(),
-        items:newItems,subtotal,discount,ivu,tax:ivu,taxPercent,total,status,notes:$('edit_invoice_notes').value,terms:$('edit_invoice_terms').value,updatedAt:serverTimestamp()
-      });
+      const title=$('edit_invoice_serviceTitle').value.trim();
+      const payload={
+        date,dueDate,clientId:client.id||'',clientName:client.name||'',
+        serviceTitle:title||(creating?newItems[0].description:''),
+        items:newItems,subtotal,discount,ivu,tax:ivu,taxPercent,total,status,
+        notes:$('edit_invoice_notes').value,terms:$('edit_invoice_terms').value
+      };
+      editing.savingInvoice=true;
+      saveButton.disabled=true;
+      if(creating){
+        const ref=await add('invoices',payload);
+        if(!ref){editing.savingInvoice=false;closeEditModal();return;}
+      }else{
+        await updateDoc(docPath('invoices',id),{
+          ...payload,number:$('edit_invoice_number').value.trim(),updatedAt:serverTimestamp()
+        });
+      }
+      editing.savingInvoice=false;
       closeEditModal();
+      if(creating){openBilling();$('newInvoice').focus();}
     }catch(err){alert(err.message||err);}
+    finally{editing.savingInvoice=false;saveButton.disabled=false;}
   };
+  saveButton.onclick=save;
+  $('editForm').onsubmit=event=>{event.preventDefault();save();};
   ['edit_invoice_subtotal','edit_invoice_ivu','edit_invoice_total'].forEach(x=>{const el=$(x);if(el){el.readOnly=true;el.tabIndex=-1;}});
   bindInvoiceEditor();
   m.classList.remove('hidden');
@@ -2665,8 +2718,7 @@ function bindForms(){
   $('paymentForm').onsubmit=async e=>{e.preventDefault();const inv=state.invoices.find(x=>x.id===$('pInvoice').value);if(!inv)return alert('Selecciona factura.');if(invoiceStatus(inv)==='Cancelada')return alert('No se puede cobrar una factura cancelada.');const amount=Number($('pAmount').value||0);if(amount<=0)return alert('Monto inválido.');const bal=invoiceBalance(inv);if(amount>bal+0.01 && !confirm('El cobro excede el balance. ¿Registrar de todos modos?')) return;const selectedMethod=$('pMethod').value;const paymentRef=await add('payments',{invoiceId:inv.id,invoiceNumber:inv.number,date:$('pDate').value,method:selectedMethod,amount,note:$('pNote').value});if(!paymentRef)return;await add('cashflow',{sourceModule:'payments',sourceId:paymentRef?.id||'',date:$('pDate').value,type:'Ingreso',concept:`Cobro ${inv.number}`,amount});const newBal=Math.max(0,bal-amount);await updateDoc(docPath('invoices',inv.id),{status:newBal<=0?'Pagada':amount>0?'Parcial':invoiceStatus(inv),paymentMethod:selectedMethod,updatedAt:serverTimestamp()});e.target.reset();};
   $('cashForm').onsubmit=e=>{e.preventDefault();add('cashflow',{origin:'manual',date:$('xDate').value,type:$('xType').value,concept:$('xConcept').value,amount:Number($('xAmount').value||0)});e.target.reset();};
   $('saveSettings').onclick=saveSettings;
-  $('newInvoice').onclick=()=>location.assign('mobile.html?abrir=factura');
-  $('invoiceFromService').onclick=()=>{const s=state.services.find(s=>s.status==='Completado'&&!serviceInvoice(s));if(s)createInvoice(s.id);else alert('No hay servicios completados pendientes de facturar.');};
+  $('newInvoice').onclick=()=>editInvoiceRecord();
   document.querySelectorAll('.report-option').forEach(b=>b.onclick=()=>selectReport(b.dataset.reportType));
   if($('reportViewBtn')) $('reportViewBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());};
   if($('reportPdfBtn')) $('reportPdfBtn').onclick=()=>{if(lockedModule('reports')){alert('Reportes es premium.');show('plans');return;}preview(currentReportType());setTimeout(downloadCurrentPreview,250);};
