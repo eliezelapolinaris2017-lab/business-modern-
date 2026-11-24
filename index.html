@@ -242,7 +242,8 @@
       <section id="suppliers" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="suppliersTitle">Suplidores</h2><span id="suppliersLimit" class="limit-chip"></span></div><form id="supplierForm" class="form-grid"></form><div id="suppliersTable"></div></div></section>
       <section id="supplierPayments" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="supplierPaymentsTitle">Pagos a suplidores</h2><span id="supplierPaymentsLimit" class="limit-chip"></span></div><form id="supplierPaymentForm" class="form-grid"></form><div id="supplierPaymentsTable"></div></div></section>
       <section id="purchases" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Compras / Órdenes de compra</h2><span id="purchasesLimit" class="limit-chip"></span></div><form id="purchaseForm" class="form-grid"></form><div id="purchasesTable"></div></div></section>
-      <section id="billing" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Facturación</h2><span id="invoicesLimit" class="limit-chip"></span></div><div class="toolbar"><button id="invoiceFromService" type="button">Facturar próximo servicio sin factura</button></div><div id="invoiceTable"></div></div></section>
+      <section id="billing" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Facturación</h2><span id="invoicesLimit" class="limit-chip"></span></div><div class="toolbar"><button id="invoiceFromService" type="button">Facturar próximo servicio sin factura</button><button type="button" data-view="labor">Ganancias de labor</button></div><div id="invoiceTable"></div></div></section>
+      <section id="labor" class="view" hidden aria-hidden="true"><div class="card"><h2>Ganancias de labor</h2><p>Mano de obra por fecha de factura, después del descuento de cada partida y antes del IVU. Incluye facturas pendientes de cobro.</p><label>Mes <input type="month" data-labor-month></label><div data-labor-result></div></div></section>
       <section id="payments" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Cobros</h2><span id="paymentsLimit" class="limit-chip"></span></div><form id="paymentForm" class="form-grid"></form><div id="paymentsTable"></div></div></section>
       <section id="cashflow" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Flujo de caja</h2><span id="cashflowLimit" class="limit-chip"></span></div><form id="cashForm" class="form-grid"></form><div id="cashTable"></div></div></section>
       <section id="reports" class="view" hidden aria-hidden="true">
@@ -320,7 +321,7 @@
   </div>
 
   <script type="module" src="payment-links.js?v=51"></script>
-  <script type="module" src="app.js?v=141-reminder-offers"></script>
+  <script type="module" src="app.js?v=142-labor"></script>
   <script src="nexus-v2.js?v=112-grooming" defer></script>
 </body>
 </html>

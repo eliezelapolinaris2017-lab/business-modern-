@@ -1,3 +1,4 @@
+import { laborOptions, renderInvoiceLabor } from './invoice-labor.js?v=1';
 import { shortDocumentLink } from './document-links.js?v=132';
 import { nextInvoiceNumber } from './invoice-number.js?v=132';
 import { searchClients, normalizeClientSearch } from './client-search.js?v=126';
@@ -108,10 +109,10 @@ let documentOrigin=null;
 function switchTab(id){
   if (!document.getElementById(id)?.classList.contains('mobile-view')) return;
   viewMemory.save();
-  const titles = {mDashboard:'Tu operación en la calle',mServices:'Trabajos pendientes',mInvoice:'Nueva factura',mInvoices:'Facturas',mClients:'Clientes',mFollowups:'Seguimientos',mHistory:'Historial',mSync:'Aplicación y sincronización',mMore:'Más herramientas',mAgenda:'Agenda de trabajo',mReceivable:'Cuentas por cobrar',mCalculator:'Calculadora de precio'};
+  const titles = {mDashboard:'Tu operación en la calle',mServices:'Trabajos pendientes',mInvoice:'Nueva factura',mInvoices:'Facturas',mClients:'Clientes',mFollowups:'Seguimientos',mHistory:'Historial',mSync:'Aplicación y sincronización',mMore:'Más herramientas',mAgenda:'Agenda de trabajo',mReceivable:'Cuentas por cobrar',mCalculator:'Calculadora de precio',mLabor:'Ganancias de labor'};
   document.querySelector('.mobile-top p').textContent = titles[id] || 'Nexus Mobile';
   document.querySelectorAll('.mobile-tabs button').forEach(b => {
-    const selected = b.dataset.tab === id || (b.dataset.tab === 'mMore' && ['mFollowups','mHistory','mSync','mAgenda','mReceivable','mCalculator'].includes(id));
+    const selected = b.dataset.tab === id || (b.dataset.tab === 'mMore' && ['mFollowups','mHistory','mSync','mAgenda','mReceivable','mCalculator','mLabor'].includes(id));
     b.setAttribute('aria-current', selected ? 'page' : 'false');
   });
   document.querySelectorAll('.mobile-view').forEach(v => v.classList.toggle('active', v.id === id));
@@ -248,7 +249,7 @@ async function loadProfile(){
   if($('mCalcTax')){$('mCalcTax').value=String(state.profile.tax??11.5);calculateMobilePrice();}
 }
 function renderAll(){return viewMemory.preserve(()=>renderAllContent());}
-function renderAllContent(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); renderMobileTools(); }
+function renderAllContent(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); renderMobileTools(); renderInvoiceLabor($('mLabor'),state.invoices,today(),money,esc); }
 function renderSelects(){
   const opts = state.clients.map(c => `<option value="${esc(c.id)}">${esc(c.name || 'Cliente')}</option>`).join('');
   ['mInvClient', 'mFollowClient'].forEach(id => { const el = $(id); if(el){ const prev = el.value; el.innerHTML = `<option value="">Seleccionar cliente</option>${opts}`; if(prev) el.value = prev; } });
@@ -309,7 +310,7 @@ function renderInvoiceLines(){
     <div class="invoice-line" data-line-row="${esc(l.id)}">
       <div class="line-head"><span>${isDiscountLine(l) ? 'Descuento' : 'Línea ' + (idx + 1)}</span><button class="danger" data-remove-line="${esc(l.id)}" type="button">Borrar</button></div>
       <label>Descripción *<textarea data-line-field="description" rows="2" maxlength="220" placeholder="Ej. Mantenimiento preventivo 6 meses" required>${esc(l.description)}</textarea></label>
-      ${isDiscountLine(l) ? `<label>Importe a descontar ($)<input data-line-field="discount" type="number" min="0" step="0.01" value="${esc(l.discount)}" /></label><small>Se resta del total. No lo añadas si el depósito ya está registrado como pago.</small>` : `<div class="three-col">
+      ${isDiscountLine(l) ? `<label>Importe a descontar ($)<input data-line-field="discount" type="number" min="0" step="0.01" value="${esc(l.discount)}" /></label><small>Se resta del total. No lo añadas si el depósito ya está registrado como pago.</small>` : `<label>Categoría de labor<select data-line-field="laborCategory">${laborOptions(l.laborCategory)}</select></label><div class="three-col">
         <label>Cant.<input data-line-field="qty" type="number" min="1" step="1" value="${esc(l.qty)}" /></label>
         <label>Precio<input data-line-field="price" type="number" min="0" step="0.01" value="${esc(l.price)}" /></label>
         <label>Desc.<input data-line-field="discount" type="number" min="0" step="0.01" value="${esc(l.discount)}" /></label>
@@ -474,7 +475,7 @@ function editMobileInvoice(id){
   }
   set('mInvNotes',inv.notes||'');
   const items=inv.items?.length?inv.items:[{description:inv.serviceTitle||inv.serviceType||'Servicio',qty:1,price:inv.subtotal??inv.total??0,taxable:Number(inv.ivu||inv.tax||0)>0}];
-  invoiceLines=items.map(l=>newLine(l.description||l.desc||'',l.qty??l.quantity??1,l.price??l.unitPrice??0,l.discount||0,l.taxable!==false));
+  invoiceLines=items.map(l=>({...newLine(l.description||l.desc||'',l.qty??l.quantity??1,l.price??l.unitPrice??0,l.discount||0,l.taxable!==false),laborCategory:l.laborCategory||''}));
   $('mInvoiceEditorTitle').textContent='Editar factura '+(inv.number||'');
   $('mSaveInvoice').textContent='Guardar cambios';$('mCancelInvoiceEdit').hidden=false;$('mSaveDraft').hidden=true;
   $('mInvNumber').readOnly=true;
@@ -493,7 +494,7 @@ async function saveInvoice(forcedStatus){
   let status = forcedStatus || $('mInvStatus').value || 'Pendiente';
   if(existing){const paid=invoicePaid(existing);if(existing.status==='Pagada'&&paid===0){if(Math.abs(calc.total-Number(existing.total))>0.005)return alert('Esta factura figura pagada sin cobros vinculados. Revisa sus cobros antes de cambiar el total.');status='Pagada';}if(calc.total+0.005<paid)return alert('El total no puede ser menor al importe ya cobrado.');if(status==='Pagada'&&existing.status!=='Pagada'&&calc.total-paid>0.005)return alert('Guarda los cambios como pendiente y registra el pago desde Saldar factura.');status=paid>0?(calc.total-paid<=0.005?'Pagada':'Parcial'):(existing.status==='Pagada'?'Pagada':status==='Borrador'?'Borrador':'Pendiente');}
   const number = $('mInvNumber').value || 'INV-M-' + String(Date.now()).slice(-7);
-  const payload = { number, date:$('mInvDate').value, dueDate:$('mInvDue').value, clientId:c.id, clientName:c.name || '', invoiceType:$('mInvType').value, serviceTitle:validLines[0]?.description || $('mInvType').value, items:validLines.map(l => ({ description:l.description, qty:Number(l.qty||1), price:Number(l.price||0), discount:Number(l.discount||0), taxable:l.taxable !== false, total:lineNet(l) })), subtotal:calc.subtotal, discount:calc.discount, ivu:calc.ivu, tax:calc.ivu, taxPercent:taxRate()*100, total:calc.total, status, notes:$('mInvNotes').value, terms:'Pago según acuerdo.', sourceType:'mobile-v62', paymentMethod:$('mInvPaymentMethod').value || '', updatedAt:serverTimestamp(), createdAt:serverTimestamp() };
+  const payload = { number, date:$('mInvDate').value, dueDate:$('mInvDue').value, clientId:c.id, clientName:c.name || '', invoiceType:$('mInvType').value, serviceTitle:validLines[0]?.description || $('mInvType').value, items:validLines.map(l => ({ description:l.description, qty:Number(l.qty||1), price:Number(l.price||0), discount:Number(l.discount||0), taxable:l.taxable !== false, total:lineNet(l), laborCategory:l.laborCategory||'' })), subtotal:calc.subtotal, discount:calc.discount, ivu:calc.ivu, tax:calc.ivu, taxPercent:taxRate()*100, total:calc.total, status, notes:$('mInvNotes').value, terms:'Pago según acuerdo.', sourceType:'mobile-v62', paymentMethod:$('mInvPaymentMethod').value || '', updatedAt:serverTimestamp(), createdAt:serverTimestamp() };
   invoiceSaving=true;const button=$('mSaveInvoice');if(button)button.disabled=true;
   try{
   if(existing){

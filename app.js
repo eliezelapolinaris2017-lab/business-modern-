@@ -1,3 +1,4 @@
+import { classifyInvoiceLabor, laborOptions, renderInvoiceLabor } from './invoice-labor.js?v=1';
 import { clientRecoveryInfo, showRecoveryDialog, showPortalInviteDialog } from './client-outreach.js?v=141';
 import { numericPurchaseNumber, nextPurchaseSequence, purchaseOrderHtml } from './purchase-order.js?v=137';
 import { shortDocumentLink } from './document-links.js?v=132';
@@ -136,7 +137,7 @@ const PLANS = {
   enterprise:{name:'Enterprise',price:'Custom',badge:'Corporativo',limits:{clients:Infinity,services:Infinity,quotes:Infinity,followups:Infinity,team:Infinity,assets:Infinity,suppliers:Infinity,supplierPayments:Infinity,payroll:Infinity,purchases:Infinity,invoices:Infinity,payments:Infinity,cashflow:Infinity},modules:['dashboard','clients','directory','contracts','services','quotes','followups','team','payroll','assets','suppliers','supplierPayments','purchases','billing','payments','cashflow','reports','plans','settings'],features:['Ilimitado','Dominio personalizado','Roles futuros','Soporte corporativo']}
 };
 
-const TITLES = {dashboard:'Home',clients:'Clientes',directory:'Directorio',contracts:'Contratos de servicios',services:'Servicios',quotes:'Cotizaciones Pro',followups:'Seguimiento',team:'Equipo',payroll:'Nómina',assets:'Activos',suppliers:'Suplidores',supplierPayments:'Pagos suplidores',purchases:'Compras',billing:'Facturación',payments:'Cobros',cashflow:'Flujo de caja',reports:'Reportes',plans:'Planes',settings:'Configuración'};
+const TITLES = {dashboard:'Home',clients:'Clientes',directory:'Directorio',contracts:'Contratos de servicios',services:'Servicios',quotes:'Cotizaciones Pro',followups:'Seguimiento',team:'Equipo',payroll:'Nómina',assets:'Activos',suppliers:'Suplidores',supplierPayments:'Pagos suplidores',purchases:'Compras',billing:'Facturación',labor:'Ganancias de labor',payments:'Cobros',cashflow:'Flujo de caja',reports:'Reportes',plans:'Planes',settings:'Configuración'};
 let mode = 'login', unsub = [];
 let state = {profile:null,clients:[],services:[],quotes:[],followups:[],contracts:[],team:[],assets:[],suppliers:[],supplierPayments:[],payroll:[],payrollRetentions:[],purchases:[],invoices:[],payments:[],cashflow:[],planRequests:[],previewHtml:'',activeView:'dashboard',editingServiceId:null,editingQuoteId:null,editingContractId:null,billingFilter:'all',billingSearch:'',directorySearch:'',directoryFavoritesOnly:false};
 const employeeCommand=createEmployeeCommand({db,uid,state,profile,clientBy,assetBy,serviceTitle,workOrderNumber,esc,dialog:serviceDialog});
@@ -158,7 +159,7 @@ function docPath(c,id){return doc(db,'users',uid(),c,id);}
 function profRef(){return doc(db,'users',uid());}
 function limit(c){if(isGrooming()&&c==='assets'&&currentPlanId()==='free')return 10;return plan().limits[c] ?? Infinity;}
 function unlimited(v){return v === Infinity;}
-function lockedModule(v){if(isGrooming()&&v==='assets')return false;return !plan().modules.includes(v);}
+function lockedModule(v){if(isGrooming()&&v==='assets')return false;return !plan().modules.includes(v==='labor'?'billing':v);}
 function canCreate(c){const l=limit(c); return unlimited(l) || (state[c]||[]).length < l;}
 function sum(a,k){return (a||[]).reduce((t,x)=>t+Number(x[k]||0),0);}
 function teamBy(id){return state.team.find(x=>x.id===id)||{};}
@@ -705,7 +706,7 @@ async function requestPlanChange(planId){
   alert(paymentUrl?'Solicitud registrada. Se abrió el enlace de pago. El plan se activa después de confirmarse el pago.':'Solicitud registrada. El dueño activará el plan después de confirmar el pago.');
 }
 function setVisuals(){const p=profile(), ind=industry(); if(p.plan!==currentPlanId()) p.plan=currentPlanId(); document.documentElement.style.setProperty('--brand',p.primaryColor||ind.color);document.documentElement.style.setProperty('--brand2',p.secondaryColor||'#0f172a');$('sideLogo').innerHTML=imgOrText(p.logoDashboard,ind.logo);$('dashboardLogo').innerHTML=imgOrText(p.logoDashboard,ind.logo);$('sideLogo').classList.toggle('has-logo',!!p.logoDashboard);$('dashboardLogo').classList.toggle('has-logo',!!p.logoDashboard);const authLogoEl=$('authLogo'); if(authLogoEl){authLogoEl.innerHTML='<img src="assets/logo.png" alt="Nexus Business PR">';}$('sideName').textContent=p.businessName||'Nexus Business';$('sideIndustry').textContent=ind.name;$('dashboardTitle').textContent=p.businessName||ind.name;$('dashboardText').textContent=p.slogan||'';$('faviconLink').href=p.favicon||$('faviconLink').href;$('planBadge').textContent=isTopPlan()?'👑 Plan Enterprise Activo':plan().name;$('sidePlan').innerHTML=isTopPlan()?'👑 Enterprise Activo':plan().name;$('sideQuota').textContent=isTopPlan()?'Funciones y registros ilimitados':`${state.clients.length}/${unlimited(limit('clients'))?'∞':limit('clients')} ${T('clientes')}`;const upgrade=$('sideUpgrade');if(upgrade){upgrade.hidden=isTopPlan();upgrade.disabled=isTopPlan();upgrade.setAttribute('aria-hidden',isTopPlan()?'true':'false');}}
-function nav(){const ind=industry();$('sideNav').innerHTML=ind.nav.map(v=>`<button type="button" data-view="${v}" class="${state.activeView===v?'active':''} ${lockedModule(v)?'locked':''}">${T(industryTitle(v))}<span>${lockedModule(v)?'🔒':''}</span></button>`).join('');document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));}
+function nav(){const ind=industry();$('sideNav').innerHTML=ind.nav.flatMap(v=>v==='billing'?[v,'labor']:[v]).map(v=>`<button type="button" data-view="${v}" class="${state.activeView===v?'active':''} ${lockedModule(v)?'locked':''}">${T(industryTitle(v))}<span>${lockedModule(v)?'🔒':''}</span></button>`).join('');document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));}
 function input(label,id,type='text',val='',cls='',step=''){const extra=type==='number'?(step?` step="${step}" min="0"`:' step="0.01" min="0"'):'';return `<div class="${cls}"><label>${esc(label)}</label><input id="${id}" type="${type}" value="${esc(val)}" placeholder="${esc(label)}"${extra}></div>`;}
 function select(label,id,opts,val='',cls=''){return `<div class="${cls}"><label>${esc(label)}</label><select id="${id}">${opts.map(o=>`<option value="${esc(o.value)}" ${String(o.value)===String(val)?'selected':''}>${esc(o.label)}</option>`).join('')}</select></div>`;}
 
@@ -1423,6 +1424,8 @@ async function convertQuoteToInvoice(id){
     alert('Esta cotización ya tenía factura. Te llevé a Facturación.');
     return;
   }
+  const items=await classifyInvoiceLabor(quoteItemsFallback(q),esc,money);
+  if(!items)return;
   const t=quoteTotals(q);
   const number='INV-'+String(Date.now()).slice(-7);
   const ref=await add('invoices',{
@@ -1435,7 +1438,7 @@ async function convertQuoteToInvoice(id){
     clientId:q.clientId||'',
     clientName:q.clientName||'',
     serviceTitle:q.title||q.serviceType||'Servicio cotizado',
-    items:quoteItemsFallback(q),
+    items,
     fields:q.fields||[],
     subtotal:t.subtotal,
     ivu:t.ivu,
@@ -1920,7 +1923,7 @@ const __v90Tables=tables;
 tables=function(){__v90Tables();renderContractsTable();};
 
 function render(){return viewMemory.preserve(()=>renderContent());}
-function renderContent(){document.body.dataset.industry=profile().industry;setVisuals();nav();forms();enhancePurchaseForm();bindSearchableClientFields();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(industryTitle(state.activeView));$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
+function renderContent(){if(state.activeView==='labor')renderInvoiceLabor($('labor'),state.invoices,today(),money,esc);document.body.dataset.industry=profile().industry;setVisuals();nav();forms();enhancePurchaseForm();bindSearchableClientFields();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(industryTitle(state.activeView));$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
 async function add(c,data){if(!canCreate(c)){alert(`Límite alcanzado en plan ${plan().name}. Mejora tu plan.`);show('plans');return null;}if(c==='invoices')data={...data,number:await nextInvoiceNumber(db,uid(),state.invoices,data.date)};return await addDoc(colPath(c),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});}
 
 function showClientSummary(id){
@@ -2175,21 +2178,29 @@ function invoiceEditorItemsHtml(items){
     <input class="invoice-edit-qty" type="number" min="0" step="0.01" placeholder="Cant." value="${esc(it.qty??1)}">
     <input class="invoice-edit-price" type="number" min="0" step="0.01" placeholder="Precio" value="${esc(it.price??0)}">
     <button class="danger mini" data-remove-invoice-line type="button">×</button>
+    <label style="grid-column:2 / -1">Categoría de labor<select class="invoice-edit-labor">${laborOptions(it.laborCategory)}</select></label>
   </div>`).join('');
 }
 function readInvoiceEditorItems(){
   return [...document.querySelectorAll('[data-invoice-edit-line]')].map(row=>({
+    ...(row.dataset.originalItem ? JSON.parse(row.dataset.originalItem) : {}),
+    laborCategory:row.querySelector('.invoice-edit-labor')?.value||'',
     description:row.querySelector('.invoice-edit-desc')?.value.trim()||'',
     qty:Number(row.querySelector('.invoice-edit-qty')?.value||0),
     price:Number(row.querySelector('.invoice-edit-price')?.value||0)
   })).filter(x=>x.description||x.qty||x.price);
 }
+function invoiceEditorTotals(items, taxPercent){
+  const subtotal=items.reduce((sum,item)=>sum+item.qty*item.price,0);
+  const discount=items.reduce((sum,item)=>sum+Number(item.discount||0),0);
+  const taxable=items.reduce((sum,item)=>sum+(item.taxable===false?0:Math.max(0,item.qty*item.price-Number(item.discount||0))),0);
+  const ivu=taxable*taxPercent/100;
+  return {subtotal,discount,ivu,total:Math.max(0,subtotal-discount+ivu)};
+}
 function recalcInvoiceEditor(){
   const items=readInvoiceEditorItems();
-  const subtotal=items.reduce((a,x)=>a+(Number(x.qty||0)*Number(x.price||0)),0);
   const taxPercent=Number($('edit_invoice_taxPercent')?.value||0);
-  const ivu=subtotal*(taxPercent/100);
-  const total=subtotal+ivu;
+  const {subtotal,ivu,total}=invoiceEditorTotals(items,taxPercent);
   const paid=Number($('edit_invoice_paid')?.dataset.value||0);
   const balance=Math.max(0,total-paid);
   if($('edit_invoice_subtotal')) $('edit_invoice_subtotal').value=subtotal.toFixed(2);
@@ -2208,7 +2219,10 @@ function bindInvoiceEditor(){
   document.querySelectorAll('[data-remove-invoice-line]').forEach(btn=>btn.onclick=()=>{
     const rows=document.querySelectorAll('[data-invoice-edit-line]');
     const row=btn.closest('[data-invoice-edit-line]');
-    if(rows.length>1) row.remove(); else row.querySelectorAll('input').forEach((el,i)=>el.value=i===1?'1':'');
+    if(rows.length>1) row.remove(); else {
+      delete row.dataset.originalItem;
+      row.querySelectorAll('input,select').forEach((el,i)=>el.value=i===1?'1':'');
+    }
     bindInvoiceEditor(); recalcInvoiceEditor();
   });
   document.querySelectorAll('.invoice-edit-desc,.invoice-edit-qty,.invoice-edit-price').forEach(el=>el.oninput=recalcInvoiceEditor);
@@ -2239,20 +2253,24 @@ async function editInvoiceRecord(id){
     <div><label>Estado resultante</label><div id="edit_invoice_result_status" class="invoice-edit-money">${invoiceStatus(inv)}</div></div>
     <div class="wide"><label>Notas</label><textarea id="edit_invoice_notes" rows="3">${esc(inv.notes||'')}</textarea></div>
     <div class="wide"><label>Términos y condiciones</label><textarea id="edit_invoice_terms" rows="3">${esc(inv.terms||inv.conditions||'Pago según acuerdo.')}</textarea></div>`;
+  document.querySelectorAll('[data-invoice-edit-line]').forEach((row,index)=>{row.dataset.originalItem=JSON.stringify(items[index]);});
   $('editSave').onclick=async()=>{
     try{
       const client=clientBy($('edit_invoice_clientId').value);
       const newItems=readInvoiceEditorItems();
       if(!newItems.length) throw new Error('Añade al menos una partida a la factura.');
-      const subtotal=newItems.reduce((a,x)=>a+(Number(x.qty||0)*Number(x.price||0)),0);
       const taxPercent=Number($('edit_invoice_taxPercent').value||0);
-      const ivu=subtotal*(taxPercent/100);
-      const total=subtotal+ivu;
-      const status=String(inv.status||'').toLowerCase()==='cancelada'?'Cancelada':(total<=paid?'Pagada':paid>0?'Parcial':'Pendiente');
+      const calculated=invoiceEditorTotals(newItems,taxPercent);
+      const unchangedAmounts=taxPercent===totals.taxPercent && newItems.length===items.length &&
+        newItems.every((item,index)=>item.qty===Number(items[index].qty??1) && item.price===Number(items[index].price??0));
+      const {subtotal,discount,ivu,total}=unchangedAmounts
+        ? {...totals,discount:Number(inv.discount||0)} : calculated;
+      const status=unchangedAmounts || ['Cancelada','Borrador'].includes(inv.status)
+        ? inv.status||'Pendiente' : (total<=paid?'Pagada':paid>0?'Parcial':'Pendiente');
       await updateDoc(docPath('invoices',id),{
         number:$('edit_invoice_number').value.trim(),date:$('edit_invoice_date').value,dueDate:$('edit_invoice_dueDate').value,
         clientId:client.id||'',clientName:client.name||'',serviceTitle:$('edit_invoice_serviceTitle').value.trim(),
-        items:newItems,subtotal,ivu,tax:ivu,taxPercent,total,status,notes:$('edit_invoice_notes').value,terms:$('edit_invoice_terms').value,updatedAt:serverTimestamp()
+        items:newItems,subtotal,discount,ivu,tax:ivu,taxPercent,total,status,notes:$('edit_invoice_notes').value,terms:$('edit_invoice_terms').value,updatedAt:serverTimestamp()
       });
       closeEditModal();
     }catch(err){alert(err.message||err);}
@@ -2296,6 +2314,10 @@ async function createInvoice(serviceId){
   if(existing){previewInvoice(existing.id);return;}
   if(s.status!=='Completado')return alert('Completa el servicio antes de facturarlo.');
   if(!canCreate('invoices')){alert('Límite de facturas alcanzado.');show('plans');return;}
+  const serviceItems = service => service.items?.length ? service.items : [{description:serviceTitle(service),qty:1,price:serviceSubtotal(service)}];
+  const sourceItems=serviceItems(s);
+  const items=await classifyInvoiceLabor(sourceItems,esc,money);
+  if(!items)return;
   try{
     const invoiceId='service-'+s.id;
     const number=await nextInvoiceNumber(db,uid(),state.invoices,today());
@@ -2307,8 +2329,9 @@ async function createInvoice(serviceId){
       const fresh={...serviceSnap.data(),id:s.id};
       if(fresh.invoiceId)throw new Error('Este servicio ya tiene factura. Recarga el listado.');
       if(fresh.status!=='Completado')throw new Error('Completa el servicio antes de facturarlo.');
+      if(JSON.stringify(serviceItems(fresh))!==JSON.stringify(sourceItems))throw new Error('Las partidas del servicio cambiaron. Revisa el servicio y vuelve a facturarlo.');
       const totals=invoiceTotalsFromService(fresh);
-      tx.set(ir,{number,date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items:fresh.items?.length?fresh.items:[{description:serviceTitle(fresh),qty:1,price:serviceSubtotal(fresh)}],fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+      tx.set(ir,{number,date:today(),serviceId:s.id,workOrderNumber:workOrderNumber(fresh),clientId:fresh.clientId,clientName:fresh.clientName,serviceTitle:serviceTitle(fresh),items,fields:fresh.fields||[],...totals,status:'Pendiente',dueDate:plusDays(15),notes:fresh.completion?.report||'',terms:'Pago según acuerdo.',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
       tx.update(sr,{status:'Facturado',invoiceId,invoicedAt:serverTimestamp(),updatedAt:serverTimestamp()});
     });
     show('billing');
