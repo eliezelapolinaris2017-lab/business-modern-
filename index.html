@@ -36,7 +36,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="labor-report.css?v=1">
+  <link rel="stylesheet" href="labor-report.css?v=2">
 </head>
 <body>
   <section id="authScreen" class="auth-screen">
@@ -247,7 +247,11 @@
       <section id="labor" class="view labor-report" hidden aria-hidden="true">
         <div class="labor-head">
           <div><h2>Ganancias de labor</h2><p>Mano de obra por fecha de factura, antes del IVU y después del descuento de cada partida. Incluye facturas pendientes de cobro.</p></div>
-          <label>Mes <input type="month" data-labor-month></label>
+          <div class="labor-period-controls">
+            <label>Vista<select data-labor-mode><option value="monthly" selected>Mensual</option><option value="weekly">Semanal</option><option value="annual">Anual</option></select></label>
+            <label>Año<select data-labor-year></select></label>
+            <label data-labor-period-wrap><span>Mes</span><select data-labor-period></select></label>
+          </div>
         </div>
         <div class="labor-metrics" data-labor-summary></div>
         <div class="labor-panel"><h3>Desglose por categoría</h3><div class="labor-categories" data-labor-categories></div></div>
@@ -338,7 +342,7 @@
   </div>
 
   <script type="module" src="payment-links.js?v=51"></script>
-  <script type="module" src="app.js?v=145-labor-report"></script>
+  <script type="module" src="app.js?v=146-labor-periods"></script>
   <script src="nexus-v2.js?v=112-grooming" defer></script>
 </body>
 </html>

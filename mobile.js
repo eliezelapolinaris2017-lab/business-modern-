@@ -1,5 +1,5 @@
-import { laborOptions } from './invoice-labor.js?v=3';
-import { renderInvoiceLabor } from './labor-report.js?v=1';
+import { laborOptions } from './invoice-labor.js?v=4';
+import { laborToday, renderInvoiceLabor } from './labor-report.js?v=2';
 import { shortDocumentLink } from './document-links.js?v=132';
 import { nextInvoiceNumber } from './invoice-number.js?v=132';
 import { searchClients, normalizeClientSearch } from './client-search.js?v=126';
@@ -11,7 +11,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const APP_VERSION = 'v138';
+const APP_VERSION = 'v139';
 let deferredInstallPrompt = null;
 let updateWaiting = null;
 let currentFilter = 'all';
@@ -119,7 +119,7 @@ function switchTab(id){
   });
   document.querySelectorAll('.mobile-view').forEach(v => v.classList.toggle('active', v.id === id));
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
-  if(id==='mLabor')renderInvoiceLabor($('mLabor'),state.invoices,today(),money,esc,invoiceStatus,openInvoiceDoc);
+  if(id==='mLabor')renderInvoiceLabor($('mLabor'),state.invoices,laborToday(),money,esc,invoiceStatus,openInvoiceDoc);
   viewMemory.recall();
 }
 
@@ -267,7 +267,7 @@ async function loadProfile(){
   if($('mCalcTax')){$('mCalcTax').value=String(state.profile.tax??11.5);calculateMobilePrice();}
 }
 function renderAll(){return viewMemory.preserve(()=>renderAllContent());}
-function renderAllContent(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); renderMobileTools(); if($('mLabor').classList.contains('active'))renderInvoiceLabor($('mLabor'),state.invoices,today(),money,esc,invoiceStatus,openInvoiceDoc); }
+function renderAllContent(){ renderServices(); renderSelects(); renderDashboard(); renderInvoices(); renderFollowups(); renderClients(); renderHistory(); renderSyncDetails(); renderSummary(); renderMobileTools(); if($('mLabor').classList.contains('active'))renderInvoiceLabor($('mLabor'),state.invoices,laborToday(),money,esc,invoiceStatus,openInvoiceDoc); }
 function renderSelects(){
   const opts = state.clients.map(c => `<option value="${esc(c.id)}">${esc(c.name || 'Cliente')}</option>`).join('');
   ['mInvClient', 'mFollowClient'].forEach(id => { const el = $(id); if(el){ const prev = el.value; el.innerHTML = `<option value="">Seleccionar cliente</option>${opts}`; if(prev) el.value = prev; } });

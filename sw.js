@@ -1,5 +1,5 @@
-const CACHE='nexus-business-mobile-v138';
-const ASSETS=['./document-links.js?v=132','./invoice-number.js?v=132','./client-search.js?v=126','./whatsapp-tab.js?v=125','./ui-context.js?v=124','./mobile.html','./mobile.css','./mobile-field.css?v=135','./mobile.js?v=138-labor-report','./invoice-labor.js?v=3','./labor-report.js?v=1','./labor-report.css?v=1','./portal-sync.js?v=121','./client-portal-data.js?v=118','./firebase-config.js','./manifest.webmanifest','./assets/logo.png'];
+const CACHE='nexus-business-mobile-v139';
+const ASSETS=['./document-links.js?v=132','./invoice-number.js?v=132','./client-search.js?v=126','./whatsapp-tab.js?v=125','./ui-context.js?v=124','./mobile.html','./mobile.css','./mobile-field.css?v=135','./mobile.js?v=139-labor-periods','./invoice-labor.js?v=4','./labor-report.js?v=2','./labor-report.css?v=2','./portal-sync.js?v=121','./client-portal-data.js?v=118','./firebase-config.js','./manifest.webmanifest','./assets/logo.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS).catch(()=>{})));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('nexus-business-')&&k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('message',event=>{if(event.data&&event.data.type==='SKIP_WAITING') self.skipWaiting();});

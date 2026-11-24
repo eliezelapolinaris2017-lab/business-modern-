@@ -33,7 +33,6 @@
   font: inherit;
   font-size: 1rem;
 }
-.labor-report input[type="month"] { min-width: 164px; }
 .labor-report :is(input, select, button):focus-visible {
   outline: 2px solid var(--labor-blue);
   outline-offset: 3px;
@@ -154,3 +153,7 @@
   .labor-report .labor-invoice-row .labor-action { grid-area: action; }
   .labor-report .labor-detail-row:not([hidden]), .labor-report .labor-detail-row > td { display: block; }
 }
+
+.labor-period-controls { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; }
+.labor-period-controls label { flex: 1 1 auto; }
+.labor-report .labor-period-controls label[hidden] { display: none; }

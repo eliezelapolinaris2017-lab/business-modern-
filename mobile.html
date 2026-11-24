@@ -16,7 +16,7 @@
 <script>
 (()=>{const incoming=new URL(location.href);if(incoming.searchParams.has('access')||incoming.searchParams.has('token')){const portal=new URL('./portal/',incoming);portal.search=incoming.search;portal.hash=incoming.hash;location.replace(portal);}})();
 </script>
-  <link rel="stylesheet" href="labor-report.css?v=1">
+  <link rel="stylesheet" href="labor-report.css?v=2">
 </head>
 <body>
   <section id="mobileAuth" class="mobile-auth">
@@ -76,7 +76,11 @@
     <section id="mLabor" class="mobile-view labor-report">
         <div class="labor-head">
           <div><h2>Ganancias de labor</h2><p>Mano de obra por fecha de factura, antes del IVU y después del descuento de cada partida. Incluye facturas pendientes de cobro.</p></div>
-          <label>Mes <input type="month" data-labor-month></label>
+          <div class="labor-period-controls">
+            <label>Vista<select data-labor-mode><option value="monthly" selected>Mensual</option><option value="weekly">Semanal</option><option value="annual">Anual</option></select></label>
+            <label>Año<select data-labor-year></select></label>
+            <label data-labor-period-wrap><span>Mes</span><select data-labor-period></select></label>
+          </div>
         </div>
         <div class="labor-metrics" data-labor-summary></div>
         <div class="labor-panel"><h3>Desglose por categoría</h3><div class="labor-categories" data-labor-categories></div></div>
@@ -249,10 +253,10 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="mobile.js?v=138-labor-report"></script>
+  <script type="module" src="mobile.js?v=139-labor-periods"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=138').catch(()=>{}));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=139').catch(()=>{}));
     }
   </script>
 </body>

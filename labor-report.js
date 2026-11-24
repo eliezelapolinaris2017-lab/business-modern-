@@ -1,9 +1,55 @@
-import { laborCategories, summarizeInvoiceLabor } from './invoice-labor.js?v=3';
+import { laborCategories, summarizeInvoiceLabor } from './invoice-labor.js?v=4';
 
 const monthFormat = new Intl.DateTimeFormat('es-PR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const monthName = new Intl.DateTimeFormat('es-PR', { month: 'long', timeZone: 'UTC' });
+const weekFormat = new Intl.DateTimeFormat('es-PR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const puertoRicoDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Puerto_Rico', year: 'numeric', month: '2-digit', day: '2-digit' });
+export function laborToday() {
+  const parts = Object.fromEntries(puertoRicoDate.formatToParts(new Date()).map(part => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
 const dayFormat = new Intl.DateTimeFormat('es-PR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const normalize = value => String(value ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 const statusStyles = { Pagada: 'paid', Parcial: 'partial', Vencida: 'overdue' };
+
+
+const isoDate = date => date.toISOString().slice(0, 10);
+const utcDate = date => new Date(date + 'T12:00:00Z');
+const capitalize = label => label.charAt(0).toUpperCase() + label.slice(1);
+
+export function laborPeriods(mode, year) {
+  const first = year + '-01-01';
+  const last = year + '-12-31';
+  if (mode === 'annual') return [{ start: first, end: last, label: String(year) }];
+  if (mode === 'monthly') {
+    return Array.from({ length: 12 }, (_, index) => {
+      const startDate = utcDate(year + '-' + String(index + 1).padStart(2, '0') + '-01');
+      const endDate = new Date(startDate);
+      endDate.setUTCMonth(endDate.getUTCMonth() + 1, 0);
+      return { start: isoDate(startDate), end: isoDate(endDate), label: capitalize(monthName.format(startDate)) };
+    });
+  }
+
+  const periods = [];
+  const monday = utcDate(first);
+  monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7);
+  while (isoDate(monday) <= last) {
+    const sunday = new Date(monday);
+    sunday.setUTCDate(sunday.getUTCDate() + 6);
+    periods.push({ start: isoDate(monday), end: isoDate(sunday), label: weekFormat.formatRange(monday, sunday) });
+    monday.setUTCDate(monday.getUTCDate() + 7);
+  }
+  return periods;
+}
+
+function setLaborOptions(select, options, value) {
+  const markup = options.map(option => `<option value="${option.value}">${option.label}</option>`).join('');
+  if (select.dataset.options !== markup) {
+    select.innerHTML = markup;
+    select.dataset.options = markup;
+  }
+  select.value = value;
+}
 
 export function filterLaborRows(rows, search, category) {
   const terms = normalize(search).trim().split(/\s+/).filter(Boolean);
@@ -17,26 +63,44 @@ export function filterLaborRows(rows, search, category) {
 }
 
 export function renderInvoiceLabor(root, invoices, date, money, escape, invoiceStatus, openInvoice) {
-  const month = root.querySelector('[data-labor-month]');
+  const mode = root.querySelector('[data-labor-mode]');
+  const yearSelect = root.querySelector('[data-labor-year]');
+  const periodSelect = root.querySelector('[data-labor-period]');
+  const periodWrap = root.querySelector('[data-labor-period-wrap]');
   const summary = root.querySelector('[data-labor-summary]');
   const categories = root.querySelector('[data-labor-categories]');
   const search = root.querySelector('[data-labor-search]');
   const category = root.querySelector('[data-labor-category]');
   const results = root.querySelector('[data-labor-results]');
   const count = root.querySelector('[data-labor-count]');
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month.value)) month.value = date.slice(0, 7);
+  const currentYear = date.slice(0, 4);
+  const years = [...new Set([currentYear, ...invoices.map(invoice => String(invoice.date || '').slice(0, 4))])]
+    .filter(year => /^\d{4}$/.test(year) && year !== '0000').sort().reverse();
+  const year = years.includes(yearSelect.value) ? yearSelect.value : currentYear;
+  setLaborOptions(yearSelect, years.map(year => ({ value: year, label: year })), year);
+
+  const periods = laborPeriods(mode.value, year);
+  const previous = periodSelect.dataset.mode === mode.value ? periodSelect.value : '';
+  const selected = periods.find(period => period.start === previous)
+    || periods.find(period => period.start <= date && period.end >= date) || periods[0];
+  periodWrap.hidden = mode.value === 'annual';
+  if (!periodWrap.hidden) {
+    periodSelect.dataset.mode = mode.value;
+    periodWrap.querySelector('span').textContent = mode.value === 'weekly' ? 'Semana (lunes a domingo)' : 'Mes';
+    setLaborOptions(periodSelect, periods.map(period => ({ value: period.start, label: period.label })), selected.start);
+  }
   if (category.options.length === 1) {
     category.insertAdjacentHTML('beforeend', Object.entries(laborCategories)
       .map(([key, label]) => `<option value="${key}">${label}</option>`).join(''));
   }
-  const { rows, total, categories: totalsByCategory } = summarizeInvoiceLabor(invoices, month.value);
+  const { rows, total, categories: totalsByCategory } = summarizeInvoiceLabor(invoices, selected);
   const moneyFromCents = cents => money(cents / 100);
-  const period = monthFormat.format(new Date(month.value + '-01T12:00:00Z'));
+  const period = mode.value === 'monthly' ? monthFormat.format(utcDate(selected.start)) : selected.label;
   const invoiceCount = rows.length;
 
   summary.innerHTML = `
     <div class="labor-metric labor-metric-primary"><span>Mano de obra facturada</span><strong>${moneyFromCents(total)}</strong><small>${escape(period)}</small></div>
-    <div class="labor-metric"><span>Facturas con labor</span><strong>${invoiceCount}</strong><small>En el mes seleccionado</small></div>
+    <div class="labor-metric"><span>Facturas con labor</span><strong>${invoiceCount}</strong><small>En el período seleccionado</small></div>
     <div class="labor-metric"><span>Promedio de labor por factura</span><strong>${moneyFromCents(invoiceCount ? Math.round(total / invoiceCount) : 0)}</strong><small>Sobre facturas con labor</small></div>`;
 
   categories.innerHTML = Object.entries(laborCategories).map(([key, label]) => {
@@ -57,7 +121,7 @@ export function renderInvoiceLabor(root, invoices, date, money, escape, invoiceS
     categories.querySelectorAll('[data-labor-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.laborFilter === category.value)));
 
     if (!filtered.length) {
-      results.innerHTML = `<p class="labor-empty">${rows.length ? 'No hay facturas que coincidan con los filtros.' : 'Este mes no tiene facturas con partidas de labor clasificadas.'}</p>`;
+      results.innerHTML = `<p class="labor-empty">${rows.length ? 'No hay facturas que coincidan con los filtros.' : 'Este período no tiene facturas con partidas de labor clasificadas.'}</p>`;
       return;
     }
 
@@ -104,6 +168,7 @@ export function renderInvoiceLabor(root, invoices, date, money, escape, invoiceS
     const button = event.target.closest('[data-labor-open]');
     if (button) openInvoice(button.dataset.laborOpen);
   };
-  month.onchange = () => renderInvoiceLabor(root, invoices, date, money, escape, invoiceStatus, openInvoice);
+  const changePeriod = () => renderInvoiceLabor(root, invoices, date, money, escape, invoiceStatus, openInvoice);
+  mode.onchange = yearSelect.onchange = periodSelect.onchange = changePeriod;
   drawRows();
 }

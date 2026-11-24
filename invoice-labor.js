@@ -13,12 +13,13 @@ export function laborOptions(selected, placeholder = 'Sin clasificar como labor'
     ).join('');
 }
 
-export function summarizeInvoiceLabor(invoices, month) {
+export function summarizeInvoiceLabor(invoices, range) {
+  const { start, end } = typeof range === 'string' ? { start: range + '-01', end: range + '-31' } : range;
   const categories = Object.fromEntries(Object.keys(laborCategories).map(key => [key, 0]));
   const rows = [];
   let total = 0;
   for (const invoice of invoices) {
-    if (!String(invoice.date || '').startsWith(month + '-')) continue;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(invoice.date) || invoice.date < start || invoice.date > end) continue;
     if (['borrador', 'cancelada', 'anulada'].includes(String(invoice.status || '').trim().toLowerCase())) continue;
     const lines = [];
     let invoiceTotal = 0;
