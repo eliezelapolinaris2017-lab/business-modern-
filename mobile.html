@@ -16,6 +16,7 @@
 <script>
 (()=>{const incoming=new URL(location.href);if(incoming.searchParams.has('access')||incoming.searchParams.has('token')){const portal=new URL('./portal/',incoming);portal.search=incoming.search;portal.hash=incoming.hash;location.replace(portal);}})();
 </script>
+  <link rel="stylesheet" href="labor-report.css?v=1">
 </head>
 <body>
   <section id="mobileAuth" class="mobile-auth">
@@ -72,7 +73,23 @@
 <button data-tab="mSync" data-icon="sync" type="button"><svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 0 1 16-5l2 3 M21 2v6h-6 M21 14a9 9 0 0 1-16 5l-2-3 M3 22v-6h6"/></svg><b>Aplicación</b><small>Actualización y conexión</small></button></div></section>
     <section id="mAgenda" class="mobile-view"><div class="field-heading"><span>PLANIFICA TU DÍA</span><h2>Agenda de trabajo</h2><p>Consulta servicios abiertos por fecha.</p></div><div class="segmented" role="group" aria-label="Periodo de agenda"><button data-agenda-filter="today" type="button">Hoy</button><button data-agenda-filter="next" type="button" class="active">Próximos 7 días</button><button data-agenda-filter="overdue" type="button">Atrasados</button></div><div id="mAgendaList" class="mobile-list"></div></section>
     <section id="mReceivable" class="mobile-view"><div class="field-heading"><span>COBROS</span><h2>Cuentas por cobrar</h2><p id="mReceivableTotal"></p></div><input id="mReceivableSearch" class="search" type="search" placeholder="Buscar cliente o factura" aria-label="Buscar balances"><div id="mReceivableList" class="mobile-list"></div></section>
-    <section id="mLabor" class="mobile-view"><div class="mobile-card mobile-form"><h2>Ganancias de labor</h2><p>Mano de obra por fecha de factura, después del descuento de cada partida y antes del IVU. Incluye facturas pendientes de cobro.</p><label>Mes <input type="month" data-labor-month></label><div data-labor-result></div></div></section>
+    <section id="mLabor" class="mobile-view labor-report">
+        <div class="labor-head">
+          <div><h2>Ganancias de labor</h2><p>Mano de obra por fecha de factura, antes del IVU y después del descuento de cada partida. Incluye facturas pendientes de cobro.</p></div>
+          <label>Mes <input type="month" data-labor-month></label>
+        </div>
+        <div class="labor-metrics" data-labor-summary></div>
+        <div class="labor-panel"><h3>Desglose por categoría</h3><div class="labor-categories" data-labor-categories></div></div>
+        <div class="labor-panel">
+          <h3>Facturas con mano de obra</h3>
+          <div class="labor-filters">
+            <label>Buscar factura o cliente<input type="search" data-labor-search placeholder="Nombre o número de factura"></label>
+            <label>Categoría<select data-labor-category><option value="">Todas las categorías</option></select></label>
+          </div>
+          <p class="labor-count" data-labor-count aria-live="polite"></p>
+          <div data-labor-results></div>
+        </div>
+      </section>
     <section id="mCalculator" class="mobile-view"><div class="field-heading"><span>HERRAMIENTA RÁPIDA</span><h2>Calcula tu precio</h2><p>Una referencia rápida antes de preparar la factura.</p></div><div class="mobile-card mobile-form"><label>Importe antes de IVU<input id="mCalcAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label><div class="two-col"><label>Descuento %<input id="mCalcDiscount" type="number" inputmode="decimal" min="0" max="100" value="0"></label><label>IVU %<input id="mCalcTax" type="number" inputmode="decimal" min="0" max="100" value="11.5"></label></div><div id="mCalcResult" aria-live="polite"></div></div></section>
     <section id="mInvoices" class="mobile-view"><div class="field-heading"><span>FACTURACIÓN</span><h2>Facturas</h2><p>Busca una factura para verla, editarla o compartirla.</p></div><div class="section-row"><span id="mInvoicesCount" class="muted"></span><button data-tab="mInvoice" type="button">Nueva factura</button></div><input id="mInvoicesSearch" class="search" type="search" placeholder="Buscar cliente, número o servicio" aria-label="Buscar facturas"><label>Estado<select id="mInvoicesStatus"><option value="all">Todas las facturas</option>Pendiente</option>Parcial</option>Vencida</option>Pagada</option>Borrador</option>Cancelada</select></label><div id="mAllInvoiceList" class="mobile-list"></div><button id="mLoadMoreInvoices" type="button" hidden>Ver más facturas</button></section>
     <section id="mInvoice" class="mobile-view">
@@ -232,10 +249,10 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="mobile.js?v=137-labor"></script>
+  <script type="module" src="mobile.js?v=138-labor-report"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=137').catch(()=>{}));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=138').catch(()=>{}));
     }
   </script>
 </body>

@@ -20,40 +20,23 @@ export function summarizeInvoiceLabor(invoices, month) {
   for (const invoice of invoices) {
     if (!String(invoice.date || '').startsWith(month + '-')) continue;
     if (['borrador', 'cancelada', 'anulada'].includes(String(invoice.status || '').trim().toLowerCase())) continue;
+    const lines = [];
     let invoiceTotal = 0;
     for (const item of invoice.items || []) {
       if (!Object.hasOwn(categories, item.laborCategory)) continue;
       const gross = Number(item.qty ?? item.quantity ?? 1) * Number(item.price ?? item.unitPrice ?? 0);
       const net = Math.round((Math.max(0, gross - (Number(item.discount) || 0)) + Number.EPSILON) * 100);
       if (!Number.isFinite(net) || !net) continue;
+      lines.push({ item, cents: net });
       categories[item.laborCategory] += net;
       invoiceTotal += net;
     }
     if (!invoiceTotal) continue;
-    rows.push({ invoice, cents: invoiceTotal });
+    rows.push({ invoice, cents: invoiceTotal, lines });
     total += invoiceTotal;
   }
   rows.sort((a, b) => b.invoice.date.localeCompare(a.invoice.date));
   return { categories, rows, total };
-}
-
-export function renderInvoiceLabor(root, invoices, date, money, escape) {
-  const month = root.querySelector('[data-labor-month]');
-  const result = root.querySelector('[data-labor-result]');
-  if (!month.value) month.value = date.slice(0, 7);
-  const render = () => {
-    const { categories, rows, total } = summarizeInvoiceLabor(invoices, month.value);
-    result.innerHTML = `<h3>Mano de obra facturada · ${money(total / 100)}</h3>
-      <dl>${Object.entries(laborCategories).map(([key, label]) =>
-        `<div class="section-row"><dt>${label}</dt><dd><strong>${money(categories[key] / 100)}</strong></dd></div>`
-      ).join('')}</dl>
-      <h3>Facturas con mano de obra</h3>
-      ${rows.length ? `<ul>${rows.map(({ invoice, cents }) =>
-        `<li>${escape(invoice.date)} · ${escape(invoice.number || 'Factura')} · ${escape(invoice.clientName || 'Cliente')} · <strong>${money(cents / 100)}</strong></li>`
-      ).join('')}</ul>` : '<p class="muted">Este mes no tiene partidas clasificadas de mano de obra.</p>'}`;
-  };
-  month.onchange = render;
-  render();
 }
 
 export function classifyInvoiceLabor(items, escape, money) {

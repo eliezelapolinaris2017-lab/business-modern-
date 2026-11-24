@@ -1,4 +1,5 @@
-import { classifyInvoiceLabor, laborOptions, renderInvoiceLabor } from './invoice-labor.js?v=2';
+import { classifyInvoiceLabor, laborOptions } from './invoice-labor.js?v=3';
+import { renderInvoiceLabor } from './labor-report.js?v=1';
 import { clientRecoveryInfo, showRecoveryDialog, showPortalInviteDialog } from './client-outreach.js?v=141';
 import { numericPurchaseNumber, nextPurchaseSequence, purchaseOrderHtml } from './purchase-order.js?v=137';
 import { shortDocumentLink } from './document-links.js?v=132';
@@ -1923,7 +1924,7 @@ const __v90Tables=tables;
 tables=function(){__v90Tables();renderContractsTable();};
 
 function render(){return viewMemory.preserve(()=>renderContent());}
-function renderContent(){if(state.activeView==='labor')renderInvoiceLabor($('labor'),state.invoices,today(),money,esc);document.body.dataset.industry=profile().industry;setVisuals();nav();forms();enhancePurchaseForm();bindSearchableClientFields();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(industryTitle(state.activeView));$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
+function renderContent(){if(state.activeView==='labor')renderInvoiceLabor($('labor'),state.invoices,today(),money,esc,invoiceStatus,previewInvoice);document.body.dataset.industry=profile().industry;setVisuals();nav();forms();enhancePurchaseForm();bindSearchableClientFields();bindContractForm();bindServiceItems();bindQuoteItems();bindServiceProductivity();if(isTransport()){['sOrigin','sDestination','sRouteMiles','sRouteRate','sRouteBase'].forEach(id=>$(id)&&($(id).oninput=updateTransportTotal));updateTransportTotal();}kpis();renderHomePolish();tables();renderModernHome();bindDirectoryControls();plans();renderWelcomeCenter();enforceModuleView();$('pageTitle').textContent=state.activeView==='dashboard'?'Inicio':T(industryTitle(state.activeView));$('pageSubtitle').textContent=state.activeView==='dashboard'?'Resumen simple de tu negocio':' ';applyLanguage();}
 async function add(c,data){if(!canCreate(c)){alert(`Límite alcanzado en plan ${plan().name}. Mejora tu plan.`);show('plans');return null;}if(c==='invoices')data={...data,number:await nextInvoiceNumber(db,uid(),state.invoices,data.date)};return await addDoc(colPath(c),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});}
 
 function showClientSummary(id){

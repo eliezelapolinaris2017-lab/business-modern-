@@ -36,6 +36,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="labor-report.css?v=1">
 </head>
 <body>
   <section id="authScreen" class="auth-screen">
@@ -243,7 +244,23 @@
       <section id="supplierPayments" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2 id="supplierPaymentsTitle">Pagos a suplidores</h2><span id="supplierPaymentsLimit" class="limit-chip"></span></div><form id="supplierPaymentForm" class="form-grid"></form><div id="supplierPaymentsTable"></div></div></section>
       <section id="purchases" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Compras / Órdenes de compra</h2><span id="purchasesLimit" class="limit-chip"></span></div><form id="purchaseForm" class="form-grid"></form><div id="purchasesTable"></div></div></section>
       <section id="billing" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Facturación</h2><span id="invoicesLimit" class="limit-chip"></span></div><div class="toolbar"><button id="newInvoice" class="primary" type="button">Nueva factura</button><button type="button" data-view="labor">Ganancias de labor</button></div><div id="invoiceTable"></div></div></section>
-      <section id="labor" class="view" hidden aria-hidden="true"><div class="card"><h2>Ganancias de labor</h2><p>Mano de obra por fecha de factura, después del descuento de cada partida y antes del IVU. Incluye facturas pendientes de cobro.</p><label>Mes <input type="month" data-labor-month></label><div data-labor-result></div></div></section>
+      <section id="labor" class="view labor-report" hidden aria-hidden="true">
+        <div class="labor-head">
+          <div><h2>Ganancias de labor</h2><p>Mano de obra por fecha de factura, antes del IVU y después del descuento de cada partida. Incluye facturas pendientes de cobro.</p></div>
+          <label>Mes <input type="month" data-labor-month></label>
+        </div>
+        <div class="labor-metrics" data-labor-summary></div>
+        <div class="labor-panel"><h3>Desglose por categoría</h3><div class="labor-categories" data-labor-categories></div></div>
+        <div class="labor-panel">
+          <h3>Facturas con mano de obra</h3>
+          <div class="labor-filters">
+            <label>Buscar factura o cliente<input type="search" data-labor-search placeholder="Nombre o número de factura"></label>
+            <label>Categoría<select data-labor-category><option value="">Todas las categorías</option></select></label>
+          </div>
+          <p class="labor-count" data-labor-count aria-live="polite"></p>
+          <div data-labor-results></div>
+        </div>
+      </section>
       <section id="payments" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Cobros</h2><span id="paymentsLimit" class="limit-chip"></span></div><form id="paymentForm" class="form-grid"></form><div id="paymentsTable"></div></div></section>
       <section id="cashflow" class="view" hidden aria-hidden="true"><div class="card"><div class="section-head"><h2>Flujo de caja</h2><span id="cashflowLimit" class="limit-chip"></span></div><form id="cashForm" class="form-grid"></form><div id="cashTable"></div></div></section>
       <section id="reports" class="view" hidden aria-hidden="true">
@@ -321,7 +338,7 @@
   </div>
 
   <script type="module" src="payment-links.js?v=51"></script>
-  <script type="module" src="app.js?v=144-desktop-invoice"></script>
+  <script type="module" src="app.js?v=145-labor-report"></script>
   <script src="nexus-v2.js?v=112-grooming" defer></script>
 </body>
 </html>
