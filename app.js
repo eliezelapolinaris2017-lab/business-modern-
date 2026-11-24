@@ -1,4 +1,4 @@
-import { classifyInvoiceLabor, laborOptions } from './invoice-labor.js?v=4';
+import { classifyInvoiceLabor, laborCategories, laborOptions } from './invoice-labor.js?v=4';
 import { laborToday, renderInvoiceLabor } from './labor-report.js?v=2';
 import { clientRecoveryInfo, showRecoveryDialog, showPortalInviteDialog } from './client-outreach.js?v=141';
 import { numericPurchaseNumber, nextPurchaseSequence, purchaseOrderHtml } from './purchase-order.js?v=137';
@@ -1993,7 +1993,7 @@ function ensureEditModal(){
   const wrap=document.createElement('div');
   wrap.id='editModal';
   wrap.className='edit-modal hidden';
-  wrap.innerHTML=`<div class="edit-backdrop" data-close-edit></div><div class="edit-panel card"><div class="edit-head"><div><span class="pill">Editar</span><h2 id="editTitle">Editar registro</h2></div><button class="icon-btn" data-close-edit type="button">×</button></div><form id="editForm" class="form-grid edit-form"></form><div class="edit-actions"><button type="button" data-close-edit>Cancelar</button><button id="editSave" class="primary" type="button">Guardar cambios</button></div></div>`;
+  wrap.innerHTML=`<div class="edit-backdrop" data-close-edit></div><div class="edit-panel card"><div class="edit-head"><div><span class="pill">Editar</span><h2 id="editTitle">Editar registro</h2></div><button class="icon-btn" data-close-edit type="button">×</button></div><form id="editForm" class="form-grid edit-form"></form><div class="edit-actions"><button id="editInvoiceBack" type="button" hidden>Atrás</button><button type="button" data-close-edit>Cancelar</button><button id="editSave" class="primary" type="button">Guardar cambios</button></div></div>`;
   document.body.appendChild(wrap);
   wrap.querySelectorAll('[data-close-edit]').forEach(b=>b.onclick=closeEditModal);
   return wrap;
@@ -2002,7 +2002,17 @@ function closeEditModal(){
   if(state.editing?.savingInvoice)return;
   const modal=$('editModal');
   if(modal){
+    const guided=modal.classList.contains('invoice-wizard');
     modal.classList.add('hidden');
+    modal.classList.remove('invoice-wizard');
+    modal.onkeydown=null;
+    $('editInvoiceBack').hidden=true;
+    $('editInvoiceBack').onclick=null;
+    if(guided){
+      const panel=modal.querySelector('.edit-panel');
+      ['role','aria-modal','aria-labelledby'].forEach(attribute=>panel.removeAttribute(attribute));
+      $('newInvoice').focus();
+    }
     $('editForm').onsubmit=null;
     $('editSave').textContent='Guardar cambios';
     modal.querySelector('.edit-head .pill').textContent='Editar';
@@ -2181,8 +2191,16 @@ async function editServiceRecord(id){
 
 
 
-function invoiceEditorItemsHtml(items){
+function invoiceEditorItemsHtml(items,guided=false){
   const arr=(Array.isArray(items)&&items.length)?items:[{description:'',qty:1,price:0}];
+  if(guided)return arr.map(it=>`<div class="invoice-wizard-line" data-invoice-edit-line>
+    <label class="wizard-description">Descripción<input class="invoice-edit-desc" placeholder="Ej. Instalación de mini-split" value="${esc(it.description||'')}"></label>
+    <label>Tipo de labor<select class="invoice-edit-labor">${laborOptions(it.laborCategory,'Materiales u otros cargos')}</select></label>
+    <label>Cant.<input class="invoice-edit-qty" type="number" min="0.01" step="0.01" value="${esc(it.qty??1)}"></label>
+    <label>Precio<input class="invoice-edit-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${esc(it.price??'')}"></label>
+    <div class="wizard-line-amount"><span>Importe</span><strong data-wizard-line-amount>${money(Number(it.qty??1)*Number(it.price||0))}</strong></div>
+    <button class="wizard-remove" data-remove-invoice-line type="button" aria-label="Quitar partida">×</button>
+  </div>`).join('');
   return arr.map((it,idx)=>`<div class="service-line invoice-edit-line" data-invoice-edit-line>
     <div class="line-number">${idx+1}</div>
     <input class="invoice-edit-desc" placeholder="Descripción de la partida" value="${esc(it.description||'')}">
@@ -2220,26 +2238,151 @@ function recalcInvoiceEditor(){
   if($('edit_invoice_balance')) $('edit_invoice_balance').textContent=money(balance);
   if($('edit_invoice_result_status')) $('edit_invoice_result_status').textContent=total<=paid?'Pagada':paid>0?'Parcial':'Pendiente';
 }
-function bindInvoiceEditor(){
+function bindInvoiceEditor(guided=false){
+  const recalc=()=>{
+    recalcInvoiceEditor();
+    if(guided)document.querySelectorAll('[data-invoice-edit-line]').forEach(row=>{
+      row.querySelector('[data-wizard-line-amount]').textContent=money(
+        Number(row.querySelector('.invoice-edit-qty').value)*Number(row.querySelector('.invoice-edit-price').value)
+      );
+    });
+  };
   const addBtn=$('edit_addInvoiceLine');
   if(addBtn) addBtn.onclick=()=>{
     const box=$('editInvoiceItemsBox'); if(!box)return;
-    box.insertAdjacentHTML('beforeend',invoiceEditorItemsHtml([{description:'',qty:1,price:0}]));
-    bindInvoiceEditor(); recalcInvoiceEditor();
+    box.insertAdjacentHTML('beforeend',invoiceEditorItemsHtml([{description:'',qty:1,price:guided?'':0}],guided));
+    bindInvoiceEditor(guided);
+    if(guided)box.lastElementChild.querySelector('.invoice-edit-desc').focus();
   };
   document.querySelectorAll('[data-remove-invoice-line]').forEach(btn=>btn.onclick=()=>{
     const rows=document.querySelectorAll('[data-invoice-edit-line]');
     const row=btn.closest('[data-invoice-edit-line]');
     if(rows.length>1) row.remove(); else {
       delete row.dataset.originalItem;
-      row.querySelectorAll('input,select').forEach((el,i)=>el.value=i===1?'1':'');
+      row.querySelectorAll('input,select').forEach(el=>el.value=el.classList.contains('invoice-edit-qty')?'1':'');
     }
-    bindInvoiceEditor(); recalcInvoiceEditor();
+    bindInvoiceEditor(guided);
   });
   document.querySelectorAll('[data-invoice-edit-line] .line-number').forEach((label, index)=>label.textContent=index+1);
-  document.querySelectorAll('.invoice-edit-desc,.invoice-edit-qty,.invoice-edit-price').forEach(el=>el.oninput=recalcInvoiceEditor);
-  if($('edit_invoice_taxPercent')) $('edit_invoice_taxPercent').oninput=recalcInvoiceEditor;
-  recalcInvoiceEditor();
+  document.querySelectorAll('.invoice-edit-desc,.invoice-edit-qty,.invoice-edit-price').forEach(el=>el.oninput=recalc);
+  if($('edit_invoice_taxPercent')) $('edit_invoice_taxPercent').oninput=recalc;
+  recalc();
+}
+function newInvoiceWizardHtml(inv,items){
+  return `<ol class="invoice-steps" aria-label="Pasos de la factura">
+    ${['Cliente y fechas','Partidas','Revisar y guardar'].map((label,index)=>`<li><span>${index+1}</span>${label}</li>`).join('')}
+  </ol>
+  <section data-invoice-step>
+    <h3 tabindex="-1">Cliente y fechas</h3>
+    <div class="wizard-customer-fields">
+      <label class="wizard-customer">Cliente<select id="edit_invoice_clientId">
+        <option value="">Selecciona un cliente</option>
+        ${state.clients.map(client=>`<option value="${esc(client.id)}">${esc(client.name)}</option>`).join('')}
+      </select></label>
+      <label>Fecha de factura<input id="edit_invoice_date" type="date" value="${esc(inv.date)}"></label>
+      <label>Vencimiento<input id="edit_invoice_dueDate" type="date" value="${esc(inv.dueDate)}"></label>
+    </div>
+  </section>
+  <section data-invoice-step hidden>
+    <div class="wizard-section-head"><h3 tabindex="-1">Partidas</h3><button id="edit_addInvoiceLine" type="button">+ Añadir partida</button></div>
+    <div id="editInvoiceItemsBox" class="wizard-items">${invoiceEditorItemsHtml(items,true)}</div>
+    <label class="wizard-tax">IVU %<input id="edit_invoice_taxPercent" type="number" min="0" step="0.01" value="${esc(profile().tax??0)}"></label>
+  </section>
+  <section data-invoice-step hidden>
+    <h3 tabindex="-1">Revisar factura</h3>
+    <div id="invoiceWizardReview"></div>
+    <details class="wizard-notes"><summary>Notas y términos de pago</summary>
+      <label>Notas<textarea id="edit_invoice_notes" rows="2"></textarea></label>
+      <label>Términos y condiciones<textarea id="edit_invoice_terms" rows="2">Pago según acuerdo.</textarea></label>
+    </details>
+  </section>
+  <p id="invoiceWizardError" class="wizard-error" role="alert" hidden></p>`;
+}
+function readNewInvoiceCustomer(){
+  const client=clientBy($('edit_invoice_clientId').value);
+  const date=$('edit_invoice_date').value;
+  const dueDate=$('edit_invoice_dueDate').value;
+  if(!client.id)throw new Error('Selecciona un cliente.');
+  if(!date || !dueDate)throw new Error('Completa la fecha de factura y su vencimiento.');
+  if(dueDate<date)throw new Error('El vencimiento debe ser igual o posterior a la fecha de la factura.');
+  return {client,date,dueDate};
+}
+function readNewInvoiceItems(){
+  const items=readInvoiceEditorItems().filter(item=>item.description||item.price||item.laborCategory);
+  const taxPercent=Number($('edit_invoice_taxPercent').value||0);
+  if(!Number.isFinite(taxPercent)||taxPercent<0)throw new Error('Indica un porcentaje de IVU válido.');
+  if(!items.length)throw new Error('Añade al menos una partida a la factura.');
+  if(items.some(item=>!item.description||!Number.isFinite(item.qty)||item.qty<=0||!Number.isFinite(item.price)||item.price<0)){
+    throw new Error('Revisa la descripción, cantidad y precio de cada partida.');
+  }
+  const totals=invoiceEditorTotals(items,taxPercent);
+  const round=value=>Math.round((value+Number.EPSILON)*100)/100;
+  const subtotal=round(totals.subtotal);
+  const ivu=round(totals.ivu);
+  return {items,taxPercent,subtotal,ivu,total:round(subtotal+ivu)};
+}
+function bindNewInvoiceWizard(modal,save){
+  const form=$('editForm');
+  const next=$('editSave');
+  const back=$('editInvoiceBack');
+  const error=$('invoiceWizardError');
+  const panels=[...form.querySelectorAll('[data-invoice-step]')];
+  const steps=[...form.querySelectorAll('.invoice-steps li')];
+  let step=0;
+  const setError=message=>{
+    error.textContent=message;
+    error.hidden=!message;
+  };
+  const showStep=index=>{
+    step=index;
+    setError('');
+    panels.forEach((panel,i)=>panel.hidden=i!==index);
+    steps.forEach((item,i)=>{
+      item.classList.toggle('complete',i<index);
+      if(i===index)item.setAttribute('aria-current','step');
+      else item.removeAttribute('aria-current');
+    });
+    back.hidden=index===0;
+    next.textContent=['Continuar','Revisar factura','Guardar factura'][index];
+    modal.scrollTop=0;
+    panels[index].querySelector('h3').focus();
+  };
+  const advance=async()=>{
+    if(state.editing?.savingInvoice)return;
+    try{
+      if(step===0){
+        readNewInvoiceCustomer();
+        showStep(1);
+      }else if(step===1){
+        const invalid=panels[1].querySelector('input:invalid');
+        if(invalid){invalid.reportValidity();return;}
+        const {client,date,dueDate}=readNewInvoiceCustomer();
+        const {items,subtotal,ivu,total}=readNewInvoiceItems();
+        $('invoiceWizardReview').innerHTML=`
+          <dl class="wizard-review-client"><div><dt>Cliente</dt><dd>${esc(client.name)}</dd></div>
+            <div><dt>Fecha</dt><dd>${esc(niceDate(date))}</dd></div><div><dt>Vencimiento</dt><dd>${esc(niceDate(dueDate))}</dd></div></dl>
+          <ul class="wizard-review-items">${items.map(item=>`<li><div><strong>${esc(item.description)}</strong>
+            <span>${esc(laborCategories[item.laborCategory]||'Materiales u otros cargos')} · ${item.qty} × ${money(item.price)}</span></div>
+            <strong>${money(item.qty*item.price)}</strong></li>`).join('')}</ul>
+          <dl class="wizard-review-totals"><div><dt>Subtotal</dt><dd>${money(subtotal)}</dd></div>
+            <div><dt>IVU</dt><dd>${money(ivu)}</dd></div><div><dt>Total</dt><dd>${money(total)}</dd></div></dl>`;
+        showStep(2);
+      }else await save();
+    }catch(err){setError(err.message);}
+  };
+  back.onclick=()=>{if(step&&!state.editing?.savingInvoice)showStep(step-1);};
+  next.onclick=advance;
+  form.onsubmit=event=>{event.preventDefault();advance();};
+  modal.onkeydown=event=>{
+    if(event.key==='Escape'){event.preventDefault();closeEditModal();return;}
+    if(event.key!=='Tab')return;
+    const focusable=[...modal.querySelectorAll('button:not([disabled]),input,select,textarea,summary')]
+      .filter(element=>element.getClientRects().length);
+    const first=focusable[0],last=focusable.at(-1);
+    if(event.shiftKey && document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
+  };
+  showStep(0);
 }
 function editInvoiceRecord(id){
   const creating=!id;
@@ -2256,9 +2399,9 @@ function editInvoiceRecord(id){
   $('editTitle').textContent=creating?'Nueva factura':`Editar factura ${inv.number||''}`;
   const saveButton=$('editSave');
   saveButton.textContent=creating?'Guardar factura':'Guardar cambios';
-  $('editForm').innerHTML=`
-    ${creating?'':`<div class="wide paid-invoice-editor-note"><b>${paid>0?'Esta factura tiene pagos registrados.':'Edición completa de factura'}</b><span>Los cobros asociados no se eliminarán. Al cambiar el total, el balance y el estado se recalcularán automáticamente.</span></div>
-    ${input('Número de factura','edit_invoice_number','text',inv.number||'')}`}
+  $('editForm').innerHTML=creating?newInvoiceWizardHtml(inv,items):`
+    <div class="wide paid-invoice-editor-note"><b>${paid>0?'Esta factura tiene pagos registrados.':'Edición completa de factura'}</b><span>Los cobros asociados no se eliminarán. Al cambiar el total, el balance y el estado se recalcularán automáticamente.</span></div>
+     ${input('Número de factura','edit_invoice_number','text',inv.number||'')}
     ${input('Fecha','edit_invoice_date','date',inv.date||today())}
     ${input('Vencimiento','edit_invoice_dueDate','date',inv.dueDate||'')}
     ${editSelectHtml('Cliente','edit_invoice_clientId',[{value:'',label:'Selecciona un cliente'},...state.clients.map(x=>({value:x.id,label:x.name}))],inv.clientId||'')}
@@ -2277,37 +2420,25 @@ function editInvoiceRecord(id){
   const save=async()=>{
     if(editing.savingInvoice)return;
     try{
-      const client=clientBy($('edit_invoice_clientId').value);
-      const date=$('edit_invoice_date').value;
-      const dueDate=$('edit_invoice_dueDate').value;
-      const taxPercent=Number($('edit_invoice_taxPercent').value||0);
-      let newItems=readInvoiceEditorItems();
-      if(creating){
-        if(!$('editForm').reportValidity())return;
-        if(!client.id)throw new Error('Selecciona un cliente.');
-        if(!date || !dueDate)throw new Error('Completa la fecha de factura y su vencimiento.');
-        if(dueDate<date)throw new Error('El vencimiento debe ser igual o posterior a la fecha de la factura.');
-        newItems=newItems.filter(item=>item.description||item.price||item.laborCategory);
-        if(newItems.some(item=>!item.description||item.qty<=0))throw new Error('Añade una descripción y una cantidad mayor de cero a cada partida.');
-      }
+      const {client,date,dueDate}=creating?readNewInvoiceCustomer():{
+        client:clientBy($('edit_invoice_clientId').value),
+        date:$('edit_invoice_date').value,
+        dueDate:$('edit_invoice_dueDate').value
+      };
+      const draft=creating?readNewInvoiceItems():{items:readInvoiceEditorItems(),taxPercent:Number($('edit_invoice_taxPercent').value||0)};
+      const {items:newItems,taxPercent}=draft;
       if(!newItems.length)throw new Error('Añade al menos una partida a la factura.');
-      const calculated=invoiceEditorTotals(newItems,taxPercent);
-      if(creating){
-        const round=value=>Math.round((value+Number.EPSILON)*100)/100;
-        calculated.subtotal=round(calculated.subtotal);
-        calculated.ivu=round(calculated.ivu);
-        calculated.total=round(calculated.subtotal+calculated.ivu);
-      }
+      const calculated=creating?{...draft,discount:0}:invoiceEditorTotals(newItems,taxPercent);
       const unchangedAmounts=!creating && taxPercent===totals.taxPercent && newItems.length===items.length &&
         newItems.every((item,index)=>item.qty===Number(items[index].qty??1) && item.price===Number(items[index].price??0));
       const {subtotal,discount,ivu,total}=unchangedAmounts
         ? {...totals,discount:Number(inv.discount||0)} : calculated;
       const status=creating?'Pendiente':unchangedAmounts || ['Cancelada','Borrador'].includes(inv.status)
         ? inv.status||'Pendiente' : (total<=paid?'Pagada':paid>0?'Parcial':'Pendiente');
-      const title=$('edit_invoice_serviceTitle').value.trim();
+      const title=creating?newItems[0].description:$('edit_invoice_serviceTitle').value.trim();
       const payload={
         date,dueDate,clientId:client.id||'',clientName:client.name||'',
-        serviceTitle:title||(creating?newItems[0].description:''),
+        serviceTitle:title,
         items:newItems,subtotal,discount,ivu,tax:ivu,taxPercent,total,status,
         notes:$('edit_invoice_notes').value,terms:$('edit_invoice_terms').value
       };
@@ -2324,14 +2455,22 @@ function editInvoiceRecord(id){
       editing.savingInvoice=false;
       closeEditModal();
       if(creating){openBilling();$('newInvoice').focus();}
-    }catch(err){alert(err.message||err);}
+    }catch(err){if(creating)throw err;alert(err.message||err);}
     finally{editing.savingInvoice=false;saveButton.disabled=false;}
   };
   saveButton.onclick=save;
   $('editForm').onsubmit=event=>{event.preventDefault();save();};
   ['edit_invoice_subtotal','edit_invoice_ivu','edit_invoice_total'].forEach(x=>{const el=$(x);if(el){el.readOnly=true;el.tabIndex=-1;}});
-  bindInvoiceEditor();
+  bindInvoiceEditor(creating);
   m.classList.remove('hidden');
+  if(creating){
+    m.classList.add('invoice-wizard');
+    const panel=m.querySelector('.edit-panel');
+    panel.setAttribute('role','dialog');
+    panel.setAttribute('aria-modal','true');
+    panel.setAttribute('aria-labelledby','editTitle');
+    bindNewInvoiceWizard(m,save);
+  }
 }
 async function editRecord(c,id){
   if(c==='purchases') return editPurchaseOrder(id);
